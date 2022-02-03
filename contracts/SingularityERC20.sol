@@ -3,9 +3,9 @@ pragma solidity ^0.8.10;
 import "./interfaces/ISingularityERC20.sol";
 
 contract SingularityERC20 is ISingularityERC20 {
-    string public constant override name = "Singularity Swap LP";
-    string public constant override symbol = "Singularity LP";
-    uint8 public constant override decimals = 18;
+    string public override name;
+    string public override symbol;
+    uint8 public override decimals;
     uint  public override totalSupply;
     mapping(address => uint) public override balanceOf;
     mapping(address => mapping(address => uint)) public override allowance;

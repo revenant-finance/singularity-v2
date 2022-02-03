@@ -5,11 +5,12 @@ interface ISingularityFactory {
     function oracle() external view returns (address);
     function feeTo() external view returns (address);
 
-    function getPool(address tokenA, address tokenB) external view returns (address pool);
     function allPools(uint) external view returns (address pool);
+    function getPool(address token) external view returns (address pool);
+    function pausers(address pauser) external view returns (bool allowed);
     function allPoolsLength() external view returns (uint);
 
-    function createPool(address token) external returns (address pool);
+    function createPool(address token, string calldata name, string calldata symbol) external returns (address pool);
 
     function setAdmin(address) external;
     function setOracle(address) external;

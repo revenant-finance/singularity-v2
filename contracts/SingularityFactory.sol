@@ -67,6 +67,13 @@ contract SingularityFactory is ISingularityFactory {
         }
     }
 
+    function setDepositCaps(address[] calldata pools, uint[] calldata caps) external onlyAdmin {
+        require(pools.length == caps.length, "SingularityFactory: NOT_SAME_LENGTH");
+        for (uint i; i < pools.length; i++) {
+            ISingularityPool(pools[i]).setDepositCap(caps[i]);
+        }
+    }
+
     function setPaused(address[] calldata pools, bool[] calldata paused) external {
         require(pausers[msg.sender], "SingularityFactory: FORBIDDEN");
         require(pools.length == paused.length, "SingularityFactory: NOT_SAME_LENGTH");

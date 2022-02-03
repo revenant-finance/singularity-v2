@@ -3,7 +3,6 @@
 pragma solidity ^0.8.10;
 
 import './interfaces/IOracle.sol';
-import './interfaces/IChainlinkOracle.sol';
 
 contract Oracle is IOracle {
 	struct PriceData {

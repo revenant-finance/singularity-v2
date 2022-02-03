@@ -2,13 +2,17 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { expectRevert } = require("@openzeppelin/test-helpers");
 
-describe("Singularity", () => {
+describe("SingularityV2", () => {
 	let ownerAccount, ownerAddress, otherAccount, otherAddress;
-	let Factory, Router, Oracle, ERC20, Pair;
-	let factory, router, oracle, eth, usdc, dai;
-	const ONE = ethers.utils.parseEther("1");
-	const TEN = ethers.utils.parseEther("10");
+	let Factory, Oracle, ERC20, Pool;
+	let factory, oracle, eth, usdc;
 	const MAX = ethers.constants.MaxUint256;
+	const ETH = { name: "Ethereum", symbol: "ETH", decimals: 18 };
+	const USDC = { name: "USD Coin", symbol: "USDC", decimals: 6 };
+
+	function numToBN(number, decimals = 18) {
+		return ethers.utils.parseUnits(number.toString(), decimals);
+	}
 
 	before(async () => {
 		const accounts = await ethers.getSigners();
@@ -16,38 +20,29 @@ describe("Singularity", () => {
 		ownerAddress = await ownerAccount.getAddress();
 		otherAddress = await otherAccount.getAddress();
 		Factory = await ethers.getContractFactory("SingularityFactory");
-		Router = await ethers.getContractFactory("SingularityRouter");
 		ERC20 = await ethers.getContractFactory("ERC20");
-		Oracle = await ethers.getContractFactory("TestOracle");
-		Pair = await ethers.getContractFactory("SingularityPair");
+		Oracle = await ethers.getContractFactory("Oracle");
+		Pool = await ethers.getContractFactory("SingularityPool");
 	});
 
 	beforeEach(async () => {
 		// deploy erc20 dummy tokens
-		eth = await ERC20.deploy("Ethereum", "ETH", 18);
+		eth = await ERC20.deploy(ETH.name, ETH.symbol, ETH.decimals);
 		await eth.deployed();
-		await eth.mint(ownerAddress, ethers.utils.parseEther("100000000"));
-		usdc = await ERC20.deploy("USDC", "USDC", 6);
+		await eth.mint(ownerAddress, ethers.utils.parseEther("1000"));
+
+		usdc = await ERC20.deploy(USDC.name, USDC.symbol, USDC.decimals);
 		await usdc.deployed();
-		await usdc.mint(ownerAddress, ethers.utils.parseUnits("100000000", 6));
-		dai = await ERC20.deploy("DAI", "DAI", 18);
-		await dai.deployed();
-		await dai.mint(ownerAddress, ethers.utils.parseEther("100000000"));
+		await usdc.mint(ownerAddress, ethers.utils.parseUnits("1000", 6));
 		// deploy oracle
 		oracle = await Oracle.deploy();
 		await oracle.deployed();
 		// set oracle prices
-		await oracle.setOracle(eth.address, ethers.utils.parseUnits("4000", 8));
-		await oracle.setOracle(usdc.address, ethers.utils.parseUnits("1", 8));
-		await oracle.setOracle(dai.address, ethers.utils.parseUnits("1", 8));
+		await oracle.pushPrices([eth.address, usdc.address], [numToBN(2000), numToBN(1)]);
 
 		// deploy factory
 		factory = await Factory.deploy(ownerAddress, oracle.address);
 		await factory.deployed();
-
-		// deploy router
-		router = await Router.deploy(factory.address, eth.address);
-		await router.deployed();
 	});
 
 	it("Should have correct initial state values", async () => {
@@ -55,288 +50,75 @@ describe("Singularity", () => {
 		expect(await factory.oracle()).to.equal(oracle.address);
 	});
 
-	it("Should create a pair", async () => {
-		await factory.createPair(eth.address, usdc.address, 50, 0);
-		const pairAddress = await factory.getPair(eth.address, usdc.address);
-		const pair = await Pair.attach(pairAddress);
-		expect(await pair.amplitude()).to.equal(50);
-		const tokens =
-			eth.address < usdc.address ? [eth.address, usdc.address] : [usdc.address, eth.address];
-		expect(await pair.token0()).to.equal(tokens[0]);
-		expect(await pair.token1()).to.equal(tokens[1]);
-		const decimals = eth.address < usdc.address ? [10 ** 12, 1] : [1, 10 ** 12];
-		expect(await pair.decimals0()).to.equal(decimals[0]);
-		expect(await pair.decimals1()).to.equal(decimals[1]);
+	it("Should create a pool for ETH and USDC", async () => {
+		await factory.createPool(usdc.address, "Singularity USDC Pool", "SLP USDC");
+		const usdcPoolAddress = await factory.getPool(usdc.address);
+		const usdcPool = await Pool.attach(usdcPoolAddress);
+		expect(await usdcPool.token()).to.equal(usdc.address);
+		expect(await usdcPool.name()).to.equal("Singularity USDC Pool");
+		expect(await usdcPool.symbol()).to.equal("SLP USDC");
+		expect(await usdcPool.decimals()).to.equal(USDC.decimals);
+		expect(await usdcPool.paused()).to.equal(false);
+		expect(await usdcPool.factory()).to.equal(factory.address);
 	});
 
-	it("Should add liquidity", async () => {
-		await factory.createPair(eth.address, usdc.address, 50, 0);
-		await eth.approve(router.address, MAX);
-		await usdc.approve(router.address, MAX);
-		await router.addLiquidity(
-			eth.address,
-			usdc.address,
-			TEN,
-			ethers.utils.parseUnits("40000", 6),
-			0,
-			ownerAddress,
-			MAX
+	it("Should mint for ETH and USDC", async () => {
+		await factory.createPool(eth.address, "Singularity ETH Pool", "SLP ETH");
+		const ethPoolAddress = await factory.getPool(eth.address);
+		const ethPool = await Pool.attach(ethPoolAddress);
+		await expect(ethPool.mint(numToBN(100, ETH.decimals), ownerAddress)).to.be.revertedWith(
+			"SingularityPair: MINT_EXCEEDS_CAP"
 		);
-		const pairAddress = await factory.getPair(eth.address, usdc.address);
-		const pair = await Pair.attach(pairAddress);
-		const reserves = await pair.getReserves();
-		expect(reserves._reserve0).to.equal(ethers.utils.parseUnits("40000", 6));
-		expect(reserves._reserve1).to.equal(TEN);
-		expect(await pair.balanceOf(ownerAddress)).to.gt("0");
-		await router.addLiquidity(
-			eth.address,
-			usdc.address,
-			TEN,
-			ethers.utils.parseUnits("40000", 6),
-			0,
-			ownerAddress,
-			MAX
-		);
-		await router.addLiquidity(
-			eth.address,
-			usdc.address,
-			TEN,
-			ethers.utils.parseUnits("0", 6),
-			0,
-			ownerAddress,
-			MAX
-		);
-		await router.addLiquidity(
-			eth.address,
-			usdc.address,
-			0,
-			ethers.utils.parseUnits("40000", 6),
-			0,
-			ownerAddress,
-			MAX
-		);
+		await factory.setDepositCaps([ethPoolAddress], [MAX]);
+		await eth.approve(ethPoolAddress, MAX);
+		await expect(ethPool.mint(0, ownerAddress)).to.be.revertedWith("SingularityPair: AMOUNT_IS_0");
+		await ethPool.mint(numToBN(100, ETH.decimals), ownerAddress);
+
+		expect(await eth.balanceOf(ownerAddress)).to.equal(numToBN(900, ETH.decimals));
+		expect(await eth.balanceOf(ethPoolAddress)).to.equal(numToBN(100, ETH.decimals));
+		expect(await ethPool.balanceOf(ownerAddress)).to.equal(numToBN(100, ETH.decimals));
+		expect(await ethPool.deposits()).to.equal(numToBN(100, ETH.decimals));
+		expect(await ethPool.debts()).to.equal(0);
+
+		await factory.createPool(usdc.address, "Singularity USDC Pool", "SLP USDC");
+		const usdcPoolAddress = await factory.getPool(usdc.address);
+		const usdcPool = await Pool.attach(usdcPoolAddress);
+		await factory.setDepositCaps([usdcPoolAddress], [MAX]);
+		await usdc.approve(usdcPoolAddress, MAX);
+		await usdcPool.mint(numToBN(100, 6), ownerAddress);
+
+		expect(await usdc.balanceOf(ownerAddress)).to.equal(numToBN(900, USDC.decimals));
+		expect(await usdc.balanceOf(usdcPoolAddress)).to.equal(numToBN(100, USDC.decimals));
+		expect(await usdcPool.balanceOf(ownerAddress)).to.equal(numToBN(100, USDC.decimals));
+		expect(await usdcPool.deposits()).to.equal(numToBN(100, USDC.decimals));
+		expect(await usdcPool.debts()).to.equal(0);
 	});
 
-	it("Should add liquidity multiple times", async () => {
-		await factory.createPair(eth.address, usdc.address, 50, 0);
-		await eth.approve(router.address, MAX);
-		await usdc.approve(router.address, MAX);
-		const pairAddress = await factory.getPair(eth.address, usdc.address);
-		const pair = await Pair.attach(pairAddress);
-		await router.addLiquidity(
-			eth.address,
-			usdc.address,
-			TEN,
-			ethers.utils.parseUnits("40000", 6),
-			0,
-			ownerAddress,
-			MAX
-		);
-		const lpBal1 = ethers.utils.formatUnits(await pair.balanceOf(ownerAddress), 6);
-		await router.addLiquidity(
-			eth.address,
-			usdc.address,
-			ONE,
-			ethers.utils.parseUnits("4000", 6),
-			0,
-			ownerAddress,
-			MAX
-		);
-		const lpBal2 = ethers.utils.formatUnits(await pair.balanceOf(ownerAddress), 6) - lpBal1;
-		expect((lpBal2 / lpBal1).toFixed(1)).to.equal("0.1");
+	it("Should burn LP for ETH and USDC", async () => {
+		await factory.createPool(eth.address, "Singularity ETH Pool", "SLP ETH");
+		const ethPoolAddress = await factory.getPool(eth.address);
+		const ethPool = await Pool.attach(ethPoolAddress);
+		await factory.setDepositCaps([ethPoolAddress], [MAX]);
+		await eth.approve(ethPoolAddress, MAX);
+		await ethPool.mint(numToBN(100, ETH.decimals), ownerAddress);
+		await ethPool.burn(numToBN(100, ETH.decimals), ownerAddress);
+
+		expect(await eth.balanceOf(ownerAddress)).to.equal(numToBN(1000, ETH.decimals));
+		expect(await eth.balanceOf(ethPoolAddress)).to.equal(0);
+		expect(await ethPool.balanceOf(ownerAddress)).to.equal(0);
+		expect(await ethPool.deposits()).to.equal(0);
+
+		await factory.createPool(usdc.address, "Singularity USDC Pool", "SLP USDC");
+		const usdcPoolAddress = await factory.getPool(usdc.address);
+		const usdcPool = await Pool.attach(usdcPoolAddress);
+		await factory.setDepositCaps([usdcPoolAddress], [MAX]);
+		await usdc.approve(usdcPoolAddress, MAX);
+		await usdcPool.mint(numToBN(100, USDC.decimals), ownerAddress);
+		await usdcPool.burn(numToBN(100, USDC.decimals), ownerAddress);
+
+		expect(await usdc.balanceOf(ownerAddress)).to.equal(numToBN(1000, USDC.decimals));
+		expect(await usdc.balanceOf(usdcPoolAddress)).to.equal(0);
+		expect(await usdcPool.balanceOf(ownerAddress)).to.equal(0);
+		expect(await usdcPool.deposits()).to.equal(0);
 	});
-
-	it("Should remove liquidity", async () => {
-		await factory.createPair(eth.address, usdc.address, 50, 0);
-		await eth.approve(router.address, MAX);
-		await usdc.approve(router.address, MAX);
-		await router.addLiquidity(
-			eth.address,
-			usdc.address,
-			TEN,
-			ethers.utils.parseUnits("40000", 6),
-			0,
-			ownerAddress,
-			MAX
-		);
-		const pairAddress = await factory.getPair(eth.address, usdc.address);
-		const pair = await Pair.attach(pairAddress);
-		expect(await pair.balanceOf(ownerAddress)).to.gt("0");
-		await pair.approve(router.address, MAX);
-		const liquidity = await pair.balanceOf(ownerAddress);
-		await router.removeLiquidity(eth.address, usdc.address, liquidity, 0, 0, ownerAddress, MAX);
-		expect(await pair.balanceOf(ownerAddress)).to.equal("0");
-		expect(await eth.balanceOf(ownerAddress)).to.gt(ethers.utils.parseEther("999000"));
-		expect(await usdc.balanceOf(ownerAddress)).to.gt(ethers.utils.parseUnits("999000", 6));
-	});
-
-	it("Should return amount in and amount out (and calculate fee)", async () => {
-		const fee = 0.1;
-		await factory.createPair(
-			eth.address,
-			usdc.address,
-			50,
-			ethers.utils.parseEther(fee.toString())
-		);
-		await eth.approve(router.address, MAX);
-		await usdc.approve(router.address, MAX);
-		await router.addLiquidity(
-			eth.address,
-			usdc.address,
-			TEN,
-			ethers.utils.parseUnits("40000", 6),
-			0,
-			ownerAddress,
-			MAX
-		);
-		const path = [eth.address, usdc.address];
-		const amountOut = (await router.getAmountsOut(ONE, path))[1];
-		expect(parseFloat(ethers.utils.formatUnits(amountOut, 6))).to.gt(3948 * (1 - fee));
-		const amountIn = (await router.getAmountsIn(ethers.utils.parseUnits("3948", 6), path))[0];
-		expect(parseFloat(ethers.utils.formatUnits(amountIn, 18))).to.gt(0.99 / (1 - fee));
-	});
-
-	it("Should swap exact ETH for USDC", async () => {
-		await factory.createPair(eth.address, usdc.address, 50, 0);
-		await eth.approve(router.address, MAX);
-		await usdc.approve(router.address, MAX);
-		await router.addLiquidity(
-			eth.address,
-			usdc.address,
-			TEN,
-			ethers.utils.parseUnits("40000", 6),
-			0,
-			ownerAddress,
-			MAX
-		);
-		const balanceBefore = await usdc.balanceOf(ownerAddress);
-		await router.swapExactTokensForTokens(
-			[eth.address, usdc.address],
-			ONE,
-			ethers.utils.parseUnits("3948", 6),
-			ownerAddress,
-			MAX
-		);
-		const amountReceived = (await usdc.balanceOf(ownerAddress)).sub(balanceBefore);
-		expect(parseFloat(ethers.utils.formatUnits(amountReceived, 6))).to.gt(3948);
-	});
-
-	it("Should swap exact USDC for ETH", async () => {
-		await factory.createPair(eth.address, usdc.address, 50, 0);
-		await eth.approve(router.address, MAX);
-		await usdc.approve(router.address, MAX);
-		await router.addLiquidity(
-			eth.address,
-			usdc.address,
-			TEN,
-			ethers.utils.parseUnits("40000", 6),
-			0,
-			ownerAddress,
-			MAX
-		);
-		const balanceBefore = await eth.balanceOf(ownerAddress);
-		await router.swapExactTokensForTokens(
-			[usdc.address, eth.address],
-			ethers.utils.parseUnits("4000", 6),
-			ethers.utils.parseEther("0.98"),
-			ownerAddress,
-			MAX
-		);
-		const amountReceived = (await eth.balanceOf(ownerAddress)).sub(balanceBefore);
-		expect(parseFloat(ethers.utils.formatUnits(amountReceived, 6))).to.gt(0.98);
-	});
-
-	it("Should swap exact ETH for USDC, accumulate admin fees, and collect fees", async () => {
-		await factory.setFeeTo(otherAddress);
-		await factory.createPair(eth.address, usdc.address, 50, ethers.utils.parseEther("0.1"));
-		await eth.approve(router.address, MAX);
-		await usdc.approve(router.address, MAX);
-		await router.addLiquidity(
-			eth.address,
-			usdc.address,
-			TEN,
-			ethers.utils.parseUnits("40000", 6),
-			0,
-			ownerAddress,
-			MAX
-		);
-		await router.swapExactTokensForTokens([eth.address, usdc.address], ONE, 0, ownerAddress, MAX);
-		const pairAddress = await factory.getPair(eth.address, usdc.address);
-		const pair = await Pair.attach(pairAddress);
-		const token0Fees = parseFloat(ethers.utils.formatEther(await pair.token0Fees()));
-		const token1Fees = parseFloat(ethers.utils.formatEther(await pair.token1Fees(), 6));
-		await factory.collectFees([pairAddress]);
-		const postToken0Fees = parseFloat(ethers.utils.formatEther(await pair.token0Fees()));
-		const postToken1Fees = parseFloat(ethers.utils.formatEther(await pair.token1Fees(), 6));
-		expect(postToken0Fees).to.equal(0);
-		expect(postToken1Fees).to.equal(0);
-		const collectedToken0Fees = await eth.balanceOf(otherAddress);
-		const collectedToken1Fees = await usdc.balanceOf(otherAddress);
-		expect(parseFloat(ethers.utils.formatEther(collectedToken0Fees))).to.equal((1 * 0.1) / 6);
-		expect(parseFloat(ethers.utils.formatEther(collectedToken1Fees, 6))).to.equal(0);
-	});
-
-	// it("Should test random values for swap exact", async () => {
-	// 	await factory.createPair(dai.address, usdc.address, 1000, 0);
-	// 	await dai.approve(router.address, MAX);
-	// 	await usdc.approve(router.address, MAX);
-	// 	await router.addLiquidity(
-	// 		dai.address,
-	// 		usdc.address,
-	// 		ethers.utils.parseEther("75000000"),
-	// 		ethers.utils.parseUnits("75000000", 6),
-	// 		0,
-	// 		ownerAddress,
-	// 		MAX
-	// 	);
-	// 	for await (i of Array.from(Array(100).keys())) {
-	// 		const rand1 = (Math.random() * 500000 + 1).toFixed();
-	// 		const rand2 = (Math.random() * 500000 + 1).toFixed();
-	// 		console.log(`run: ${i}, rand1: ${rand1}, rand2: ${rand2}`);
-	// 		const amt = ethers.utils.parseUnits(rand1, 6);
-	// 		await router.swapExactTokensForTokens([usdc.address, dai.address], amt, 0, ownerAddress, MAX);
-	// 		await router.swapExactTokensForTokens(
-	// 			[dai.address, usdc.address],
-	// 			ethers.utils.parseUnits(rand2, 18),
-	// 			0,
-	// 			ownerAddress,
-	// 			MAX
-	// 		);
-	// 	}
-	// });
-
-	// it("Should test random values for swap to exact", async () => {
-	// 	await factory.createPair(dai.address, usdc.address, 1000, 0);
-	// 	await dai.approve(router.address, MAX);
-	// 	await usdc.approve(router.address, MAX);
-	// 	await router.addLiquidity(
-	// 		dai.address,
-	// 		usdc.address,
-	// 		ethers.utils.parseEther("75000000"),
-	// 		ethers.utils.parseUnits("75000000", 6),
-	// 		0,
-	// 		ownerAddress,
-	// 		MAX
-	// 	);
-	// 	for await (i of Array.from(Array(100).keys())) {
-	// 		const rand1 = (Math.random() * 500000 + 1).toFixed();
-	// 		const rand2 = (Math.random() * 500000 + 1).toFixed();
-	// 		console.log(`run: ${i}, rand1: ${rand1}, rand2: ${rand2}`);
-	// 		const amt = ethers.utils.parseUnits(rand1, 18);
-	// 		await router.swapTokensForExactTokens(
-	// 			[usdc.address, dai.address],
-	// 			amt,
-	// 			MAX,
-	// 			ownerAddress,
-	// 			MAX
-	// 		);
-	// 		await router.swapTokensForExactTokens(
-	// 			[dai.address, usdc.address],
-	// 			ethers.utils.parseUnits(rand2, 6),
-	// 			MAX,
-	// 			ownerAddress,
-	// 			MAX
-	// 		);
-	// 	}
-	// });
 });

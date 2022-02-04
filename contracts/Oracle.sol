@@ -19,9 +19,10 @@ contract Oracle is IOracle {
 		pushers[msg.sender] = true;
 	}
 
-	function getPriceUSD(address token_) external view override returns (uint256 price) {
+	function getPriceUSD(address token_) external view override returns (uint256 price, uint256 updateTime) {
 		PriceData[] memory prices = allPrices[token_];
-		return prices[prices.length - 1].price;
+		price = prices[prices.length - 1].price;
+		updateTime = prices[prices.length - 1].updateTime;
 	}
 
 	function pushPrices(address[] calldata tokens, uint256[] calldata prices) external {

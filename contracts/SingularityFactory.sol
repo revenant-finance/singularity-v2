@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: bsl-1.1
 
-pragma solidity ^0.8.10;
+pragma solidity ^0.8.11;
 
 import "./SingularityPool.sol";
 import "./interfaces/ISingularityFactory.sol";
@@ -35,6 +35,8 @@ contract SingularityFactory is ISingularityFactory {
         return allPools.length;
     }
 
+    /* ========== ADMIN FUNCTIONS ========== */
+
     function createPool(address token, string calldata name, string calldata symbol, uint baseFee) external override onlyAdmin returns (address pool) {
         require(token != address(0), "SingularityFactory: ZERO_ADDRESS");
         require(getPool[token] == address(0), "SingularityFactory: POOL_EXISTS");
@@ -66,7 +68,7 @@ contract SingularityFactory is ISingularityFactory {
         router = _router;
     }
 
-    function collectFees() public override onlyAdmin {
+    function collectFees() external override onlyAdmin {
         require(feeTo != address(0), "SingularityFactory: FEES_NOT_ENABLED");
         for (uint i; i < allPools.length; i++) {
             ISingularityPool(allPools[i]).collectFees();

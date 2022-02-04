@@ -1,4 +1,4 @@
-pragma solidity ^0.8.10;
+pragma solidity ^0.8.11;
 
 interface ISingularityERC20 {
     event Approval(address indexed owner, address indexed spender, uint value);

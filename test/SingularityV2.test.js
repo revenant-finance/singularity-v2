@@ -143,6 +143,12 @@ describe("SingularityV2", () => {
 		await usdcPool.mint(numToBN(2000, USDC.decimals), ownerAddress);
 
 		await eth.approve(router.address, MAX);
-		await router.swap([eth.address, usdc.address], numToBN(0.1), ownerAddress);
+		await router.swapExactTokensForTokens(
+			[eth.address, usdc.address],
+			numToBN(0.1),
+			0,
+			ownerAddress,
+			MAX
+		);
 	});
 });

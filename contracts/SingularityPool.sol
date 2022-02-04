@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: bsl-1.1
 
-pragma solidity ^0.8.10;
+pragma solidity ^0.8.11;
 
 import "./SingularityERC20.sol";
 import "./interfaces/ISingularityPool.sol";
@@ -19,14 +19,12 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
     address public override token;
 
     uint public override depositCap;
-
-    uint public override liabilities;
     uint public override assets;
-
-    uint public override adminFees;
-    uint public override lockedFees;
+    uint public override liabilities;
 
     uint public override baseFee;
+    uint public override adminFees;
+    uint public override lockedFees;
     
     uint private constant MULTIPLIER = 10**18;
     uint private locked = 1;
@@ -60,10 +58,22 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         baseFee = _baseFee;
     }
 
-    // ALWAYS RETURNS PRICE IN 18 DECIMALS
+    function getAssetsAndLiabilities() external view override returns (uint _assets, uint _liabilities) {
+        _assets = assets;
+        _liabilities = liabilities;
+    }
+
     function getTokenPrice() public view override returns (uint tokenPrice) {
         (tokenPrice, ) = IOracle(ISingularityFactory(factory).oracle()).getPriceUSD(token);
         require(tokenPrice != 0, "SingularityPool: INVALID_ORACLE_PRICE");
+    }
+
+    function amountToValue(uint amount) public override view returns (uint value) {
+        value = amount * 10**(18 - decimals) * getTokenPrice() / MULTIPLIER;
+    }
+
+    function valueToAmount(uint value) public override view returns (uint amount) {
+        amount = value * MULTIPLIER / (getTokenPrice() * 10**(18 - decimals));
     }
 
     function getFees(uint amount) public view override returns (uint lockedFee, uint adminFee, uint lpFee) {
@@ -84,43 +94,12 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         if (totalSupply == 0) {
             pricePerShare = MULTIPLIER;
         } else {
-            pricePerShare = MULTIPLIER * (liabilities - lockedFees) / totalSupply;
-        }
-    }
-
-    function mint(uint amount, address to) external override notPaused lock returns (uint amountToMint) {
-        require(amount != 0, "SingularityPool: AMOUNT_IS_0");
-        require(amount + liabilities <= depositCap, "SingularityPool: MINT_EXCEEDS_CAP");
-        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
-        liabilities += amount;
-        assets += amount;
-        if (liabilities == 0) {
-            amountToMint = amount;
-        } else {
-            amountToMint = amount * MULTIPLIER / getPricePerShare();
-        }
-        _mint(to, amountToMint);
-        emit Mint(msg.sender, amount, amountToMint, to);
-    }
-
-    function getCollatalizationRatio() public view override returns (uint collateralizationRatio) {
-        if (liabilities == 0) {
-            collateralizationRatio = type(uint).max;
-        } else {
-            collateralizationRatio = MULTIPLIER * assets / liabilities;
-        }
-    }
-
-    function getNewCollateralizationRatio(uint newAssets, uint newLiabilities) internal view returns (uint newCollateralizationRatio) {
-        if (liabilities == 0) {
-            newCollateralizationRatio = type(uint).max;
-        } else {
-            newCollateralizationRatio = MULTIPLIER * newAssets / newLiabilities;
+            pricePerShare = MULTIPLIER * liabilities / totalSupply;
         }
     }
 
     function calculatePenalty(uint amount, uint newAssets, uint newLiabilities) public view returns (uint penalty) {
-        uint collateralizationRatio = getNewCollateralizationRatio(newAssets, newLiabilities);
+        uint collateralizationRatio = getCollatalizationRatio(newAssets, newLiabilities);
         uint penaltyRate;
         if (collateralizationRatio >= 1 ether) {
             penaltyRate = 0;
@@ -142,6 +121,21 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         penalty = amount * penaltyRate / MULTIPLIER;
     }
 
+    function mint(uint amount, address to) external override notPaused lock returns (uint amountToMint) {
+        require(amount != 0, "SingularityPool: AMOUNT_IS_0");
+        require(amount + liabilities <= depositCap, "SingularityPool: MINT_EXCEEDS_CAP");
+        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+        liabilities += amount;
+        assets += amount;
+        if (liabilities == 0) {
+            amountToMint = amount;
+        } else {
+            amountToMint = amount * MULTIPLIER / getPricePerShare();
+        }
+        _mint(to, amountToMint);
+        emit Mint(msg.sender, amount, amountToMint, to);
+    }
+
     function burn(uint amount, address to) external override notPaused lock returns (uint amountWithdrawn) {
         require(amount != 0, "SingularityPool: AMOUNT_IS_0");
         _burn(msg.sender, amount);
@@ -155,27 +149,35 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         emit Burn(msg.sender, amount, amountWithdrawn, to);
     }
 
-    function swapIn(uint256 amountIn) external override notPaused lock returns (uint amountOut) {
+    function swapIn(uint amountIn) external override notPaused lock returns (uint amountOut) {
         require(msg.sender == ISingularityFactory(factory).router(), "SingularityPool: NOT_ROUTER");
         require(amountIn != 0, "SingularityPool: AMOUNT_IS_0");
         IERC20(token).safeTransferFrom(msg.sender, address(this), amountIn);
+
+        // Apply fees
+        (uint lockedFee, uint adminFee, uint lpFee) = getFees(amountIn);
+        lockedFees += lockedFee;
+        adminFees += adminFee;
+        liabilities += lpFee;
+        amountIn -= lockedFee + adminFee+ lpFee;
+
         assets += amountIn;
-        amountOut = amountIn * 10**(18 - decimals) * getTokenPrice() / MULTIPLIER;
+        amountOut = amountToValue(amountIn);
         emit SwapIn(msg.sender, amountIn, amountOut);
     }
 
-    function swapOut(uint256 amountIn, address to) external override notPaused lock returns (uint amountOut) {
+    function swapOut(uint amountIn, address to) external override notPaused lock returns (uint amountOut) {
         require(msg.sender == ISingularityFactory(factory).router(), "SingularityPool: NOT_ROUTER");
         require(amountIn != 0, "SingularityPool: AMOUNT_IS_0");
-        amountOut = amountIn * MULTIPLIER / (getTokenPrice() * 10**(18 - decimals));
+        amountOut = valueToAmount(amountIn);
         // Calculate penalties
         uint penalty = calculatePenalty(amountOut, assets - amountOut, liabilities);
         amountOut -= penalty;
 
         // Apply fees
         (uint lockedFee, uint adminFee, uint lpFee) = getFees(amountOut);
-        adminFees += adminFee;
         lockedFees += lockedFee;
+        adminFees += adminFee;
         liabilities += lpFee;
         amountOut -= lockedFee + adminFee + lpFee;
 
@@ -183,6 +185,16 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         IERC20(token).safeTransfer(to, amountOut);
         emit SwapOut(msg.sender, amountIn, amountOut, to);
     }
+
+    function getCollatalizationRatio(uint _assets, uint _liabilities) internal view returns (uint newCollateralizationRatio) {
+        if (liabilities == 0) {
+            newCollateralizationRatio = type(uint).max;
+        } else {
+            newCollateralizationRatio = MULTIPLIER * _assets / _liabilities;
+        }
+    }
+
+    /* ========== ADMIN FUNCTIONS ========== */
 
     function collectFees() external override onlyFactory {
         address feeTo = ISingularityFactory(factory).feeTo();

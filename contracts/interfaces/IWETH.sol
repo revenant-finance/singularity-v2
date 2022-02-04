@@ -1,6 +1,6 @@
-pragma solidity ^0.8.10;
+pragma solidity ^0.8.11;
 
-interface IWrappedNative {
+interface IWETH {
     function deposit() external payable;
     function withdraw(uint) external;
 }

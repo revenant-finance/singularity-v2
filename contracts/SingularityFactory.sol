@@ -7,6 +7,8 @@ import "./interfaces/ISingularityFactory.sol";
 import "./interfaces/ISingularityPool.sol";
 
 contract SingularityFactory is ISingularityFactory {
+    string public override name;
+
     address public override admin;
     address public override oracle;
     address public override feeTo;
@@ -23,9 +25,10 @@ contract SingularityFactory is ISingularityFactory {
         _;
     }
 
-    constructor(address _admin, address _oracle) {
+    constructor(string memory _name, address _admin, address _oracle) {
         require(_admin != address(0), "SingularityFactory: ADMIN_IS_0");
         require(_oracle != address(0), "SingularityFactory: ORACLE_IS_0");
+        name = _name;
         admin = _admin;
         oracle = _oracle;
         pausers[msg.sender] = true;
@@ -37,19 +40,19 @@ contract SingularityFactory is ISingularityFactory {
 
     /* ========== ADMIN FUNCTIONS ========== */
 
-    function createPool(address token, string calldata name, string calldata symbol, uint baseFee) external override onlyAdmin returns (address pool) {
-        require(token != address(0), "SingularityFactory: ZERO_ADDRESS");
-        require(getPool[token] == address(0), "SingularityFactory: POOL_EXISTS");
-        require(baseFee > 0, "SingularityFactory: FEE_IS_0");
+    function createPool(address _token, string calldata _name, string calldata _symbol, uint _baseFee) external override onlyAdmin returns (address pool) {
+        require(_token != address(0), "SingularityFactory: ZERO_ADDRESS");
+        require(getPool[_token] == address(0), "SingularityFactory: POOL_EXISTS");
+        require(_baseFee > 0, "SingularityFactory: FEE_IS_0");
         bytes memory bytecode = type(SingularityPool).creationCode;
-        bytes32 salt = keccak256(abi.encodePacked(token));
+        bytes32 salt = keccak256(abi.encodePacked(_token));
         assembly {
             pool := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        ISingularityPool(pool).initialize(token, name, symbol, baseFee);
-        getPool[token] = pool;
+        ISingularityPool(pool).initialize(_token, _name, _symbol, _baseFee);
+        getPool[_token] = pool;
         allPools.push(pool);
-        emit PoolCreated(token, pool, name, symbol, allPools.length);
+        emit PoolCreated(_token, pool, _name, _symbol, allPools.length);
     }
 
     function setAdmin(address _admin) external override onlyAdmin {

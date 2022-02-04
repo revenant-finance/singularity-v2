@@ -79,15 +79,14 @@ contract SingularityRouter is ISingularityRouter {
 
     function swapExactETHForTokens(
         address[] calldata path, 
-        uint amountIn, 
         uint minAmountOut, 
         address to, 
         uint deadline
     ) external payable override ensure(deadline) returns (uint[] memory amounts) {
         require(path[0] == WETH, "SingularityRouter: INVALID_PATH");
-        amounts = getAmountsOut(amountIn, path);
+        amounts = getAmountsOut(msg.value, path);
         require(amounts[amounts.length - 1] >= minAmountOut, "SingularityRouter: INSUFFICIENT_OUTPUT_AMOUNT");
-        IWETH(WETH).deposit{value: amountIn}();
+        IWETH(WETH).deposit{value: msg.value}();
         _swap(amounts, path, to);
     }
 
@@ -101,6 +100,7 @@ contract SingularityRouter is ISingularityRouter {
         require(path[path.length - 1] == WETH, "SingularityRouter: INVALID_PATH");
         amounts = getAmountsOut(amountIn, path);
         require(amounts[amounts.length - 1] >= minAmountOut, "SingularityRouter: INSUFFICIENT_OUTPUT_AMOUNT");
+        IERC20(path[0]).safeTransferFrom(msg.sender, address(this), amountIn);
         _swap(amounts, path, address(this));
         IWETH(WETH).deposit{value: amounts[amounts.length - 1]}();
         _safeTransferETH(to, amounts[amounts.length - 1]);
@@ -115,6 +115,50 @@ contract SingularityRouter is ISingularityRouter {
             address to = i < path.length - 2 ? address(this) : _to;
             ISingularityPool(outPool).swapOut(amountOut, to);
         }
+    }
+
+    function addLiquidity(
+        address token,
+        uint amount,
+        address to,
+        uint deadline
+    ) public override ensure(deadline) returns (uint liquidity) {
+        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+        address pool = poolFor(token);
+        IERC20(token).safeIncreaseAllowance(pool, amount);
+        liquidity = ISingularityPool(pool).mint(amount, to);
+    }
+
+    function addLiquidityETH(
+        address to,
+        uint deadline
+    ) external payable override ensure(deadline) returns (uint liquidity) {
+        IWETH(WETH).deposit{value: msg.value}();
+        liquidity = addLiquidity(WETH, msg.value, to, deadline);
+    }
+
+    function removeLiquidity(
+        address token,
+        uint liquidity,
+        uint amountMin,
+        address to,
+        uint deadline
+    ) public override ensure(deadline) returns (uint amount) {
+        address pool = poolFor(token);
+        IERC20(pool).safeTransferFrom(msg.sender, address(this), liquidity);
+        amount = ISingularityPool(pool).burn(liquidity, to);
+        require(amount >= amountMin, "SingularityRouter: INSUFFICIENT_TOKEN_AMOUNT");
+    }
+
+    function removeLiquidityETH(
+        uint liquidity,
+        uint amountMin,
+        address to,
+        uint deadline
+    ) external payable override ensure(deadline) returns (uint amount) {
+        amount = removeLiquidity(WETH, liquidity, amountMin, address(this), deadline);
+        IWETH(WETH).withdraw(amount);
+        _safeTransferETH(to, amount);
     }
 
     function _safeTransferETH(address to, uint value) internal {

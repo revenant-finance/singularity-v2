@@ -18,7 +18,6 @@ interface ISingularityRouter {
 
     function swapExactETHForTokens(
         address[] calldata path, 
-        uint amountIn, 
         uint minAmountOut, 
         address to, 
         uint deadline
@@ -31,4 +30,31 @@ interface ISingularityRouter {
         address to, 
         uint deadline
     ) external returns (uint[] memory amounts);
+
+    function addLiquidity(
+        address token,
+        uint amount,
+        address to,
+        uint deadline
+    ) external returns (uint);
+
+    function addLiquidityETH(
+        address to,
+        uint deadline
+    ) external payable returns (uint liquidity);
+
+    function removeLiquidity(
+        address token,
+        uint liquidity,
+        uint amountMin,
+        address to,
+        uint deadline
+    ) external returns (uint amount);
+
+    function removeLiquidityETH(
+        uint liquidity,
+        uint amountMin,
+        address to,
+        uint deadline
+    ) external payable returns (uint amount);
 }

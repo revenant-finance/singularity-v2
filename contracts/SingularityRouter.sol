@@ -42,16 +42,14 @@ contract SingularityRouter is ISingularityRouter {
     function getAmountOut(uint amountIn, address[2] memory path) public view override returns (uint amountOut) {
         require(amountIn != 0, "SingularityRouter: INSUFFICIENT_INPUT_AMOUNT");
         address inPool = poolFor(path[0]);
-        (uint lockedFee, uint adminFee, uint lpFee) = ISingularityPool(inPool).getFees(amountIn);
-        amountIn -= lockedFee + adminFee + lpFee;
         amountOut = ISingularityPool(inPool).amountToValue(amountIn);
-
+        // TODO: apply inverse
         address outPool = poolFor(path[1]);
         amountOut = ISingularityPool(outPool).valueToAmount(amountOut);
         (uint assets, uint liabilities) = ISingularityPool(outPool).getAssetsAndLiabilities();
-        uint penalty = ISingularityPool(outPool).calculatePenalty(amountOut, assets - amountOut, liabilities);
+        uint penalty = ISingularityPool(outPool).getSlippage(amountOut, assets - amountOut, liabilities);
         amountOut -= penalty;
-        (lockedFee, adminFee, lpFee) = ISingularityPool(outPool).getFees(amountOut);
+        (uint lockedFee, uint adminFee, uint lpFee) = ISingularityPool(outPool).getFees(amountOut);
         amountOut -= lockedFee + adminFee + lpFee;
     }
 
@@ -124,9 +122,7 @@ contract SingularityRouter is ISingularityRouter {
         uint deadline
     ) public override ensure(deadline) returns (uint liquidity) {
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
-        address pool = poolFor(token);
-        IERC20(token).safeIncreaseAllowance(pool, amount);
-        liquidity = ISingularityPool(pool).mint(amount, to);
+        liquidity = _addLiquidity(token, amount, to);
     }
 
     function addLiquidityETH(
@@ -134,7 +130,17 @@ contract SingularityRouter is ISingularityRouter {
         uint deadline
     ) external payable override ensure(deadline) returns (uint liquidity) {
         IWETH(WETH).deposit{value: msg.value}();
-        liquidity = addLiquidity(WETH, msg.value, to, deadline);
+        liquidity = _addLiquidity(WETH, msg.value, to);
+    }
+
+    function _addLiquidity(
+        address token,
+        uint amount,
+        address to
+    ) internal returns (uint liquidity) {
+        address pool = poolFor(token);
+        IERC20(token).safeIncreaseAllowance(pool, amount);
+        liquidity = ISingularityPool(pool).deposit(amount, to);
     }
 
     function removeLiquidity(
@@ -146,7 +152,7 @@ contract SingularityRouter is ISingularityRouter {
     ) public override ensure(deadline) returns (uint amount) {
         address pool = poolFor(token);
         IERC20(pool).safeTransferFrom(msg.sender, address(this), liquidity);
-        amount = ISingularityPool(pool).burn(liquidity, to);
+        amount = ISingularityPool(pool).withdraw(liquidity, to);
         require(amount >= amountMin, "SingularityRouter: INSUFFICIENT_TOKEN_AMOUNT");
     }
 

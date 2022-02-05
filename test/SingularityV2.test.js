@@ -117,9 +117,9 @@ describe("SingularityV2", () => {
 
 	it("Should mint via pool and router", async () => {
 		const mintAmount = 100;
-		await expect(ethPool.mint(0, ownerAddress)).to.be.revertedWith("SingularityPool: AMOUNT_IS_0");
+		await expect(ethPool.deposit(0, ownerAddress)).to.be.revertedWith("SingularityPool: AMOUNT_IS_0");
 		// mint via pool
-		await ethPool.mint(numToBN(mintAmount, ETH.decimals), ownerAddress);
+		await ethPool.deposit(numToBN(mintAmount, ETH.decimals), ownerAddress);
 
 		expect(await eth.balanceOf(ownerAddress)).to.equal(
 			numToBN(ETH.balance - mintAmount, ETH.decimals)
@@ -142,16 +142,16 @@ describe("SingularityV2", () => {
 
 	it("Should burn via pool and router", async () => {
 		const mintAmount = 100;
-		await ethPool.mint(numToBN(mintAmount, ETH.decimals), ownerAddress);
+		await ethPool.deposit(numToBN(mintAmount, ETH.decimals), ownerAddress);
 		// burn via pool
-		await ethPool.burn(numToBN(mintAmount, ETH.decimals), ownerAddress);
+		await ethPool.withdraw(numToBN(mintAmount, ETH.decimals), ownerAddress);
 
 		expect(await eth.balanceOf(ownerAddress)).to.equal(numToBN(ETH.balance, ETH.decimals));
 		expect(await eth.balanceOf(ethPoolAddress)).to.equal(0);
 		expect(await ethPool.balanceOf(ownerAddress)).to.equal(0);
 		expect(await ethPool.liabilities()).to.equal(0);
 
-		await usdcPool.mint(numToBN(mintAmount, USDC.decimals), ownerAddress);
+		await usdcPool.deposit(numToBN(mintAmount, USDC.decimals), ownerAddress);
 		// burn via router
 		await router.removeLiquidity(
 			usdc.address,
@@ -167,8 +167,8 @@ describe("SingularityV2", () => {
 	});
 
 	it("Should swap", async () => {
-		await ethPool.mint(numToBN(1, ETH.decimals), ownerAddress);
-		await usdcPool.mint(numToBN(2000, USDC.decimals), ownerAddress);
+		await ethPool.deposit(numToBN(100, ETH.decimals), ownerAddress);
+		await usdcPool.deposit(numToBN(2000, USDC.decimals), ownerAddress);
 
 		await router.swapExactTokensForTokens(
 			[eth.address, usdc.address],

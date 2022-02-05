@@ -98,7 +98,41 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         }
     }
 
-    function calculatePenalty(uint amount, uint newAssets, uint newLiabilities) public view returns (uint penalty) {
+    function getDepositFee(uint amount) public view override returns (uint fee) {
+        uint collateralizationRatio = getCollatalizationRatio(assets + amount, liabilities + amount);
+        uint depositFeeRate;
+        if (collateralizationRatio <= 1 ether || collateralizationRatio > 1.4 ether) {
+            depositFeeRate = 0;
+        } else if (collateralizationRatio <= 1.1 ether) {
+            depositFeeRate = 0.000017 ether;
+        } else if (collateralizationRatio <= 1.2 ether) {
+            depositFeeRate = 0.000012 ether;
+        } else if (collateralizationRatio <= 1.3 ether) {
+            depositFeeRate = 0.000008 ether;
+        } else if (collateralizationRatio <= 1.4 ether) {
+            depositFeeRate = 0.000006 ether;
+        }
+        uint percentOfPool = 100 * amount * MULTIPLIER / (liabilities + amount);
+        depositFeeRate = depositFeeRate * percentOfPool / MULTIPLIER;
+        fee = amount * depositFeeRate / MULTIPLIER;
+    }
+
+    function getWithdrawFee(uint amount) public view override returns (uint fee) {
+        uint collateralizationRatio = getCollatalizationRatio(assets - amount, liabilities - amount);
+        uint withdrawFeeRate;
+        if (collateralizationRatio >= 1 ether) {
+            withdrawFeeRate = 0;
+        } else if (collateralizationRatio > 0.5 ether) {
+            withdrawFeeRate = 0.0000025 ether * MULTIPLIER**3 / (collateralizationRatio - 0.5 ether)**3;
+        } else {
+            return amount;
+        }
+        uint percentOfPool = liabilities != 0 ? 100 * amount * MULTIPLIER / liabilities : 100 ether;
+        withdrawFeeRate = withdrawFeeRate * percentOfPool / MULTIPLIER;
+        fee = amount * withdrawFeeRate / MULTIPLIER;
+    }
+
+    function getSlippage(uint amount, uint newAssets, uint newLiabilities) public override pure returns (uint penalty) {
         uint collateralizationRatio = getCollatalizationRatio(newAssets, newLiabilities);
         uint penaltyRate;
         if (collateralizationRatio >= 1 ether) {
@@ -121,46 +155,43 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         penalty = amount * penaltyRate / MULTIPLIER;
     }
 
-    function mint(uint amount, address to) external override notPaused lock returns (uint amountToMint) {
+    function deposit(uint amount, address to) external override notPaused lock returns (uint amountMinted) {
         require(amount != 0, "SingularityPool: AMOUNT_IS_0");
-        require(amount + liabilities <= depositCap, "SingularityPool: MINT_EXCEEDS_CAP");
+        require(amount + liabilities <= depositCap, "SingularityPool: DEPOSIT_EXCEEDS_CAP");
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+        if (liabilities == 0) {
+            amountMinted = amount;
+        } else {
+            amountMinted = amount * MULTIPLIER / getPricePerShare();
+        }
+        uint depositFee = getDepositFee(amount);
+        amount -= depositFee;
+        adminFees += depositFee;
         liabilities += amount;
         assets += amount;
-        if (liabilities == 0) {
-            amountToMint = amount;
-        } else {
-            amountToMint = amount * MULTIPLIER / getPricePerShare();
-        }
-        _mint(to, amountToMint);
-        emit Mint(msg.sender, amount, amountToMint, to);
+        _mint(to, amountMinted);
+        emit Deposit(msg.sender, amount, amountMinted, to);
     }
 
-    function burn(uint amount, address to) external override notPaused lock returns (uint amountWithdrawn) {
+    function withdraw(uint amount, address to) external override notPaused lock returns (uint amountWithdrawn) {
         require(amount != 0, "SingularityPool: AMOUNT_IS_0");
         _burn(msg.sender, amount);
         uint liquidityValue = amount * getPricePerShare() / MULTIPLIER;
-        uint penalty = calculatePenalty(liquidityValue, assets - amountWithdrawn, liabilities - amountWithdrawn);
-        amountWithdrawn = liquidityValue - penalty;
-        IERC20(token).safeTransfer(to, amountWithdrawn);
+        uint withdrawFee = getWithdrawFee(amount);
+        amountWithdrawn = liquidityValue - withdrawFee;
+        adminFees += withdrawFee;
         liabilities -= amountWithdrawn;
         assets -= amountWithdrawn;
-        adminFees += penalty;
-        emit Burn(msg.sender, amount, amountWithdrawn, to);
+        IERC20(token).safeTransfer(to, amountWithdrawn);
+        emit Withdraw(msg.sender, amount, amountWithdrawn, to);
     }
 
     function swapIn(uint amountIn) external override notPaused lock returns (uint amountOut) {
         require(msg.sender == ISingularityFactory(factory).router(), "SingularityPool: NOT_ROUTER");
         require(amountIn != 0, "SingularityPool: AMOUNT_IS_0");
         IERC20(token).safeTransferFrom(msg.sender, address(this), amountIn);
-
-        // Apply fees
-        (uint lockedFee, uint adminFee, uint lpFee) = getFees(amountIn);
-        lockedFees += lockedFee;
-        adminFees += adminFee;
-        liabilities += lpFee;
-        amountIn -= lockedFee + adminFee+ lpFee;
-
+        // apply inverse protocol
+        
         assets += amountIn;
         amountOut = amountToValue(amountIn);
         emit SwapIn(msg.sender, amountIn, amountOut);
@@ -171,7 +202,7 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         require(amountIn != 0, "SingularityPool: AMOUNT_IS_0");
         amountOut = valueToAmount(amountIn);
         // Calculate penalties
-        uint penalty = calculatePenalty(amountOut, assets - amountOut, liabilities);
+        uint penalty = getSlippage(amountOut, assets - amountOut, liabilities);
         amountOut -= penalty;
 
         // Apply fees
@@ -186,8 +217,8 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         emit SwapOut(msg.sender, amountIn, amountOut, to);
     }
 
-    function getCollatalizationRatio(uint _assets, uint _liabilities) internal view returns (uint newCollateralizationRatio) {
-        if (liabilities == 0) {
+    function getCollatalizationRatio(uint _assets, uint _liabilities) internal pure returns (uint newCollateralizationRatio) {
+        if (_liabilities == 0) {
             newCollateralizationRatio = type(uint).max;
         } else {
             newCollateralizationRatio = MULTIPLIER * _assets / _liabilities;

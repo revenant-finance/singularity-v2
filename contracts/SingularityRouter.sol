@@ -39,18 +39,26 @@ contract SingularityRouter is ISingularityRouter {
         require(pool != address(0), "SingularityRouter: POOL_DOES_NOT_EXIST");
     }
 
+    function getAssetsAndLiabilities(address token) public view override returns (uint assets, uint liabilities) {
+        address pool = poolFor(token);
+        (assets, liabilities) = ISingularityPool(pool).getAssetsAndLiabilities();
+    }
+
     function getAmountOut(uint amountIn, address[2] memory path) public view override returns (uint amountOut) {
         require(amountIn != 0, "SingularityRouter: INSUFFICIENT_INPUT_AMOUNT");
         address inPool = poolFor(path[0]);
-        amountOut = ISingularityPool(inPool).amountToValue(amountIn);
-        // TODO: apply inverse
+        (uint assets, uint liabilities) = getAssetsAndLiabilities(path[0]);
+        uint slippageIn = ISingularityPool(inPool).getSlippage(amountIn, assets + amountIn, liabilities);
+        amountIn += slippageIn;
+        uint swapInAmountOut = ISingularityPool(inPool).amountToValue(amountIn);
+
         address outPool = poolFor(path[1]);
-        amountOut = ISingularityPool(outPool).valueToAmount(amountOut);
-        (uint assets, uint liabilities) = ISingularityPool(outPool).getAssetsAndLiabilities();
-        uint penalty = ISingularityPool(outPool).getSlippage(amountOut, assets - amountOut, liabilities);
-        amountOut -= penalty;
-        (uint lockedFee, uint adminFee, uint lpFee) = ISingularityPool(outPool).getFees(amountOut);
-        amountOut -= lockedFee + adminFee + lpFee;
+        uint swapOutAmountOut = ISingularityPool(outPool).valueToAmount(swapInAmountOut);
+        (assets, liabilities) = getAssetsAndLiabilities(path[1]);
+        uint slippageOut = ISingularityPool(outPool).getSlippage(swapOutAmountOut, assets - swapOutAmountOut, liabilities);
+        swapOutAmountOut -= slippageOut;
+        (uint lockedFee, uint adminFee, uint lpFee) = ISingularityPool(outPool).getFees(swapOutAmountOut);
+        amountOut = swapOutAmountOut - lockedFee - adminFee - lpFee;
     }
 
     function getAmountsOut(uint amountIn, address[] calldata path) public view override returns (uint[] memory amounts) {

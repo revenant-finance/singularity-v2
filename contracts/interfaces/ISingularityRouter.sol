@@ -5,6 +5,7 @@ interface ISingularityRouter {
     function WETH() external returns (address);
 
     function poolFor(address token) external view returns (address pool);
+    function getAssetsAndLiabilities(address token) external view returns (uint assets, uint liabilities);
     function getAmountOut(uint amountIn, address[2] memory path) external view returns (uint amountOut);
     function getAmountsOut(uint amountIn, address[] calldata path) external view returns (uint[] memory amounts);
 

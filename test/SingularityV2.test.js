@@ -170,12 +170,20 @@ describe("SingularityV2", () => {
 		await ethPool.deposit(numToBN(100, ETH.decimals), ownerAddress);
 		await usdcPool.deposit(numToBN(2000, USDC.decimals), ownerAddress);
 
+		const amountToSwap = 1;
+		const path = [eth.address, usdc.address];
+		const ethBal = await eth.balanceOf(ownerAddress);
+		const usdcBal = await usdc.balanceOf(ownerAddress)
+		const expectedOut = await router.getAmountsOut(numToBN(amountToSwap, ETH.decimals), path)
 		await router.swapExactTokensForTokens(
-			[eth.address, usdc.address],
-			numToBN(0.1),
+			path,
+			numToBN(amountToSwap, ETH.decimals),
 			0,
 			ownerAddress,
 			MAX
 		);
+		const ethBalAfter = await eth.balanceOf(ownerAddress);
+		const usdcBalAfter = await usdc.balanceOf(ownerAddress);
+
 	});
 });

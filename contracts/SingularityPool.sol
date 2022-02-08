@@ -84,20 +84,6 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         amount = value * MULTIPLIER / (getTokenPrice() * 10**(18 - decimals));
     }
 
-    function getFees(uint amount) public view override returns (uint lockedFee, uint adminFee, uint lpFee) {
-        (, uint updateTime) = IOracle(ISingularityFactory(factory).oracle()).getPriceUSD(token);
-        uint timeDiff = block.timestamp - updateTime;
-        uint rate;
-        if (timeDiff >= 60) {
-            rate = baseFee * 2;
-        } else {
-            rate = baseFee + baseFee * timeDiff / 60;
-        }
-        lockedFee = rate * amount / (3 * MULTIPLIER);
-        adminFee = rate * amount / (3 * MULTIPLIER);
-        lpFee = rate * amount / (3 * MULTIPLIER);
-    }
-
     function getDepositFee(uint amount) public view override returns (uint fee) {
         uint collateralizationRatio = getCollatalizationRatio(assets + amount, liabilities + amount);
         uint depositFeeRate;
@@ -138,6 +124,20 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
             slippageRate = 0.01 ether;
         }
         slippage = amount * slippageRate / MULTIPLIER;
+    }
+
+    function getTradingFees(uint amount) public view override returns (uint lockedFee, uint adminFee, uint lpFee) {
+        (, uint updateTime) = IOracle(ISingularityFactory(factory).oracle()).getPriceUSD(token);
+        uint timeDiff = block.timestamp - updateTime;
+        uint rate;
+        if (timeDiff >= 60) {
+            rate = baseFee * 2;
+        } else {
+            rate = baseFee + baseFee * timeDiff / 60;
+        }
+        lockedFee = rate * amount / (3 * MULTIPLIER);
+        adminFee = rate * amount / (3 * MULTIPLIER);
+        lpFee = rate * amount / (3 * MULTIPLIER);
     }
 
     function deposit(uint amount, address to) external override notPaused lock returns (uint amountMinted) {
@@ -192,7 +192,7 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         uint slippage = getSlippage(amountOut, assets - amountOut, liabilities);
         amountOut -= slippage;
         // Apply fees
-        (uint lockedFee, uint adminFee, uint lpFee) = getFees(amountOut);
+        (uint lockedFee, uint adminFee, uint lpFee) = getTradingFees(amountOut);
         lockedFees += lockedFee;
         adminFees += adminFee;
         liabilities += lpFee;

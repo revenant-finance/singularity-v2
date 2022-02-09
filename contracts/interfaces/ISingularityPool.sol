@@ -18,6 +18,7 @@ interface ISingularityPool {
     function paused() external view returns (bool);
     function factory() external view returns (address);
     function token() external view returns (address);
+    function isStablecoin() external view returns (bool);
 
     function depositCap() external view returns (uint);
     function assets() external view returns (uint);
@@ -47,5 +48,11 @@ interface ISingularityPool {
     function setBaseFee(uint newBaseFee) external;
     function setPaused(bool paused) external;
 
-    function initialize(address token, string calldata name, string calldata symbol, uint baseFee) external;
+    function initialize(
+        address token, 
+        bool isStablecoin, 
+        string calldata name, 
+        string calldata symbol, 
+        uint baseFee
+    ) external;
 }

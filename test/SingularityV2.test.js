@@ -27,6 +27,18 @@ describe("SingularityV2", () => {
 		return ethers.utils.parseUnits(number.toString(), decimals);
 	}
 
+	function advanceTime(seconds) {
+		ethers.provider.send("evm_increaseTime", [seconds]);
+		ethers.provider.send("evm_mine");
+	}
+
+	async function updatePrices() {
+		await oracle.pushPrices(
+			[eth.address, usdc.address, dai.address],
+			[numToBN(ETH.price), numToBN(USDC.price), numToBN(DAI.price)]
+		);
+	}
+
 	before(async () => {
 		const accounts = await ethers.getSigners();
 		[ownerAccount, otherAccount] = accounts;
@@ -72,13 +84,25 @@ describe("SingularityV2", () => {
 		await factory.setRouter(router.address);
 
 		// setup pools
-		await factory.createPool(eth.address, "Singularity ETH Pool", "SLP ETH", numToBN(0.0015));
+		await factory.createPool(
+			eth.address,
+			false,
+			"Singularity ETH Pool",
+			"SLP ETH",
+			numToBN(0.0015)
+		);
 		ethPoolAddress = await factory.getPool(eth.address);
 		ethPool = await Pool.attach(ethPoolAddress);
-		await factory.createPool(usdc.address, "Singularity USDC Pool", "SLP USDC", numToBN(0.0015));
+		await factory.createPool(
+			usdc.address,
+			true,
+			"Singularity USDC Pool",
+			"SLP USDC",
+			numToBN(0.0015)
+		);
 		usdcPoolAddress = await factory.getPool(usdc.address);
 		usdcPool = await Pool.attach(usdcPoolAddress);
-		await factory.createPool(dai.address, "Singularity DAI Pool", "SLP DAI", numToBN(0.0015));
+		await factory.createPool(dai.address, true, "Singularity DAI Pool", "SLP DAI", numToBN(0.0015));
 		daiPoolAddress = await factory.getPool(dai.address);
 		daiPool = await Pool.attach(daiPoolAddress);
 
@@ -105,19 +129,31 @@ describe("SingularityV2", () => {
 		expect(await factory.oracle()).to.equal(oracle.address);
 	});
 
-	it("Should create a pool for USDC", async () => {
+	it("Should have correct pool values", async () => {
 		const usdcPool = await Pool.attach(usdcPoolAddress);
 		expect(await usdcPool.token()).to.equal(usdc.address);
+		expect(await usdcPool.isStablecoin()).to.equal(true);
 		expect(await usdcPool.name()).to.equal("Singularity USDC Pool");
 		expect(await usdcPool.symbol()).to.equal("SLP USDC");
 		expect(await usdcPool.decimals()).to.equal(USDC.decimals);
 		expect(await usdcPool.paused()).to.equal(false);
 		expect(await usdcPool.factory()).to.equal(factory.address);
+
+		const ethPool = await Pool.attach(ethPoolAddress);
+		expect(await ethPool.token()).to.equal(eth.address);
+		expect(await ethPool.isStablecoin()).to.equal(false);
+		expect(await ethPool.name()).to.equal("Singularity ETH Pool");
+		expect(await ethPool.symbol()).to.equal("SLP ETH");
+		expect(await ethPool.decimals()).to.equal(ETH.decimals);
+		expect(await ethPool.paused()).to.equal(false);
+		expect(await ethPool.factory()).to.equal(factory.address);
 	});
 
 	it("Should mint via pool and router", async () => {
 		const mintAmount = 100;
-		await expect(ethPool.deposit(0, ownerAddress)).to.be.revertedWith("SingularityPool: AMOUNT_IS_0");
+		await expect(ethPool.deposit(0, ownerAddress)).to.be.revertedWith(
+			"SingularityPool: AMOUNT_IS_0"
+		);
 		// mint via pool
 		await ethPool.deposit(numToBN(mintAmount, ETH.decimals), ownerAddress);
 
@@ -173,8 +209,8 @@ describe("SingularityV2", () => {
 		const amountToSwap = 1;
 		const path = [eth.address, usdc.address];
 		const ethBal = await eth.balanceOf(ownerAddress);
-		const usdcBal = await usdc.balanceOf(ownerAddress)
-		const expectedOut = await router.getAmountsOut(numToBN(amountToSwap, ETH.decimals), path)
+		const usdcBal = await usdc.balanceOf(ownerAddress);
+		const expectedOut = (await router.getAmountsOut(numToBN(amountToSwap, ETH.decimals), path))[1];
 		await router.swapExactTokensForTokens(
 			path,
 			numToBN(amountToSwap, ETH.decimals),
@@ -184,6 +220,9 @@ describe("SingularityV2", () => {
 		);
 		const ethBalAfter = await eth.balanceOf(ownerAddress);
 		const usdcBalAfter = await usdc.balanceOf(ownerAddress);
-
+		const usdcOut = usdcBalAfter.sub(usdcBal);
+		const ethIn = ethBal.sub(ethBalAfter);
+		expect(usdcOut).to.be.closeTo(expectedOut, numToBN(1, USDC.decimals));
+		expect(ethIn).to.equal(numToBN(amountToSwap, ETH.decimals));
 	});
 });

@@ -17,6 +17,7 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
 
     address public immutable override factory;
     address public override token;
+    bool public override isStablecoin;
 
     uint public override depositCap;
     uint public override assets;
@@ -50,8 +51,9 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         factory = msg.sender;
     }
 
-    function initialize(address _token, string calldata _name, string calldata _symbol, uint _baseFee) external override onlyFactory {
+    function initialize(address _token, bool _isStablecoin, string calldata _name, string calldata _symbol, uint _baseFee) external override onlyFactory {
         token = _token;
+        isStablecoin = _isStablecoin;
         name = _name;
         symbol = _symbol;
         decimals = IERC20(_token).decimals();
@@ -128,12 +130,16 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
 
     function getTradingFees(uint amount) public view override returns (uint lockedFee, uint adminFee, uint lpFee) {
         (, uint updateTime) = IOracle(ISingularityFactory(factory).oracle()).getPriceUSD(token);
-        uint timeDiff = block.timestamp - updateTime;
         uint rate;
-        if (timeDiff >= 60) {
-            rate = baseFee * 2;
+        if (isStablecoin) {
+            rate = baseFee;
         } else {
-            rate = baseFee + baseFee * timeDiff / 60;
+            uint timeDiff = block.timestamp - updateTime;
+            if (timeDiff >= 60) {
+                rate = baseFee * 2;
+            } else {
+                rate = baseFee + baseFee * timeDiff / 60;
+            }
         }
         lockedFee = rate * amount / (3 * MULTIPLIER);
         adminFee = rate * amount / (3 * MULTIPLIER);
@@ -175,10 +181,17 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         require(msg.sender == ISingularityFactory(factory).router(), "SingularityPool: NOT_ROUTER");
         require(amountIn != 0, "SingularityPool: AMOUNT_IS_0");
         IERC20(token).safeTransferFrom(msg.sender, address(this), amountIn);
+
         // Apply slippage (bonus)
         uint slippage = getSlippage(amountIn, assets + amountIn, liabilities);
         amountIn += slippage;
         liabilities -= slippage;
+        // Apply fees
+        (uint lockedFee, uint adminFee, uint lpFee) = getTradingFees(amountIn);
+        lockedFees += lockedFee;
+        adminFees += adminFee;
+        liabilities += lpFee;
+        amountIn -= lockedFee + adminFee + lpFee;
         assets += amountIn;
         amountOut = amountToValue(amountIn);
         emit SwapIn(msg.sender, amountIn, amountOut);
@@ -188,9 +201,11 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         require(msg.sender == ISingularityFactory(factory).router(), "SingularityPool: NOT_ROUTER");
         require(amountIn != 0, "SingularityPool: AMOUNT_IS_0");
         amountOut = valueToAmount(amountIn);
+
         // Apply slippage (penalty)
         uint slippage = getSlippage(amountOut, assets - amountOut, liabilities);
         amountOut -= slippage;
+
         // Apply fees
         (uint lockedFee, uint adminFee, uint lpFee) = getTradingFees(amountOut);
         lockedFees += lockedFee;

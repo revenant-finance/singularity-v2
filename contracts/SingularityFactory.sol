@@ -40,7 +40,7 @@ contract SingularityFactory is ISingularityFactory {
 
     /* ========== ADMIN FUNCTIONS ========== */
 
-    function createPool(address _token, string calldata _name, string calldata _symbol, uint _baseFee) external override onlyAdmin returns (address pool) {
+    function createPool(address _token, bool _isStablecoin, string calldata _poolName, string calldata _poolSymbol, uint _baseFee) external override onlyAdmin returns (address pool) {
         require(_token != address(0), "SingularityFactory: ZERO_ADDRESS");
         require(getPool[_token] == address(0), "SingularityFactory: POOL_EXISTS");
         require(_baseFee > 0, "SingularityFactory: FEE_IS_0");
@@ -49,10 +49,10 @@ contract SingularityFactory is ISingularityFactory {
         assembly {
             pool := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        ISingularityPool(pool).initialize(_token, _name, _symbol, _baseFee);
+        ISingularityPool(pool).initialize(_token, _isStablecoin, _poolName, _poolSymbol, _baseFee);
         getPool[_token] = pool;
         allPools.push(pool);
-        emit PoolCreated(_token, pool, _name, _symbol, allPools.length);
+        emit PoolCreated(_token, pool, _poolName, _poolSymbol, allPools.length);
     }
 
     function setAdmin(address _admin) external override onlyAdmin {

@@ -13,7 +13,7 @@ interface ISingularityFactory {
     function pausers(address pauser) external view returns (bool allowed);
     function allPoolsLength() external view returns (uint);
 
-    function createPool(address token, string calldata name, string calldata symbol, uint baseFee) external returns (address pool);
+    function createPool(address token, bool isStablecoin, string calldata poolName, string calldata poolSymbol, uint baseFee) external returns (address pool);
 
     function setAdmin(address _admin) external;
     function setOracle(address _oracle) external;

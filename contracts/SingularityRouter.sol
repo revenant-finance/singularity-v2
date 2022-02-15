@@ -44,85 +44,76 @@ contract SingularityRouter is ISingularityRouter {
         (assets, liabilities) = ISingularityPool(pool).getAssetsAndLiabilities();
     }
 
-    function getAmountOut(uint amountIn, address[2] memory path) public view override returns (uint amountOut) {
+    function getAmountOut(uint amountIn, address tokenIn, address tokenOut) public view override returns (uint amountOut) {
         require(amountIn != 0, "SingularityRouter: INSUFFICIENT_INPUT_AMOUNT");
-        address inPool = poolFor(path[0]);
-        (uint assets, uint liabilities) = getAssetsAndLiabilities(path[0]);
-        uint slippageIn = ISingularityPool(inPool).getSlippage(amountIn, assets + amountIn, liabilities);
+        address poolIn = poolFor(tokenIn);
+        (uint assets, uint liabilities) = getAssetsAndLiabilities(tokenIn);
+        uint slippageIn = ISingularityPool(poolIn).getSlippage(amountIn, assets + amountIn, liabilities);
         amountIn += slippageIn;
-        (uint lockedFee, uint adminFee, uint lpFee) = ISingularityPool(inPool).getTradingFees(amountIn);
+        (uint lockedFee, uint adminFee, uint lpFee) = ISingularityPool(poolIn).getTradingFees(amountIn);
         amountIn -= lockedFee + adminFee + lpFee;
-        uint swapInAmountOut = ISingularityPool(inPool).amountToValue(amountIn);
+        uint swapInAmountOut = ISingularityPool(poolIn).amountToValue(amountIn);
 
-        address outPool = poolFor(path[1]);
-        uint swapOutAmountOut = ISingularityPool(outPool).valueToAmount(swapInAmountOut);
-        (assets, liabilities) = getAssetsAndLiabilities(path[1]);
-        uint slippageOut = ISingularityPool(outPool).getSlippage(swapOutAmountOut, assets - swapOutAmountOut, liabilities);
+        address poolOut = poolFor(tokenOut);
+        uint swapOutAmountOut = ISingularityPool(poolOut).valueToAmount(swapInAmountOut);
+        (assets, liabilities) = getAssetsAndLiabilities(tokenOut);
+        uint slippageOut = ISingularityPool(poolOut).getSlippage(swapOutAmountOut, assets - swapOutAmountOut, liabilities);
         swapOutAmountOut -= slippageOut;
-        (lockedFee, adminFee, lpFee) = ISingularityPool(outPool).getTradingFees(swapOutAmountOut);
+        (lockedFee, adminFee, lpFee) = ISingularityPool(poolOut).getTradingFees(swapOutAmountOut);
         amountOut = swapOutAmountOut - lockedFee - adminFee - lpFee;
     }
 
-    function getAmountsOut(uint amountIn, address[] calldata path) public view override returns (uint[] memory amounts) {
-        require(path.length >= 2, "SingularityRouter: INVALID_PATH");
-        amounts = new uint[](path.length);
-        amounts[0] = amountIn;
-        for (uint i; i < path.length - 1; i++) {
-            amounts[i + 1] = getAmountOut(amounts[i], [path[i], path[i+1]]);
-        }
-    }
-
     function swapExactTokensForTokens(
-        address[] calldata path, 
+        address tokenIn,
+        address tokenOut, 
         uint amountIn, 
         uint minAmountOut, 
         address to, 
         uint deadline
-    ) external override ensure(deadline) returns (uint[] memory amounts) {
-        amounts = getAmountsOut(amountIn, path);
-        require(amounts[amounts.length - 1] >= minAmountOut, "SingularityRouter: INSUFFICIENT_OUTPUT_AMOUNT");
-        IERC20(path[0]).safeTransferFrom(msg.sender, address(this), amountIn);
-        _swap(amounts, path, to);
+    ) external override ensure(deadline) returns (uint amountOut) {
+        amountOut = getAmountOut(amountIn, tokenIn, tokenOut);
+        require(amountOut >= minAmountOut, "SingularityRouter: INSUFFICIENT_OUTPUT_AMOUNT");
+        IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
+        _swap(amountIn, tokenIn, tokenOut, to);
     }
 
     function swapExactETHForTokens(
-        address[] calldata path, 
+        address tokenIn,
+        address tokenOut, 
         uint minAmountOut, 
         address to, 
         uint deadline
-    ) external payable override ensure(deadline) returns (uint[] memory amounts) {
-        require(path[0] == WETH, "SingularityRouter: INVALID_PATH");
-        amounts = getAmountsOut(msg.value, path);
-        require(amounts[amounts.length - 1] >= minAmountOut, "SingularityRouter: INSUFFICIENT_OUTPUT_AMOUNT");
+    ) external payable override ensure(deadline) returns (uint amountOut) {
+        require(tokenIn == WETH, "SingularityRouter: INVALID_PATH");
+        amountOut = getAmountOut(msg.value, tokenIn, tokenOut);
+        require(amountOut >= minAmountOut, "SingularityRouter: INSUFFICIENT_OUTPUT_AMOUNT");
         IWETH(WETH).deposit{value: msg.value}();
-        _swap(amounts, path, to);
+        _swap(msg.value, tokenIn, tokenOut, to);
     }
 
     function swapExactTokensForETH(
-        address[] calldata path, 
+        address tokenIn,
+        address tokenOut, 
         uint amountIn, 
         uint minAmountOut, 
         address to, 
         uint deadline
-    ) external override ensure(deadline) returns (uint[] memory amounts) {
-        require(path[path.length - 1] == WETH, "SingularityRouter: INVALID_PATH");
-        amounts = getAmountsOut(amountIn, path);
-        require(amounts[amounts.length - 1] >= minAmountOut, "SingularityRouter: INSUFFICIENT_OUTPUT_AMOUNT");
-        IERC20(path[0]).safeTransferFrom(msg.sender, address(this), amountIn);
-        _swap(amounts, path, address(this));
-        IWETH(WETH).deposit{value: amounts[amounts.length - 1]}();
-        _safeTransferETH(to, amounts[amounts.length - 1]);
+    ) external override ensure(deadline) returns (uint amountOut) {
+        require(tokenOut == WETH, "SingularityRouter: INVALID_PATH");
+        amountOut = getAmountOut(amountIn, tokenIn, tokenOut);
+        require(amountOut >= minAmountOut, "SingularityRouter: INSUFFICIENT_OUTPUT_AMOUNT");
+        IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
+        _swap(amountIn, tokenIn, tokenOut, address(this));
+        IWETH(WETH).deposit{value: amountOut}();
+        _safeTransferETH(to, amountOut);
     }
 
-    function _swap(uint[] memory amounts, address[] memory path, address _to) internal virtual {
-        for (uint i; i < path.length - 1; i++) {
-            address inPool = poolFor(path[i]);
-            IERC20(path[i]).safeIncreaseAllowance(inPool, amounts[i]);
-            uint amountOut = ISingularityPool(inPool).swapIn(amounts[i]);
-            address outPool = poolFor(path[i + 1]);
-            address to = i < path.length - 2 ? address(this) : _to;
-            ISingularityPool(outPool).swapOut(amountOut, to);
-        }
+    function _swap(uint amountIn, address tokenIn, address tokenOut, address to) internal virtual {
+        address poolIn = poolFor(tokenIn);
+        IERC20(tokenIn).safeIncreaseAllowance(poolIn, amountIn);
+        uint amountOut = ISingularityPool(poolIn).swapIn(amountIn);
+        address poolOut = poolFor(tokenOut);
+        ISingularityPool(poolOut).swapOut(amountOut, to);
     }
 
     function addLiquidity(

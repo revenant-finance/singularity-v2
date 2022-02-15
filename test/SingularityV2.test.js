@@ -207,12 +207,16 @@ describe("SingularityV2", () => {
 		await usdcPool.deposit(numToBN(2000, USDC.decimals), ownerAddress);
 
 		const amountToSwap = 1;
-		const path = [eth.address, usdc.address];
 		const ethBal = await eth.balanceOf(ownerAddress);
 		const usdcBal = await usdc.balanceOf(ownerAddress);
-		const expectedOut = (await router.getAmountsOut(numToBN(amountToSwap, ETH.decimals), path))[1];
+		const expectedOut = await router.getAmountOut(
+			numToBN(amountToSwap, ETH.decimals),
+			eth.address,
+			usdc.address
+		);
 		await router.swapExactTokensForTokens(
-			path,
+			eth.address,
+			usdc.address,
 			numToBN(amountToSwap, ETH.decimals),
 			0,
 			ownerAddress,

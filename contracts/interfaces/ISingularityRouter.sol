@@ -6,31 +6,33 @@ interface ISingularityRouter {
 
     function poolFor(address token) external view returns (address pool);
     function getAssetsAndLiabilities(address token) external view returns (uint assets, uint liabilities);
-    function getAmountOut(uint amountIn, address[2] memory path) external view returns (uint amountOut);
-    function getAmountsOut(uint amountIn, address[] calldata path) external view returns (uint[] memory amounts);
+    function getAmountOut(uint amountIn, address tokenIn, address tokenOut) external view returns (uint amountOut);
 
     function swapExactTokensForTokens(
-        address[] calldata path, 
+        address tokenIn,
+        address tokenOut, 
         uint amountIn, 
         uint minAmountOut, 
         address to, 
         uint deadline
-    ) external returns (uint[] memory amounts);
+    ) external returns (uint amountOut);
 
     function swapExactETHForTokens(
-        address[] calldata path, 
+        address tokenIn,
+        address tokenOut, 
         uint minAmountOut, 
         address to, 
         uint deadline
-    ) external payable returns (uint[] memory amounts);
+    ) external payable returns (uint amountOut);
 
     function swapExactTokensForETH(
-        address[] calldata path, 
+        address tokenIn,
+        address tokenOut, 
         uint amountIn, 
         uint minAmountOut, 
         address to, 
         uint deadline
-    ) external returns (uint[] memory amounts);
+    ) external returns (uint amountOut);
 
     function addLiquidity(
         address token,

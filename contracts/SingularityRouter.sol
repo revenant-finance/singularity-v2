@@ -11,8 +11,6 @@ import "./interfaces/IOracle.sol";
 import "./interfaces/IWETH.sol";
 import "./utils/SafeERC20.sol";
 
-import "hardhat/console.sol";
-
 contract SingularityRouter is ISingularityRouter {
     using SafeERC20 for IERC20;
 
@@ -104,7 +102,7 @@ contract SingularityRouter is ISingularityRouter {
         require(amountOut >= minAmountOut, "SingularityRouter: INSUFFICIENT_OUTPUT_AMOUNT");
         IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
         _swap(amountIn, tokenIn, tokenOut, address(this));
-        IWETH(WETH).deposit{value: amountOut}();
+        IWETH(WETH).withdraw(amountOut);
         _safeTransferETH(to, amountOut);
     }
 

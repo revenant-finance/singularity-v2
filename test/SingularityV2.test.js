@@ -4,13 +4,16 @@ const { expectRevert } = require("@openzeppelin/test-helpers");
 
 describe("SingularityV2", () => {
 	let ownerAccount, ownerAddress, otherAccount, otherAddress;
-	let Factory, Router, Oracle, ERC20, Pool;
+	let Factory, Router, Oracle, ERC20, Pool, Wftm;
 	let factory,
 		router,
 		oracle,
+		wftm,
 		eth,
 		usdc,
 		dai,
+		wftmPoolAddress,
+		wftmPool,
 		ethPoolAddress,
 		ethPool,
 		usdcPoolAddress,
@@ -19,9 +22,11 @@ describe("SingularityV2", () => {
 		daiPool;
 	const name = "Tranche A";
 	const MAX = ethers.constants.MaxUint256;
+	const WFTM = { name: "Wrapped FTM", symbol: "wFTM", decimals: 18, price: 2 };
 	const ETH = { name: "Ethereum", symbol: "ETH", decimals: 18, price: 2000, balance: 1000 };
 	const USDC = { name: "USD Coin", symbol: "USDC", decimals: 6, price: 1, balance: 1000000 };
 	const DAI = { name: "Dai Stablecoin", symbol: "DAI", decimals: 18, price: 1, balance: 1000000 };
+	const amountToSwap = 1;
 
 	function numToBN(number, decimals = 18) {
 		return ethers.utils.parseUnits(number.toString(), decimals);
@@ -39,6 +44,10 @@ describe("SingularityV2", () => {
 		);
 	}
 
+	async function getFtmBalance() {
+		return await ethers.provider.getBalance(ownerAddress);
+	}
+
 	before(async () => {
 		const accounts = await ethers.getSigners();
 		[ownerAccount, otherAccount] = accounts;
@@ -49,9 +58,13 @@ describe("SingularityV2", () => {
 		ERC20 = await ethers.getContractFactory("ERC20");
 		Oracle = await ethers.getContractFactory("Oracle");
 		Pool = await ethers.getContractFactory("SingularityPool");
+		Wftm = await ethers.getContractFactory("WFTM");
 	});
 
 	beforeEach(async () => {
+		// deploy wFTM
+		wftm = await Wftm.deploy();
+
 		// deploy erc20 dummy tokens
 		eth = await ERC20.deploy(ETH.name, ETH.symbol, ETH.decimals);
 		await eth.deployed();
@@ -70,8 +83,8 @@ describe("SingularityV2", () => {
 		await oracle.deployed();
 		// set oracle prices
 		await oracle.pushPrices(
-			[eth.address, usdc.address, dai.address],
-			[numToBN(ETH.price), numToBN(USDC.price), numToBN(DAI.price)]
+			[wftm.address, eth.address, usdc.address, dai.address],
+			[numToBN(WFTM.price), numToBN(ETH.price), numToBN(USDC.price), numToBN(DAI.price)]
 		);
 
 		// deploy factory
@@ -79,11 +92,20 @@ describe("SingularityV2", () => {
 		await factory.deployed();
 
 		// deploy router
-		router = await Router.deploy(factory.address, eth.address);
+		router = await Router.deploy(factory.address, wftm.address);
 		await router.deployed();
 		await factory.setRouter(router.address);
 
 		// setup pools
+		await factory.createPool(
+			wftm.address,
+			false,
+			"Singularity wFTM Pool",
+			"SLP wFTM",
+			numToBN(0.0015)
+		);
+		wftmPoolAddress = await factory.getPool(wftm.address);
+		wftmPool = await Pool.attach(wftmPoolAddress);
 		await factory.createPool(
 			eth.address,
 			false,
@@ -107,17 +129,22 @@ describe("SingularityV2", () => {
 		daiPool = await Pool.attach(daiPoolAddress);
 
 		// set deposit caps (already tested)
-		await factory.setDepositCaps([ethPoolAddress], [MAX]);
-		await factory.setDepositCaps([usdcPoolAddress], [MAX]);
-		await factory.setDepositCaps([daiPoolAddress], [MAX]);
+		await factory.setDepositCaps(
+			[wftmPoolAddress, ethPoolAddress, usdcPoolAddress, daiPoolAddress],
+			[MAX, MAX, MAX, MAX]
+		);
 
-		// approvals
+		// Approve pools
+		await wftm.approve(wftmPoolAddress, MAX);
 		await eth.approve(ethPoolAddress, MAX);
 		await usdc.approve(usdcPoolAddress, MAX);
 		await dai.approve(daiPoolAddress, MAX);
+		// Approve router
+		await wftm.approve(router.address, MAX);
 		await eth.approve(router.address, MAX);
 		await usdc.approve(router.address, MAX);
 		await dai.approve(router.address, MAX);
+		await wftmPool.approve(router.address, MAX);
 		await ethPool.approve(router.address, MAX);
 		await usdcPool.approve(router.address, MAX);
 		await daiPool.approve(router.address, MAX);
@@ -149,7 +176,7 @@ describe("SingularityV2", () => {
 		expect(await ethPool.factory()).to.equal(factory.address);
 	});
 
-	it("Should mint via pool and router", async () => {
+	it("Should add liquidity via pool and router", async () => {
 		const mintAmount = 100;
 		await expect(ethPool.deposit(0, ownerAddress)).to.be.revertedWith(
 			"SingularityPool: AMOUNT_IS_0"
@@ -176,7 +203,7 @@ describe("SingularityV2", () => {
 		expect(await usdcPool.assets()).to.equal(numToBN(mintAmount, USDC.decimals));
 	});
 
-	it("Should burn via pool and router", async () => {
+	it("Should remove liquidity via pool and router", async () => {
 		const mintAmount = 100;
 		await ethPool.deposit(numToBN(mintAmount, ETH.decimals), ownerAddress);
 		// burn via pool
@@ -202,11 +229,10 @@ describe("SingularityV2", () => {
 		expect(await usdcPool.liabilities()).to.equal(0);
 	});
 
-	it("Should swap", async () => {
+	it("Should swapExactTokensForTokens", async () => {
 		await ethPool.deposit(numToBN(100, ETH.decimals), ownerAddress);
 		await usdcPool.deposit(numToBN(2000, USDC.decimals), ownerAddress);
 
-		const amountToSwap = 1;
 		const ethBal = await eth.balanceOf(ownerAddress);
 		const usdcBal = await usdc.balanceOf(ownerAddress);
 		const expectedOut = await router.getAmountOut(
@@ -224,9 +250,60 @@ describe("SingularityV2", () => {
 		);
 		const ethBalAfter = await eth.balanceOf(ownerAddress);
 		const usdcBalAfter = await usdc.balanceOf(ownerAddress);
-		const usdcOut = usdcBalAfter.sub(usdcBal);
-		const ethIn = ethBal.sub(ethBalAfter);
-		expect(usdcOut).to.be.closeTo(expectedOut, numToBN(1, USDC.decimals));
-		expect(ethIn).to.equal(numToBN(amountToSwap, ETH.decimals));
+		const usdcBought = usdcBalAfter.sub(usdcBal);
+		const ethSpent = ethBal.sub(ethBalAfter);
+		expect(usdcBought).to.be.closeTo(expectedOut, numToBN(1, USDC.decimals));
+		expect(ethSpent).to.equal(numToBN(amountToSwap, ETH.decimals));
+	});
+
+	it("Should swapExactETHForTokens", async () => {
+		await wftm.deposit({ value: numToBN(1000) });
+		await wftmPool.deposit(numToBN(1000, WFTM.decimals), ownerAddress);
+		await usdcPool.deposit(numToBN(2000, USDC.decimals), ownerAddress);
+
+		const ftmBal = await getFtmBalance();
+		const usdcBal = await usdc.balanceOf(ownerAddress);
+		const expectedOut = await router.getAmountOut(
+			numToBN(amountToSwap, WFTM.decimals),
+			wftm.address,
+			usdc.address
+		);
+		await router.swapExactETHForTokens(wftm.address, usdc.address, 0, ownerAddress, MAX, {
+			value: numToBN(amountToSwap, WFTM.decimals),
+		});
+		const ftmBalAfter = await getFtmBalance();
+		const usdcBalAfter = await usdc.balanceOf(ownerAddress);
+		const ftmSpent = ftmBal.sub(ftmBalAfter);
+		const usdcBought = usdcBalAfter.sub(usdcBal);
+		expect(usdcBought).to.be.closeTo(expectedOut, numToBN(1, USDC.decimals));
+		expect(ftmSpent).to.be.closeTo(numToBN(amountToSwap, WFTM.decimals), numToBN(1, 16)); // account for gas cost
+	});
+
+	it("Should swapExactTokensForETH", async () => {
+		await wftm.deposit({ value: numToBN(1000) });
+		await wftmPool.deposit(numToBN(1000, WFTM.decimals), ownerAddress);
+		await usdcPool.deposit(numToBN(2000, USDC.decimals), ownerAddress);
+
+		const ftmBal = await getFtmBalance();
+		const usdcBal = await usdc.balanceOf(ownerAddress);
+		const expectedOut = await router.getAmountOut(
+			numToBN(amountToSwap, USDC.decimals),
+			usdc.address,
+			wftm.address
+		);
+		await router.swapExactTokensForETH(
+			usdc.address,
+			wftm.address,
+			numToBN(amountToSwap, USDC.decimals),
+			0,
+			ownerAddress,
+			MAX
+		);
+		const ftmBalAfter = await getFtmBalance();
+		const usdcBalAfter = await usdc.balanceOf(ownerAddress);
+		const usdcSpent = usdcBal.sub(usdcBalAfter);
+		const ftmBought = ftmBalAfter.sub(ftmBal);
+		expect(usdcSpent).to.equal(numToBN(amountToSwap, USDC.decimals));
+		expect(ftmBought).to.be.closeTo(expectedOut, numToBN(1, 16)); // account for gas cost
 	});
 });

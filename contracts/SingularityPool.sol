@@ -8,7 +8,6 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/ISingularityFactory.sol";
 import "./interfaces/IOracle.sol";
 import "./utils/SafeERC20.sol";
-import "hardhat/console.sol";
 
 contract SingularityPool is ISingularityPool, SingularityERC20 {
     using SafeERC20 for IERC20;

@@ -107,6 +107,14 @@ contract ERC20 is IERC20 {
         emit Transfer(address(0), account, amount);
     }
 
+    function burn(address account, uint256 amount) external virtual {
+        require(account != address(0), "ERC20: burn from the zero address");
+
+        _totalSupply -= amount;
+        _balances[account] -= amount;
+        emit Transfer(account, address(0), amount);
+    }
+
     function _approve(
         address owner,
         address spender,

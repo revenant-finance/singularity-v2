@@ -2,6 +2,10 @@ pragma solidity ^0.8.11;
 
 import "./interfaces/ISingularityERC20.sol";
 
+/**
+ * @title Singularity Pool Token
+ * @author Revenant Labs
+ */
 contract SingularityERC20 is ISingularityERC20 {
     string public override name;
     string public override symbol;
@@ -73,7 +77,7 @@ contract SingularityERC20 is ISingularityERC20 {
     }
 
     function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external override {
-        require(deadline >= block.timestamp, "Singularity: EXPIRED");
+        require(deadline >= block.timestamp, "SingularityERC20: EXPIRED");
         bytes32 digest = keccak256(
             abi.encodePacked(
                 "\x19\x01",
@@ -82,7 +86,7 @@ contract SingularityERC20 is ISingularityERC20 {
             )
         );
         address recoveredAddress = ecrecover(digest, v, r, s);
-        require(recoveredAddress != address(0) && recoveredAddress == owner, "Singularity: INVALID_SIGNATURE");
+        require(recoveredAddress != address(0) && recoveredAddress == owner, "SingularityERC20: INVALID_SIGNATURE");
         _approve(owner, spender, value);
     }
 }

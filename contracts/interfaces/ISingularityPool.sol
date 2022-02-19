@@ -51,8 +51,6 @@ interface ISingularityPool {
     function initialize(
         address token, 
         bool isStablecoin, 
-        string calldata name, 
-        string calldata symbol, 
         uint baseFee
     ) external;
 }

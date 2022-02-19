@@ -4,11 +4,15 @@ pragma solidity ^0.8.11;
 
 import "./SingularityERC20.sol";
 import "./interfaces/ISingularityPool.sol";
-import "./interfaces/IERC20.sol";
 import "./interfaces/ISingularityFactory.sol";
 import "./interfaces/IOracle.sol";
+import "./interfaces/IERC20.sol";
 import "./utils/SafeERC20.sol";
 
+/**
+ * @title Singularity Pool
+ * @author Revenant Labs
+ */
 contract SingularityPool is ISingularityPool, SingularityERC20 {
     using SafeERC20 for IERC20;
 
@@ -46,15 +50,32 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         _;
     }
 
+    modifier onlyRouter() {
+        require(msg.sender == ISingularityFactory(factory).router(), "SingularityPool: NOT_ROUTER");
+        _;
+    }
+
     constructor() {
         factory = msg.sender;
     }
 
-    function initialize(address _token, bool _isStablecoin, string calldata _name, string calldata _symbol, uint _baseFee) external override onlyFactory {
+    function initialize(address _token, bool _isStablecoin, uint _baseFee) external override onlyFactory {
         token = _token;
         isStablecoin = _isStablecoin;
-        name = _name;
-        symbol = _symbol;
+        name = string(abi.encodePacked(
+            "Singularity ", 
+            IERC20(_token).symbol(), 
+            " Pool (", 
+            ISingularityFactory(factory).tranche(), 
+            ")"
+        ));
+        symbol = string(abi.encodePacked(
+            "SPT-", 
+            IERC20(_token).symbol(), 
+            " (", 
+            ISingularityFactory(factory).tranche(), 
+            ")"
+        ));
         decimals = IERC20(_token).decimals();
         baseFee = _baseFee;
     }
@@ -86,7 +107,7 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
     }
 
     function getDepositFee(uint amount) public view override returns (uint fee) {
-        uint collateralizationRatio = getCollatalizationRatio(assets + amount, liabilities + amount);
+        uint collateralizationRatio = _getCollatalizationRatio(assets + amount, liabilities + amount);
         uint depositFeeRate;
         if (collateralizationRatio <= 1 ether) {
             depositFeeRate = 0;
@@ -99,7 +120,7 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
     }
 
     function getWithdrawFee(uint amount) public view override returns (uint fee) {
-        uint collateralizationRatio = getCollatalizationRatio(assets - amount, liabilities - amount);
+        uint collateralizationRatio = _getCollatalizationRatio(assets - amount, liabilities - amount);
         uint withdrawFeeRate;
         if (collateralizationRatio >= 1 ether) {
             withdrawFeeRate = 0;
@@ -115,7 +136,7 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
     }
 
     function getSlippage(uint amount, uint newAssets, uint newLiabilities) public override pure returns (uint slippage) {
-        uint collateralizationRatio = getCollatalizationRatio(newAssets, newLiabilities);
+        uint collateralizationRatio = _getCollatalizationRatio(newAssets, newLiabilities);
         uint slippageRate;
         if (collateralizationRatio >= 1 ether) {
             slippageRate = 0;
@@ -145,7 +166,7 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         lpFee = rate * amount / (3 * MULTIPLIER);
     }
 
-    function deposit(uint amount, address to) external override notPaused lock returns (uint amountMinted) {
+    function deposit(uint amount, address to) external override onlyRouter notPaused lock returns (uint amountMinted) {
         require(amount != 0, "SingularityPool: AMOUNT_IS_0");
         require(amount + liabilities <= depositCap, "SingularityPool: DEPOSIT_EXCEEDS_CAP");
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
@@ -163,7 +184,7 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         emit Deposit(msg.sender, amount, amountMinted, to);
     }
 
-    function withdraw(uint amount, address to) external override notPaused lock returns (uint amountWithdrawn) {
+    function withdraw(uint amount, address to) external override onlyRouter notPaused lock returns (uint amountWithdrawn) {
         require(amount != 0, "SingularityPool: AMOUNT_IS_0");
         _burn(msg.sender, amount);
         uint liquidityValue = amount * getPricePerShare() / MULTIPLIER;
@@ -176,16 +197,16 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         emit Withdraw(msg.sender, amount, amountWithdrawn, to);
     }
 
-    function swapIn(uint amountIn) external override notPaused lock returns (uint amountOut) {
-        require(msg.sender == ISingularityFactory(factory).router(), "SingularityPool: NOT_ROUTER");
+    function swapIn(uint amountIn) external override onlyRouter notPaused lock returns (uint amountOut) {
         require(amountIn != 0, "SingularityPool: AMOUNT_IS_0");
         IERC20(token).safeTransferFrom(msg.sender, address(this), amountIn);
 
-        // Apply slippage (bonus)
+        // Apply slippage (positive)
         uint slippage = getSlippage(amountIn, assets + amountIn, liabilities);
         amountIn += slippage;
-        liabilities -= slippage;
-        // Apply fees
+        // TODO: should liabilities reflect slippage???
+
+        // Apply trading fees
         (uint lockedFee, uint adminFee, uint lpFee) = getTradingFees(amountIn);
         lockedFees += lockedFee;
         adminFees += adminFee;
@@ -196,16 +217,16 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         emit SwapIn(msg.sender, amountIn, amountOut);
     }
 
-    function swapOut(uint amountIn, address to) external override notPaused lock returns (uint amountOut) {
-        require(msg.sender == ISingularityFactory(factory).router(), "SingularityPool: NOT_ROUTER");
+    function swapOut(uint amountIn, address to) external override onlyRouter notPaused lock returns (uint amountOut) {
         require(amountIn != 0, "SingularityPool: AMOUNT_IS_0");
         amountOut = valueToAmount(amountIn);
 
-        // Apply slippage (penalty)
+        // Apply slippage (negative)
         uint slippage = getSlippage(amountOut, assets - amountOut, liabilities);
         amountOut -= slippage;
+        // TODO: should liabilities reflect slippage???
 
-        // Apply fees
+        // Apply trading fees
         (uint lockedFee, uint adminFee, uint lpFee) = getTradingFees(amountOut);
         lockedFees += lockedFee;
         adminFees += adminFee;
@@ -216,7 +237,7 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         emit SwapOut(msg.sender, amountIn, amountOut, to);
     }
 
-    function getCollatalizationRatio(uint _assets, uint _liabilities) internal pure returns (uint newCollateralizationRatio) {
+    function _getCollatalizationRatio(uint _assets, uint _liabilities) internal pure returns (uint newCollateralizationRatio) {
         if (_liabilities == 0) {
             newCollateralizationRatio = type(uint).max;
         } else {
@@ -224,7 +245,7 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         }
     }
 
-    /* ========== ADMIN FUNCTIONS ========== */
+    /* ========== FACTORY FUNCTIONS ========== */
 
     function collectFees() external override onlyFactory {
         address feeTo = ISingularityFactory(factory).feeTo();

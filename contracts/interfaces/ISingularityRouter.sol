@@ -37,11 +37,13 @@ interface ISingularityRouter {
     function addLiquidity(
         address token,
         uint amount,
+        uint minLiquidity,
         address to,
         uint deadline
     ) external returns (uint);
 
     function addLiquidityETH(
+        uint minLiquidity,
         address to,
         uint deadline
     ) external payable returns (uint liquidity);

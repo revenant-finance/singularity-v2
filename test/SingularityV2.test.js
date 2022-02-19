@@ -1,51 +1,108 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { expectRevert } = require("@openzeppelin/test-helpers");
 
 describe("SingularityV2", () => {
 	let ownerAccount, ownerAddress, otherAccount, otherAddress;
 	let Factory, Router, Oracle, ERC20, Pool, Wftm;
-	let factory,
-		router,
-		oracle,
-		wftm,
-		eth,
-		usdc,
-		dai,
-		wftmPoolAddress,
-		wftmPool,
-		ethPoolAddress,
-		ethPool,
-		usdcPoolAddress,
-		usdcPool,
-		daiPoolAddress,
-		daiPool;
-	const name = "Tranche A";
+	let factory, router, oracle, wftm, eth, usdc, dai;
+	const trancheName = "Tranche A";
 	const MAX = ethers.constants.MaxUint256;
-	const WFTM = { name: "Wrapped FTM", symbol: "wFTM", decimals: 18, price: 2 };
-	const ETH = { name: "Ethereum", symbol: "ETH", decimals: 18, price: 2000, balance: 1000 };
-	const USDC = { name: "USD Coin", symbol: "USDC", decimals: 6, price: 1, balance: 1000000 };
-	const DAI = { name: "Dai Stablecoin", symbol: "DAI", decimals: 18, price: 1, balance: 1000000 };
+	const ZERO_ADDR = ethers.constants.AddressZero;
+	const WFTM = {
+		address: "",
+		name: "Wrapped FTM",
+		symbol: "wFTM",
+		decimals: 18,
+		price: 2,
+		baseFee: numToBN(0.0015),
+		poolAddress: "",
+		pool: "",
+	};
+	const ETH = {
+		address: "",
+		name: "Ethereum",
+		symbol: "ETH",
+		decimals: 18,
+		price: 2000,
+		balance: 1000,
+		baseFee: numToBN(0.0015),
+		poolAddress: "",
+		pool: "",
+	};
+	const USDC = {
+		address: "",
+		name: "USD Coin",
+		symbol: "USDC",
+		decimals: 6,
+		price: 1,
+		balance: 1000000,
+		baseFee: numToBN(0.0015),
+		poolAddress: "",
+		pool: "",
+	};
+	const DAI = {
+		address: "",
+		name: "Dai Stablecoin",
+		symbol: "DAI",
+		decimals: 18,
+		price: 1,
+		balance: 1000000,
+		baseFee: numToBN(0.0015),
+		poolAddress: "",
+		pool: "",
+	};
 	const amountToSwap = 1;
 
 	function numToBN(number, decimals = 18) {
 		return ethers.utils.parseUnits(number.toString(), decimals);
 	}
 
-	function advanceTime(seconds) {
-		ethers.provider.send("evm_increaseTime", [seconds]);
-		ethers.provider.send("evm_mine");
+	async function deployTestTokens() {
+		// deploy wFTM
+		wftm = await Wftm.deploy();
+		await wftm.deployed();
+		WFTM.address = wftm.address;
+
+		// deploy erc20 dummy tokens
+		eth = await ERC20.deploy(ETH.name, ETH.symbol, ETH.decimals);
+		await eth.deployed();
+		ETH.address = eth.address;
+		await eth.mint(ownerAddress, numToBN(ETH.balance, ETH.decimals));
+
+		usdc = await ERC20.deploy(USDC.name, USDC.symbol, USDC.decimals);
+		await usdc.deployed();
+		USDC.address = usdc.address;
+		await usdc.mint(ownerAddress, numToBN(USDC.balance, USDC.decimals));
+
+		dai = await ERC20.deploy(DAI.name, DAI.symbol, DAI.decimals);
+		await dai.deployed();
+		DAI.address = dai.address;
+		await dai.mint(ownerAddress, numToBN(DAI.balance, DAI.decimals));
+	}
+
+	async function createPool(asset) {
+		await factory.createPool(
+			asset.address,
+			false,
+			asset.baseFee
+		);
+		asset.poolAddress = await factory.getPool(asset.address);
+		asset.pool = await Pool.attach(asset.poolAddress);
 	}
 
 	async function updatePrices() {
 		await oracle.pushPrices(
-			[eth.address, usdc.address, dai.address],
-			[numToBN(ETH.price), numToBN(USDC.price), numToBN(DAI.price)]
+			[wftm.address, eth.address, usdc.address, dai.address],
+			[numToBN(WFTM.price), numToBN(ETH.price), numToBN(USDC.price), numToBN(DAI.price)]
 		);
 	}
 
 	async function getFtmBalance() {
 		return await ethers.provider.getBalance(ownerAddress);
+	}
+
+	async function addLiquidity(asset, amount) {
+		await router.addLiquidity(asset.address, numToBN(amount, asset.decimals), 0, ownerAddress, MAX);
 	}
 
 	before(async () => {
@@ -62,160 +119,145 @@ describe("SingularityV2", () => {
 	});
 
 	beforeEach(async () => {
-		// deploy wFTM
-		wftm = await Wftm.deploy();
-
-		// deploy erc20 dummy tokens
-		eth = await ERC20.deploy(ETH.name, ETH.symbol, ETH.decimals);
-		await eth.deployed();
-		await eth.mint(ownerAddress, numToBN(ETH.balance, ETH.decimals));
-
-		usdc = await ERC20.deploy(USDC.name, USDC.symbol, USDC.decimals);
-		await usdc.deployed();
-		await usdc.mint(ownerAddress, numToBN(USDC.balance, USDC.decimals));
-
-		dai = await ERC20.deploy(DAI.name, DAI.symbol, DAI.decimals);
-		await dai.deployed();
-		await dai.mint(ownerAddress, numToBN(DAI.balance, DAI.decimals));
+		await deployTestTokens();
 
 		// deploy oracle
-		oracle = await Oracle.deploy();
+		oracle = await Oracle.deploy(ownerAddress, [ownerAddress]);
 		await oracle.deployed();
 		// set oracle prices
-		await oracle.pushPrices(
-			[wftm.address, eth.address, usdc.address, dai.address],
-			[numToBN(WFTM.price), numToBN(ETH.price), numToBN(USDC.price), numToBN(DAI.price)]
-		);
+		await updatePrices();
 
 		// deploy factory
-		factory = await Factory.deploy(name, ownerAddress, oracle.address);
+		factory = await Factory.deploy(trancheName, ownerAddress, oracle.address, ownerAddress);
 		await factory.deployed();
 
 		// deploy router
-		router = await Router.deploy(factory.address, wftm.address);
+		router = await Router.deploy(factory.address, WFTM.address);
 		await router.deployed();
 		await factory.setRouter(router.address);
 
-		// setup pools
-		await factory.createPool(
-			wftm.address,
-			false,
-			"Singularity wFTM Pool",
-			"SLP wFTM",
-			numToBN(0.0015)
-		);
-		wftmPoolAddress = await factory.getPool(wftm.address);
-		wftmPool = await Pool.attach(wftmPoolAddress);
-		await factory.createPool(
-			eth.address,
-			false,
-			"Singularity ETH Pool",
-			"SLP ETH",
-			numToBN(0.0015)
-		);
-		ethPoolAddress = await factory.getPool(eth.address);
-		ethPool = await Pool.attach(ethPoolAddress);
-		await factory.createPool(
-			usdc.address,
-			true,
-			"Singularity USDC Pool",
-			"SLP USDC",
-			numToBN(0.0015)
-		);
-		usdcPoolAddress = await factory.getPool(usdc.address);
-		usdcPool = await Pool.attach(usdcPoolAddress);
-		await factory.createPool(dai.address, true, "Singularity DAI Pool", "SLP DAI", numToBN(0.0015));
-		daiPoolAddress = await factory.getPool(dai.address);
-		daiPool = await Pool.attach(daiPoolAddress);
+		await createPool(WFTM);
+		await createPool(ETH);
+		await createPool(USDC);
 
-		// set deposit caps (already tested)
+		// set deposit caps
 		await factory.setDepositCaps(
-			[wftmPoolAddress, ethPoolAddress, usdcPoolAddress, daiPoolAddress],
-			[MAX, MAX, MAX, MAX]
+			[WFTM.poolAddress, ETH.poolAddress, USDC.poolAddress],
+			[MAX, MAX, MAX]
 		);
 
 		// Approve pools
-		await wftm.approve(wftmPoolAddress, MAX);
-		await eth.approve(ethPoolAddress, MAX);
-		await usdc.approve(usdcPoolAddress, MAX);
-		await dai.approve(daiPoolAddress, MAX);
+		await wftm.approve(WFTM.poolAddress, MAX);
+		await eth.approve(ETH.poolAddress, MAX);
+		await usdc.approve(USDC.poolAddress, MAX);
 		// Approve router
 		await wftm.approve(router.address, MAX);
 		await eth.approve(router.address, MAX);
 		await usdc.approve(router.address, MAX);
 		await dai.approve(router.address, MAX);
-		await wftmPool.approve(router.address, MAX);
-		await ethPool.approve(router.address, MAX);
-		await usdcPool.approve(router.address, MAX);
-		await daiPool.approve(router.address, MAX);
+		await WFTM.pool.approve(router.address, MAX);
+		await ETH.pool.approve(router.address, MAX);
+		await USDC.pool.approve(router.address, MAX);
 	});
 
 	it("Should have correct initial state values", async () => {
-		expect(await factory.name()).to.equal(name);
+		expect(await factory.tranche()).to.equal(trancheName);
 		expect(await factory.admin()).to.equal(ownerAddress);
 		expect(await factory.oracle()).to.equal(oracle.address);
+		expect(await factory.feeTo()).to.equal(ownerAddress);
+		expect(await factory.router()).to.equal(router.address);
 	});
 
-	it("Should have correct pool values", async () => {
-		const usdcPool = await Pool.attach(usdcPoolAddress);
-		expect(await usdcPool.token()).to.equal(usdc.address);
-		expect(await usdcPool.isStablecoin()).to.equal(true);
-		expect(await usdcPool.name()).to.equal("Singularity USDC Pool");
-		expect(await usdcPool.symbol()).to.equal("SLP USDC");
-		expect(await usdcPool.decimals()).to.equal(USDC.decimals);
-		expect(await usdcPool.paused()).to.equal(false);
-		expect(await usdcPool.factory()).to.equal(factory.address);
+	it("Should create pool correct pool values", async () => {
+		await expect(
+			factory.createPool(
+				ZERO_ADDR,
+				true,
+				DAI.baseFee
+			)
+		).to.be.revertedWith("SingularityFactory: ZERO_ADDRESS");
+		await expect(
+			factory.createPool(
+				WFTM.address,
+				true,
+				WFTM.baseFee
+			)
+		).to.be.revertedWith("SingularityFactory: POOL_EXISTS");
+		await expect(
+			factory.createPool(
+				DAI.address,
+				true,
+				0
+			)
+		).to.be.revertedWith("SingularityFactory: FEE_IS_0");
+		await factory.createPool(
+			DAI.address,
+			true,
+			DAI.baseFee
+		);
+		DAI.poolAddress = await factory.getPool(DAI.address);
+		DAI.pool = await Pool.attach(DAI.poolAddress);
 
-		const ethPool = await Pool.attach(ethPoolAddress);
-		expect(await ethPool.token()).to.equal(eth.address);
-		expect(await ethPool.isStablecoin()).to.equal(false);
-		expect(await ethPool.name()).to.equal("Singularity ETH Pool");
-		expect(await ethPool.symbol()).to.equal("SLP ETH");
-		expect(await ethPool.decimals()).to.equal(ETH.decimals);
-		expect(await ethPool.paused()).to.equal(false);
-		expect(await ethPool.factory()).to.equal(factory.address);
+		expect(await DAI.pool.paused()).to.equal(false);
+		expect(await DAI.pool.factory()).to.equal(factory.address);
+		expect(await DAI.pool.token()).to.equal(DAI.address);
+		expect(await DAI.pool.isStablecoin()).to.equal(true);
+		expect(await DAI.pool.depositCap()).to.equal(0);
+		expect(await DAI.pool.assets()).to.equal(0);
+		expect(await DAI.pool.liabilities()).to.equal(0);
+		expect(await DAI.pool.baseFee()).to.equal(DAI.baseFee);
+		expect(await DAI.pool.adminFees()).to.equal(0);
+		expect(await DAI.pool.lockedFees()).to.equal(0);
+		expect(await DAI.pool.name()).to.equal(`Singularity ${DAI.symbol} Pool (${trancheName})`);
+		expect(await DAI.pool.symbol()).to.equal(`SPT-${DAI.symbol} (${trancheName})`);
+		expect(await DAI.pool.decimals()).to.equal(DAI.decimals);
 	});
 
-	it("Should add liquidity via pool and router", async () => {
+	it("Should add liquidity", async () => {
 		const mintAmount = 100;
-		await expect(ethPool.deposit(0, ownerAddress)).to.be.revertedWith(
-			"SingularityPool: AMOUNT_IS_0"
-		);
-		// mint via pool
-		await ethPool.deposit(numToBN(mintAmount, ETH.decimals), ownerAddress);
+		await expect(
+			USDC.pool.deposit(numToBN(mintAmount, USDC.decimals), ownerAddress)
+		).to.be.revertedWith("SingularityPool: NOT_ROUTER");
+		await expect(
+			router.addLiquidity(
+				usdc.address,
+				numToBN(mintAmount, 6),
+				numToBN(mintAmount + 1, 6),
+				ownerAddress,
+				MAX
+			)
+		).to.be.revertedWith("SingularityRouter: INSUFFICIENT_LIQUIDITY_AMOUNT");
+		await factory.setDepositCaps([USDC.poolAddress], [numToBN(50, USDC.decimals)]);
+		await expect(
+			router.addLiquidity(usdc.address, numToBN(mintAmount, 6), 0, ownerAddress, MAX)
+		).to.be.revertedWith("SingularityPool: DEPOSIT_EXCEEDS_CAP");
+		await factory.setDepositCaps([USDC.poolAddress], [MAX]);
 
-		expect(await eth.balanceOf(ownerAddress)).to.equal(
-			numToBN(ETH.balance - mintAmount, ETH.decimals)
-		);
-		expect(await eth.balanceOf(ethPoolAddress)).to.equal(numToBN(mintAmount, ETH.decimals));
-		expect(await ethPool.balanceOf(ownerAddress)).to.equal(numToBN(mintAmount, ETH.decimals));
-		expect(await ethPool.liabilities()).to.equal(numToBN(mintAmount, ETH.decimals));
-		expect(await ethPool.assets()).to.equal(numToBN(mintAmount, ETH.decimals));
-
-		// mint via router
-		await router.addLiquidity(usdc.address, numToBN(mintAmount, 6), ownerAddress, MAX);
+		await addLiquidity(USDC, mintAmount);
 		expect(await usdc.balanceOf(ownerAddress)).to.equal(
 			numToBN(USDC.balance - mintAmount, USDC.decimals)
 		);
-		expect(await usdc.balanceOf(usdcPoolAddress)).to.equal(numToBN(mintAmount, USDC.decimals));
-		expect(await usdcPool.balanceOf(ownerAddress)).to.equal(numToBN(mintAmount, USDC.decimals));
-		expect(await usdcPool.liabilities()).to.equal(numToBN(mintAmount, USDC.decimals));
-		expect(await usdcPool.assets()).to.equal(numToBN(mintAmount, USDC.decimals));
+		expect(await usdc.balanceOf(USDC.poolAddress)).to.equal(numToBN(mintAmount, USDC.decimals));
+		expect(await USDC.pool.balanceOf(ownerAddress)).to.equal(numToBN(mintAmount, USDC.decimals));
+		expect(await USDC.pool.liabilities()).to.equal(numToBN(mintAmount, USDC.decimals));
+		expect(await USDC.pool.assets()).to.equal(numToBN(mintAmount, USDC.decimals));
 	});
 
-	it("Should remove liquidity via pool and router", async () => {
+	it("Should remove liquidity", async () => {
 		const mintAmount = 100;
-		await ethPool.deposit(numToBN(mintAmount, ETH.decimals), ownerAddress);
-		// burn via pool
-		await ethPool.withdraw(numToBN(mintAmount, ETH.decimals), ownerAddress);
-
-		expect(await eth.balanceOf(ownerAddress)).to.equal(numToBN(ETH.balance, ETH.decimals));
-		expect(await eth.balanceOf(ethPoolAddress)).to.equal(0);
-		expect(await ethPool.balanceOf(ownerAddress)).to.equal(0);
-		expect(await ethPool.liabilities()).to.equal(0);
-
-		await usdcPool.deposit(numToBN(mintAmount, USDC.decimals), ownerAddress);
-		// burn via router
+		await addLiquidity(USDC, mintAmount);
+		await expect(router.removeLiquidity(usdc.address, 0, 0, ownerAddress, MAX)).to.be.revertedWith(
+			"SingularityPool: AMOUNT_IS_0"
+		);
+		await expect(
+			router.removeLiquidity(
+				usdc.address,
+				numToBN(mintAmount, USDC.decimals),
+				numToBN(mintAmount + 1, USDC.decimals),
+				ownerAddress,
+				MAX
+			)
+		).to.be.revertedWith("SingularityRouter: INSUFFICIENT_TOKEN_AMOUNT");
 		await router.removeLiquidity(
 			usdc.address,
 			numToBN(mintAmount, USDC.decimals),
@@ -224,14 +266,14 @@ describe("SingularityV2", () => {
 			MAX
 		);
 		expect(await usdc.balanceOf(ownerAddress)).to.equal(numToBN(USDC.balance, USDC.decimals));
-		expect(await usdc.balanceOf(usdcPoolAddress)).to.equal(0);
-		expect(await usdcPool.balanceOf(ownerAddress)).to.equal(0);
-		expect(await usdcPool.liabilities()).to.equal(0);
+		expect(await usdc.balanceOf(USDC.poolAddress)).to.equal(0);
+		expect(await USDC.pool.balanceOf(ownerAddress)).to.equal(0);
+		expect(await USDC.pool.liabilities()).to.equal(0);
 	});
 
 	it("Should swapExactTokensForTokens", async () => {
-		await ethPool.deposit(numToBN(100, ETH.decimals), ownerAddress);
-		await usdcPool.deposit(numToBN(2000, USDC.decimals), ownerAddress);
+		await addLiquidity(ETH, 100);
+		await addLiquidity(USDC, 2000);
 
 		const ethBal = await eth.balanceOf(ownerAddress);
 		const usdcBal = await usdc.balanceOf(ownerAddress);
@@ -258,8 +300,8 @@ describe("SingularityV2", () => {
 
 	it("Should swapExactETHForTokens", async () => {
 		await wftm.deposit({ value: numToBN(1000) });
-		await wftmPool.deposit(numToBN(1000, WFTM.decimals), ownerAddress);
-		await usdcPool.deposit(numToBN(2000, USDC.decimals), ownerAddress);
+		await addLiquidity(WFTM, 1000);
+		await addLiquidity(USDC, 2000);
 
 		const ftmBal = await getFtmBalance();
 		const usdcBal = await usdc.balanceOf(ownerAddress);
@@ -281,8 +323,8 @@ describe("SingularityV2", () => {
 
 	it("Should swapExactTokensForETH", async () => {
 		await wftm.deposit({ value: numToBN(1000) });
-		await wftmPool.deposit(numToBN(1000, WFTM.decimals), ownerAddress);
-		await usdcPool.deposit(numToBN(2000, USDC.decimals), ownerAddress);
+		await addLiquidity(WFTM, 1000);
+		await addLiquidity(USDC, 2000);
 
 		const ftmBal = await getFtmBalance();
 		const usdcBal = await usdc.balanceOf(ownerAddress);

@@ -3,14 +3,18 @@
 pragma solidity ^0.8.11;
 
 import "./interfaces/ISingularityRouter.sol";
-import "./interfaces/ISingularityPool.sol";
 import "./interfaces/ISingularityFactory.sol";
+import "./interfaces/ISingularityPool.sol";
 import "./interfaces/ISingularityERC20.sol";
-import "./interfaces/IERC20.sol";
 import "./interfaces/IOracle.sol";
+import "./interfaces/IERC20.sol";
 import "./interfaces/IWETH.sol";
 import "./utils/SafeERC20.sol";
 
+/**
+ * @title Singularity Router
+ * @author Revenant Labs
+ */
 contract SingularityRouter is ISingularityRouter {
     using SafeERC20 for IERC20;
 
@@ -117,29 +121,33 @@ contract SingularityRouter is ISingularityRouter {
     function addLiquidity(
         address token,
         uint amount,
+        uint minLiquidity,
         address to,
         uint deadline
     ) public override ensure(deadline) returns (uint liquidity) {
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
-        liquidity = _addLiquidity(token, amount, to);
+        liquidity = _addLiquidity(token, amount, minLiquidity, to);
     }
 
     function addLiquidityETH(
+        uint minLiquidity,
         address to,
         uint deadline
     ) external payable override ensure(deadline) returns (uint liquidity) {
         IWETH(WETH).deposit{value: msg.value}();
-        liquidity = _addLiquidity(WETH, msg.value, to);
+        liquidity = _addLiquidity(WETH, msg.value, minLiquidity, to);
     }
 
     function _addLiquidity(
         address token,
         uint amount,
+        uint minLiquidity,
         address to
     ) internal returns (uint liquidity) {
         address pool = poolFor(token);
         IERC20(token).safeIncreaseAllowance(pool, amount);
         liquidity = ISingularityPool(pool).deposit(amount, to);
+        require(liquidity >= minLiquidity, "SingularityRouter: INSUFFICIENT_LIQUIDITY_AMOUNT");
     }
 
     function removeLiquidity(

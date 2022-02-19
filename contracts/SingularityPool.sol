@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.11;
 
-import "./SingularityERC20.sol";
+import "./SingularityPoolToken.sol";
 import "./interfaces/ISingularityPool.sol";
 import "./interfaces/ISingularityFactory.sol";
 import "./interfaces/ISingularityOracle.sol";
@@ -14,7 +14,7 @@ import "./utils/ReentrancyGuard.sol";
  * @title Singularity Pool
  * @author Revenant Labs
  */
-contract SingularityPool is ISingularityPool, SingularityERC20, ReentrancyGuard {
+contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     bool public override paused;
@@ -96,17 +96,20 @@ contract SingularityPool is ISingularityPool, SingularityERC20, ReentrancyGuard 
         }
     }
 
-    function getTokenPrice() public view override returns (uint tokenPrice) {
-        (tokenPrice, ) = ISingularityOracle(ISingularityFactory(factory).oracle()).getPriceUSD(token);
+    function getOracleData() public view override returns (uint tokenPrice, uint updatedAt) {
+        (tokenPrice, updatedAt) = ISingularityOracle(ISingularityFactory(factory).oracle()).getLatestRound(token);
         require(tokenPrice != 0, "SingularityPool: INVALID_ORACLE_PRICE");
+        require(updatedAt != 0, "SingularityPool: INVALID_ORACLE_UPDATE_TIMESTAMP");
     }
 
     function getAmountToValue(uint amount) public override view returns (uint value) {
-        value = amount * 10**(18 - decimals) * getTokenPrice() / MULTIPLIER;
+        (uint tokenPrice, ) = getOracleData();
+        value = amount * 10**(18 - decimals) * tokenPrice / MULTIPLIER;
     }
 
     function getValueToAmount(uint value) public override view returns (uint amount) {
-        amount = value * MULTIPLIER / (getTokenPrice() * 10**(18 - decimals));
+        (uint tokenPrice, ) = getOracleData();
+        amount = value * MULTIPLIER / (tokenPrice * 10**(18 - decimals));
     }
 
     function getDepositFee(uint amount) public view override returns (uint fee) {
@@ -152,11 +155,11 @@ contract SingularityPool is ISingularityPool, SingularityERC20, ReentrancyGuard 
     }
 
     function getTradingFees(uint amount) public view override returns (uint lockedFee, uint adminFee, uint lpFee) {
-        (, uint updatedAt) = ISingularityOracle(ISingularityFactory(factory).oracle()).getPriceUSD(token);
         uint rate;
         if (isStablecoin) {
             rate = baseFee;
         } else {
+            (, uint updatedAt) = getOracleData();
             uint timeDiff = block.timestamp - updatedAt;
             if (timeDiff >= 60) {
                 rate = baseFee * 2;

@@ -2,8 +2,8 @@
 
 pragma solidity ^0.8.11;
 
-import "./SingularityPool.sol";
 import "./interfaces/ISingularityFactory.sol";
+import "./SingularityPool.sol";
 
 /**
  * @title Singularity Factory

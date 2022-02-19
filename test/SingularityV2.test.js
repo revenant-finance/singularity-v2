@@ -118,8 +118,10 @@ describe("SingularityV2", () => {
 		await deployTestTokens();
 
 		// deploy oracle
-		oracle = await Oracle.deploy(ownerAddress, [ownerAddress]);
+		oracle = await Oracle.deploy(ownerAddress);
 		await oracle.deployed();
+		await oracle.setPusher(ownerAddress, true);
+
 		// set oracle prices
 		await updatePrices();
 
@@ -198,7 +200,7 @@ describe("SingularityV2", () => {
 		expect(await DAI.pool.decimals()).to.equal(DAI.decimals);
 		expect(await DAI.pool.getCollateralizationRatio()).to.equal(MAX);
 		expect(await DAI.pool.getPricePerShare()).to.equal(numToBN(1));
-		expect(await DAI.pool.getTokenPrice()).to.equal(numToBN(DAI.price));
+		expect((await DAI.pool.getOracleData())[0]).to.equal(numToBN(DAI.price));
 		expect(await DAI.pool.getAmountToValue(numToBN(1, DAI.decimals))).to.equal(numToBN(DAI.price));
 		expect(await DAI.pool.getValueToAmount(numToBN(DAI.price))).to.equal(numToBN(1, DAI.decimals));
 	});

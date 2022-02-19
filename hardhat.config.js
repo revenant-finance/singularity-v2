@@ -3,25 +3,28 @@ require("dotenv").config();
 require("@nomiclabs/hardhat-etherscan");
 require("@nomiclabs/hardhat-waffle");
 require("hardhat-gas-reporter");
+require("hardhat-contract-sizer");
 require("solidity-coverage");
 
 module.exports = {
+	contractSizer: {
+		alphaSort: true,
+		runOnCompile: true,
+		disambiguatePaths: false,
+	},
 	solidity: {
 		version: "0.8.11",
 		settings: {
 			optimizer: {
 				enabled: true,
-				runs: 200,
+				runs: 1000000,
 			},
 		},
 	},
-	optimizer: {
-		enabled: true,
-		runs: 200,
-	},
 	networks: {
 		hardhat: {
-			initialBaseFeePerGas: 0, // workaround from https://github.com/sc-forks/solidity-coverage/issues/652#issuecomment-896330136 . Remove when that issue is closed.
+			initialBaseFeePerGas: 0,
+			allowUnlimitedContractSize: true,
 		},
 		ropsten: {
 			url: process.env.ROPSTEN_URL || "",
@@ -29,6 +32,10 @@ module.exports = {
 		},
 		ftm: {
 			url: "https://rpc.ftm.tools",
+			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+		},
+		ftmtest: {
+			url: "https://rpc.testnet.fantom.network/",
 			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
 		},
 	},

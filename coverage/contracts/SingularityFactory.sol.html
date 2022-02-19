@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for contracts\SingularityFactory.sol</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../prettify.css" />
+    <link rel="stylesheet" href="../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../index.html">all files</a> / <a href="index.html">contracts/</a> SingularityFactory.sol
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">57.14% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>24/42</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">41.18% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>14/34</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">38.46% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>5/13</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">59.09% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>26/44</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line medium'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">41×</span>
+<span class="cline-any cline-yes">41×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">25×</span>
+<span class="cline-any cline-yes">25×</span>
+<span class="cline-any cline-yes">24×</span>
+<span class="cline-any cline-yes">23×</span>
+<span class="cline-any cline-yes">22×</span>
+<span class="cline-any cline-yes">22×</span>
+<span class="cline-any cline-yes">22×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">22×</span>
+<span class="cline-any cline-yes">22×</span>
+<span class="cline-any cline-yes">22×</span>
+<span class="cline-any cline-yes">22×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">9×</span>
+<span class="cline-any cline-yes">9×</span>
+<span class="cline-any cline-yes">23×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// SPDX-License-Identifier: No License
+&nbsp;
+pragma solidity ^0.8.11;
+&nbsp;
+import "./interfaces/ISingularityFactory.sol";
+import "./SingularityPool.sol";
+&nbsp;
+/**
+ * @title Singularity Factory
+ * @author Revenant Labs
+ */
+ contract SingularityFactory is ISingularityFactory {
+    string public override tranche;
+    address public override admin;
+    address public override oracle;
+    address public override feeTo;
+    address public override router;
+    
+    mapping(address =&gt; address) public override getPool;
+    address[] public override allPools;
+&nbsp;
+    event PoolCreated(address indexed token, address indexed pool, uint index);
+&nbsp;
+    modifier onlyAdmin() {
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(msg.sender == admin, "SingularityFactory: FORBIDDEN");
+        _;
+    }
+&nbsp;
+    constructor(string memory _tranche, address _admin, address _oracle, address _feeTo) {
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(bytes(_tranche).length &gt; 0, "SingularityFactory: TRANCHE_IS_EMPTY");
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(_admin != address(0), "SingularityFactory: ADMIN_IS_0");
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(_oracle != address(0), "SingularityFactory: ORACLE_IS_0");
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(_feeTo != address(0), "SingularityFactory: FEE_TO_IS_0");
+        tranche = _tranche;
+        admin = _admin;
+        oracle = _oracle;
+        feeTo = _feeTo;
+    }
+&nbsp;
+<span class="fstat-no" title="function not covered" >    function allPoolsLength() external override view returns (uint) {</span>
+<span class="cstat-no" title="statement not covered" >        return allPools.length;</span>
+    }
+&nbsp;
+    /* ========== ADMIN FUNCTIONS ========== */
+&nbsp;
+    /// @notice Creates pool for token
+    /// @dev Only one pool can exist per token
+    /// @param token The pool token
+    /// @param isStablecoin If token is a stablecoin (bypasses oracle fee)
+    /// @param baseFee The base fee for the pool
+    /// @return pool The address of the pool created
+    function createPool(
+        address token, 
+        bool isStablecoin, 
+        uint baseFee
+    ) external override onlyAdmin returns (address pool) {
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(router != address(0), "SingularityFactory: ROUTER_IS_0");
+        require(token != address(0), "SingularityFactory: ZERO_ADDRESS");
+        require(getPool[token] == address(0), "SingularityFactory: POOL_EXISTS");
+        require(baseFee &gt; 0, "SingularityFactory: FEE_IS_0");
+        bytes memory bytecode = type(SingularityPool).creationCode;
+        bytes32 salt = keccak256(abi.encodePacked(token));
+        assembly {
+            pool := create2(0, add(bytecode, 32), mload(bytecode), salt)
+        }
+        SingularityPool(pool).initialize(token, isStablecoin, baseFee);
+        getPool[token] = pool;
+        allPools.push(pool);
+        emit PoolCreated(token, pool, allPools.length);
+    }
+&nbsp;
+<span class="fstat-no" title="function not covered" >    function setAdmin(address _admin) external override onlyAdmin {</span>
+<span class="cstat-no" title="statement not covered" >        require(_admin != address(0), "SingularityFactory: ZERO_ADDRESS")</span>;
+<span class="cstat-no" title="statement not covered" >        admin = _admin</span>;
+    }
+&nbsp;
+<span class="fstat-no" title="function not covered" >    function setOracle(address _oracle) external override onlyAdmin {</span>
+<span class="cstat-no" title="statement not covered" >        require(_oracle != address(0), "SingularityFactory: ZERO_ADDRESS")</span>;
+<span class="cstat-no" title="statement not covered" >        oracle = _oracle</span>;
+    }
+&nbsp;
+<span class="fstat-no" title="function not covered" >    function setFeeTo(address _feeTo) external override onlyAdmin {</span>
+<span class="cstat-no" title="statement not covered" >        require(_feeTo != address(0), "SingularityFactory: ZERO_ADDRESS")</span>;
+<span class="cstat-no" title="statement not covered" >        feeTo = _feeTo</span>;
+    }
+&nbsp;
+    function setRouter(address _router) external override onlyAdmin {
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(_router != address(0), "SingularityFactory: ZERO_ADDRESS");
+        router = _router;
+    }
+&nbsp;
+<span class="fstat-no" title="function not covered" >    function collectFees() external override onlyAdmin {</span>
+<span class="cstat-no" title="statement not covered" >        for (uint i; i &lt; allPools.length; i++) {</span>
+<span class="cstat-no" title="statement not covered" >            ISingularityPool(allPools[i]).collectFees()</span>;
+        }
+    }
+&nbsp;
+    function setDepositCaps(address[] calldata pools, uint[] calldata caps) external override onlyAdmin {
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(pools.length == caps.length, "SingularityFactory: NOT_SAME_LENGTH");
+        for (uint i; i &lt; pools.length; i++) {
+            ISingularityPool(pools[i]).setDepositCap(caps[i]);
+        }
+    }
+&nbsp;
+<span class="fstat-no" title="function not covered" >    function setBaseFees(address[] calldata pools, uint[] calldata baseFees) external override onlyAdmin {</span>
+<span class="cstat-no" title="statement not covered" >        require(pools.length == baseFees.length, "SingularityFactory: NOT_SAME_LENGTH")</span>;
+<span class="cstat-no" title="statement not covered" >        for (uint i; i &lt; pools.length; i++) {</span>
+<span class="cstat-no" title="statement not covered" >            require(baseFees[i] &gt; 0, "SingularityFactory: FEE_IS_0")</span>;
+<span class="cstat-no" title="statement not covered" >            ISingularityPool(pools[i]).setBaseFee(baseFees[i])</span>;
+        }
+    }
+&nbsp;
+<span class="fstat-no" title="function not covered" >    function setPaused(address[] calldata pools, bool[] calldata paused) external override onlyAdmin {</span>
+<span class="cstat-no" title="statement not covered" >        require(pools.length == paused.length, "SingularityFactory: NOT_SAME_LENGTH")</span>;
+<span class="cstat-no" title="statement not covered" >        for (uint i; i &lt; pools.length; i++) {</span>
+<span class="cstat-no" title="statement not covered" >            ISingularityPool(pools[i]).setPaused(paused[i])</span>;
+        }
+    }
+&nbsp;
+<span class="fstat-no" title="function not covered" >    function setPausedForAll(bool paused) external override onlyAdmin {</span>
+<span class="cstat-no" title="statement not covered" >        for (uint i; i &lt; allPools.length; i++) {</span>
+<span class="cstat-no" title="statement not covered" >            ISingularityPool(allPools[i]).setPaused(paused)</span>;
+        }
+    }
+}</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Sat Feb 19 2022 17:38:14 GMT-0600 (Central Standard Time)
+</div>
+</div>
+<script src="../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../sorter.js"></script>
+</body>
+</html>

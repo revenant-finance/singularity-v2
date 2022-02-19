@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for contracts\SingularityRouter.sol</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../prettify.css" />
+    <link rel="stylesheet" href="../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../index.html">all files</a> / <a href="index.html">contracts/</a> SingularityRouter.sol
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>60/60</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">59.09% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>13/22</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>15/15</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>63/63</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line high'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182
+183
+184
+185</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">20×</span>
+<span class="cline-any cline-yes">20×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-yes">21×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">46×</span>
+<span class="cline-any cline-yes">46×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">12×</span>
+<span class="cline-any cline-yes">12×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-yes">10×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">12×</span>
+<span class="cline-any cline-yes">12×</span>
+<span class="cline-any cline-yes">12×</span>
+<span class="cline-any cline-yes">11×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// SPDX-License-Identifier: No License
+&nbsp;
+pragma solidity ^0.8.11;
+&nbsp;
+import "./interfaces/ISingularityRouter.sol";
+import "./interfaces/ISingularityFactory.sol";
+import "./interfaces/ISingularityPool.sol";
+import "./interfaces/IERC20.sol";
+import "./interfaces/IWETH.sol";
+import "./utils/SafeERC20.sol";
+&nbsp;
+/**
+ * @title Singularity Router
+ * @author Revenant Labs
+ */
+contract SingularityRouter is ISingularityRouter {
+    using SafeERC20 for IERC20;
+&nbsp;
+    address public immutable override factory;
+    address public immutable override WETH;
+    uint private constant MULTIPLIER = 10**18;
+&nbsp;
+    modifier ensure(uint deadline) {
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(deadline &gt;= block.timestamp, "SingularityRouter: EXPIRED");
+        _;
+    }
+&nbsp;
+    constructor(address _factory, address _WETH) {
+        factory = _factory;
+        WETH = _WETH;
+    }
+&nbsp;
+    receive() external payable {
+        assert(msg.sender == WETH);
+    }
+&nbsp;
+    function poolFor(address token) public view override returns (address pool) {
+        pool = ISingularityFactory(factory).getPool(token);
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(pool != address(0), "SingularityRouter: POOL_DOES_NOT_EXIST");
+    }
+&nbsp;
+    function getAssetsAndLiabilities(address token) public view override returns (uint assets, uint liabilities) {
+        address pool = poolFor(token);
+        (assets, liabilities) = ISingularityPool(pool).getAssetsAndLiabilities();
+    }
+&nbsp;
+    function getAmountOut(uint amountIn, address tokenIn, address tokenOut) public view override returns (uint amountOut) {
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(amountIn != 0, "SingularityRouter: INSUFFICIENT_INPUT_AMOUNT");
+        address poolIn = poolFor(tokenIn);
+        (uint assets, uint liabilities) = getAssetsAndLiabilities(tokenIn);
+        uint slippageIn = ISingularityPool(poolIn).getSlippage(amountIn, assets + amountIn, liabilities);
+        amountIn += slippageIn;
+        (uint lockedFee, uint adminFee, uint lpFee) = ISingularityPool(poolIn).getTradingFees(amountIn);
+        amountIn -= lockedFee + adminFee + lpFee;
+        uint swapInAmountOut = ISingularityPool(poolIn).getAmountToValue(amountIn);
+&nbsp;
+        address poolOut = poolFor(tokenOut);
+        uint swapOutAmountOut = ISingularityPool(poolOut).getValueToAmount(swapInAmountOut);
+        (assets, liabilities) = getAssetsAndLiabilities(tokenOut);
+        uint slippageOut = ISingularityPool(poolOut).getSlippage(swapOutAmountOut, assets - swapOutAmountOut, liabilities);
+        swapOutAmountOut -= slippageOut;
+        (lockedFee, adminFee, lpFee) = ISingularityPool(poolOut).getTradingFees(swapOutAmountOut);
+        amountOut = swapOutAmountOut - lockedFee - adminFee - lpFee;
+    }
+&nbsp;
+    function swapExactTokensForTokens(
+        address tokenIn,
+        address tokenOut, 
+        uint amountIn, 
+        uint minAmountOut, 
+        address to, 
+        uint deadline
+    ) external override ensure(deadline) returns (uint amountOut) {
+        amountOut = getAmountOut(amountIn, tokenIn, tokenOut);
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(amountOut &gt;= minAmountOut, "SingularityRouter: INSUFFICIENT_OUTPUT_AMOUNT");
+        IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
+        _swap(amountIn, tokenIn, tokenOut, to);
+    }
+&nbsp;
+    function swapExactETHForTokens(
+        address tokenIn,
+        address tokenOut, 
+        uint minAmountOut, 
+        address to, 
+        uint deadline
+    ) external payable override ensure(deadline) returns (uint amountOut) {
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(tokenIn == WETH, "SingularityRouter: INVALID_PATH");
+        amountOut = getAmountOut(msg.value, tokenIn, tokenOut);
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(amountOut &gt;= minAmountOut, "SingularityRouter: INSUFFICIENT_OUTPUT_AMOUNT");
+        IWETH(WETH).deposit{value: msg.value}();
+        _swap(msg.value, tokenIn, tokenOut, to);
+    }
+&nbsp;
+    function swapExactTokensForETH(
+        address tokenIn,
+        address tokenOut, 
+        uint amountIn, 
+        uint minAmountOut, 
+        address to, 
+        uint deadline
+    ) external override ensure(deadline) returns (uint amountOut) {
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(tokenOut == WETH, "SingularityRouter: INVALID_PATH");
+        amountOut = getAmountOut(amountIn, tokenIn, tokenOut);
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(amountOut &gt;= minAmountOut, "SingularityRouter: INSUFFICIENT_OUTPUT_AMOUNT");
+        IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
+        _swap(amountIn, tokenIn, tokenOut, address(this));
+        IWETH(WETH).withdraw(amountOut);
+        _safeTransferETH(to, amountOut);
+    }
+&nbsp;
+    function _swap(uint amountIn, address tokenIn, address tokenOut, address to) internal virtual {
+        address poolIn = poolFor(tokenIn);
+        IERC20(tokenIn).safeIncreaseAllowance(poolIn, amountIn);
+        uint amountOut = ISingularityPool(poolIn).swapIn(amountIn);
+        address poolOut = poolFor(tokenOut);
+        ISingularityPool(poolOut).swapOut(amountOut, to);
+    }
+&nbsp;
+    function addLiquidity(
+        address token,
+        uint amount,
+        uint minLiquidity,
+        address to,
+        uint deadline
+    ) public override ensure(deadline) returns (uint liquidity) {
+        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+        liquidity = _addLiquidity(token, amount, minLiquidity, to);
+    }
+&nbsp;
+    function addLiquidityETH(
+        uint minLiquidity,
+        address to,
+        uint deadline
+    ) external payable override ensure(deadline) returns (uint liquidity) {
+        IWETH(WETH).deposit{value: msg.value}();
+        liquidity = _addLiquidity(WETH, msg.value, minLiquidity, to);
+    }
+&nbsp;
+    function _addLiquidity(
+        address token,
+        uint amount,
+        uint minLiquidity,
+        address to
+    ) internal returns (uint liquidity) {
+        address pool = poolFor(token);
+        IERC20(token).safeIncreaseAllowance(pool, amount);
+        liquidity = ISingularityPool(pool).deposit(amount, to);
+        require(liquidity &gt;= minLiquidity, "SingularityRouter: INSUFFICIENT_LIQUIDITY_AMOUNT");
+    }
+&nbsp;
+    function removeLiquidity(
+        address token,
+        uint liquidity,
+        uint amountMin,
+        address to,
+        uint deadline
+    ) public override ensure(deadline) returns (uint amount) {
+        address pool = poolFor(token);
+        IERC20(pool).safeTransferFrom(msg.sender, address(this), liquidity);
+        amount = ISingularityPool(pool).withdraw(liquidity, to);
+        require(amount &gt;= amountMin, "SingularityRouter: INSUFFICIENT_TOKEN_AMOUNT");
+    }
+&nbsp;
+    function removeLiquidityETH(
+        uint liquidity,
+        uint amountMin,
+        address to,
+        uint deadline
+    ) external payable override ensure(deadline) returns (uint amount) {
+        amount = removeLiquidity(WETH, liquidity, amountMin, address(this), deadline);
+        IWETH(WETH).withdraw(amount);
+        _safeTransferETH(to, amount);
+    }
+&nbsp;
+    function _safeTransferETH(address to, uint256 amount) internal {
+        bool callStatus;
+&nbsp;
+        assembly {
+            // Transfer the ETH and store if it succeeded or not.
+            callStatus := call(gas(), to, amount, 0, 0, 0, 0)
+        }
+&nbsp;
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(callStatus, "ETH_TRANSFER_FAILED");
+    }
+}</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Sat Feb 19 2022 17:38:14 GMT-0600 (Central Standard Time)
+</div>
+</div>
+<script src="../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../sorter.js"></script>
+</body>
+</html>

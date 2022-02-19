@@ -81,11 +81,7 @@ describe("SingularityV2", () => {
 	}
 
 	async function createPool(asset) {
-		await factory.createPool(
-			asset.address,
-			false,
-			asset.baseFee
-		);
+		await factory.createPool(asset.address, false, asset.baseFee);
 		asset.poolAddress = await factory.getPool(asset.address);
 		asset.pool = await Pool.attach(asset.poolAddress);
 	}
@@ -112,9 +108,9 @@ describe("SingularityV2", () => {
 		otherAddress = await otherAccount.getAddress();
 		Factory = await ethers.getContractFactory("SingularityFactory");
 		Router = await ethers.getContractFactory("SingularityRouter");
-		ERC20 = await ethers.getContractFactory("ERC20");
-		Oracle = await ethers.getContractFactory("Oracle");
+		Oracle = await ethers.getContractFactory("SingularityOracle");
 		Pool = await ethers.getContractFactory("SingularityPool");
+		ERC20 = await ethers.getContractFactory("ERC20");
 		Wftm = await ethers.getContractFactory("WFTM");
 	});
 
@@ -161,40 +157,29 @@ describe("SingularityV2", () => {
 	});
 
 	it("Should have correct initial state values", async () => {
+		// Factory
 		expect(await factory.tranche()).to.equal(trancheName);
 		expect(await factory.admin()).to.equal(ownerAddress);
 		expect(await factory.oracle()).to.equal(oracle.address);
 		expect(await factory.feeTo()).to.equal(ownerAddress);
 		expect(await factory.router()).to.equal(router.address);
+
+		// Router
+		expect(await router.factory()).to.equal(factory.address);
+		expect(await router.WETH()).to.equal(WFTM.address);
 	});
 
 	it("Should create pool correct pool values", async () => {
-		await expect(
-			factory.createPool(
-				ZERO_ADDR,
-				true,
-				DAI.baseFee
-			)
-		).to.be.revertedWith("SingularityFactory: ZERO_ADDRESS");
-		await expect(
-			factory.createPool(
-				WFTM.address,
-				true,
-				WFTM.baseFee
-			)
-		).to.be.revertedWith("SingularityFactory: POOL_EXISTS");
-		await expect(
-			factory.createPool(
-				DAI.address,
-				true,
-				0
-			)
-		).to.be.revertedWith("SingularityFactory: FEE_IS_0");
-		await factory.createPool(
-			DAI.address,
-			true,
-			DAI.baseFee
+		await expect(factory.createPool(ZERO_ADDR, true, DAI.baseFee)).to.be.revertedWith(
+			"SingularityFactory: ZERO_ADDRESS"
 		);
+		await expect(factory.createPool(WFTM.address, true, WFTM.baseFee)).to.be.revertedWith(
+			"SingularityFactory: POOL_EXISTS"
+		);
+		await expect(factory.createPool(DAI.address, true, 0)).to.be.revertedWith(
+			"SingularityFactory: FEE_IS_0"
+		);
+		await factory.createPool(DAI.address, true, DAI.baseFee);
 		DAI.poolAddress = await factory.getPool(DAI.address);
 		DAI.pool = await Pool.attach(DAI.poolAddress);
 
@@ -211,6 +196,11 @@ describe("SingularityV2", () => {
 		expect(await DAI.pool.name()).to.equal(`Singularity ${DAI.symbol} Pool (${trancheName})`);
 		expect(await DAI.pool.symbol()).to.equal(`SPT-${DAI.symbol} (${trancheName})`);
 		expect(await DAI.pool.decimals()).to.equal(DAI.decimals);
+		expect(await DAI.pool.getCollateralizationRatio()).to.equal(MAX);
+		expect(await DAI.pool.getPricePerShare()).to.equal(numToBN(1));
+		expect(await DAI.pool.getTokenPrice()).to.equal(numToBN(DAI.price));
+		expect(await DAI.pool.getAmountToValue(numToBN(1, DAI.decimals))).to.equal(numToBN(DAI.price));
+		expect(await DAI.pool.getValueToAmount(numToBN(DAI.price))).to.equal(numToBN(1, DAI.decimals));
 	});
 
 	it("Should add liquidity", async () => {
@@ -241,6 +231,12 @@ describe("SingularityV2", () => {
 		expect(await USDC.pool.balanceOf(ownerAddress)).to.equal(numToBN(mintAmount, USDC.decimals));
 		expect(await USDC.pool.liabilities()).to.equal(numToBN(mintAmount, USDC.decimals));
 		expect(await USDC.pool.assets()).to.equal(numToBN(mintAmount, USDC.decimals));
+		expect(await USDC.pool.getCollateralizationRatio()).to.equal(numToBN(1));
+
+		const ftmBal = await getFtmBalance();
+		await router.addLiquidityETH(0, ownerAddress, MAX, { value: numToBN(mintAmount) });
+		const ftmBalDiff = ftmBal.sub(await getFtmBalance());
+		expect(ftmBalDiff).to.be.closeTo(numToBN(mintAmount), numToBN(1, 16));
 	});
 
 	it("Should remove liquidity", async () => {
@@ -269,6 +265,12 @@ describe("SingularityV2", () => {
 		expect(await usdc.balanceOf(USDC.poolAddress)).to.equal(0);
 		expect(await USDC.pool.balanceOf(ownerAddress)).to.equal(0);
 		expect(await USDC.pool.liabilities()).to.equal(0);
+
+		await router.addLiquidityETH(0, ownerAddress, MAX, { value: numToBN(mintAmount) });
+		const ftmBal = await getFtmBalance();
+		await router.removeLiquidityETH(numToBN(mintAmount), 0, ownerAddress, MAX);
+		const ftmBalDiff = (await getFtmBalance()).sub(ftmBal);
+		expect(ftmBalDiff).to.be.closeTo(numToBN(mintAmount), numToBN(1, 16));
 	});
 
 	it("Should swapExactTokensForTokens", async () => {
@@ -296,6 +298,8 @@ describe("SingularityV2", () => {
 		const ethSpent = ethBal.sub(ethBalAfter);
 		expect(usdcBought).to.be.closeTo(expectedOut, numToBN(1, USDC.decimals));
 		expect(ethSpent).to.equal(numToBN(amountToSwap, ETH.decimals));
+		expect(await ETH.pool.getPricePerShare()).to.be.gt(numToBN(1));
+		expect(await USDC.pool.getPricePerShare()).to.be.gt(numToBN(1));
 	});
 
 	it("Should swapExactETHForTokens", async () => {

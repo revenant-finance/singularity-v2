@@ -17,13 +17,13 @@
     "chai": "^4.3.4",
     "ethereum-waffle": "^3.4.0",
     "ethers": "^5.4.6",
-    "hardhat": "^2.6.2"
+    "hardhat": "^2.6.2",
+    "hardhat-gas-reporter": "^1.0.8"
   },
   "dependencies": {
     "@nomiclabs/hardhat-etherscan": "^2.1.6",
     "@openzeppelin/test-helpers": "^0.5.13",
     "dotenv": "^10.0.0",
-    "hardhat-gas-reporter": "^1.0.4",
     "solidity-coverage": "^0.7.17"
   }
 }

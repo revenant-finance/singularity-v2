@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: bsl-1.1
+// SPDX-License-Identifier: No License
 
 pragma solidity ^0.8.11;
 
@@ -11,16 +11,15 @@ import "./interfaces/ISingularityFactory.sol";
  */
  contract SingularityFactory is ISingularityFactory {
     string public override tranche;
-
     address public override admin;
     address public override oracle;
     address public override feeTo;
     address public override router;
-
-    address[] public override allPools;
+    
     mapping(address => address) public override getPool;
+    address[] public override allPools;
 
-    event PoolCreated(address indexed token, address indexed pool, uint indexed index);
+    event PoolCreated(address indexed token, address indexed pool, uint index);
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "SingularityFactory: FORBIDDEN");

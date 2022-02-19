@@ -1,15 +1,16 @@
+// SPDX-License-Identifier: No License
+
 pragma solidity ^0.8.11;
 
 interface ISingularityFactory {
     function tranche() external view returns (string memory);
-
     function admin() external view returns (address);
     function oracle() external view returns (address);
     function feeTo() external view returns (address);
     function router() external view returns (address);
-
-    function allPools(uint) external view returns (address pool);
+    
     function getPool(address token) external view returns (address pool);
+    function allPools(uint) external view returns (address pool);
     function allPoolsLength() external view returns (uint);
 
     function createPool(address token, bool isStablecoin, uint baseFee) external returns (address pool);

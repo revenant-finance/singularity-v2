@@ -1,26 +1,27 @@
-// SPDX-License-Identifier: bsl-1.1
+// SPDX-License-Identifier: No License
 
 pragma solidity ^0.8.11;
 
 import "./SingularityERC20.sol";
 import "./interfaces/ISingularityPool.sol";
 import "./interfaces/ISingularityFactory.sol";
-import "./interfaces/IOracle.sol";
+import "./interfaces/ISingularityOracle.sol";
 import "./interfaces/IERC20.sol";
 import "./utils/SafeERC20.sol";
+import "./utils/ReentrancyGuard.sol";
 
 /**
  * @title Singularity Pool
  * @author Revenant Labs
  */
-contract SingularityPool is ISingularityPool, SingularityERC20 {
+contract SingularityPool is ISingularityPool, SingularityERC20, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     bool public override paused;
+    bool public override isStablecoin;
 
     address public immutable override factory;
     address public override token;
-    bool public override isStablecoin;
 
     uint public override depositCap;
     uint public override assets;
@@ -32,13 +33,6 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
     
     uint private constant MULTIPLIER = 10**18;
     uint private locked = 1;
-
-    modifier lock() {
-        require(locked == 1, "SingularityPool: REENTRANCY");
-        locked = 2;
-        _;
-        locked = 1;
-    }
 
     modifier notPaused() {
         require(paused == false, "SingularityPool: PAUSED");
@@ -59,6 +53,7 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         factory = msg.sender;
     }
 
+    /// @notice Only initializable once by factory
     function initialize(address _token, bool _isStablecoin, uint _baseFee) external override onlyFactory {
         token = _token;
         isStablecoin = _isStablecoin;
@@ -80,6 +75,19 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         baseFee = _baseFee;
     }
 
+    function getAssetsAndLiabilities() external view override returns (uint _assets, uint _liabilities) {
+        _assets = assets;
+        _liabilities = liabilities;
+    }
+
+    function getCollateralizationRatio() external view override returns (uint collateralizationRatio) {
+        if (liabilities == 0) {
+            collateralizationRatio = type(uint).max;
+        } else {
+            collateralizationRatio = MULTIPLIER * assets / liabilities;
+        }
+    }
+
     function getPricePerShare() public view override returns (uint pricePerShare) {
         if (totalSupply == 0) {
             pricePerShare = MULTIPLIER;
@@ -88,26 +96,21 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         }
     }
 
-    function getAssetsAndLiabilities() external view override returns (uint _assets, uint _liabilities) {
-        _assets = assets;
-        _liabilities = liabilities;
-    }
-
     function getTokenPrice() public view override returns (uint tokenPrice) {
-        (tokenPrice, ) = IOracle(ISingularityFactory(factory).oracle()).getPriceUSD(token);
+        (tokenPrice, ) = ISingularityOracle(ISingularityFactory(factory).oracle()).getPriceUSD(token);
         require(tokenPrice != 0, "SingularityPool: INVALID_ORACLE_PRICE");
     }
 
-    function amountToValue(uint amount) public override view returns (uint value) {
+    function getAmountToValue(uint amount) public override view returns (uint value) {
         value = amount * 10**(18 - decimals) * getTokenPrice() / MULTIPLIER;
     }
 
-    function valueToAmount(uint value) public override view returns (uint amount) {
+    function getValueToAmount(uint value) public override view returns (uint amount) {
         amount = value * MULTIPLIER / (getTokenPrice() * 10**(18 - decimals));
     }
 
     function getDepositFee(uint amount) public view override returns (uint fee) {
-        uint collateralizationRatio = _getCollatalizationRatio(assets + amount, liabilities + amount);
+        uint collateralizationRatio = _calcCollatalizationRatio(assets + amount, liabilities + amount);
         uint depositFeeRate;
         if (collateralizationRatio <= 1 ether) {
             depositFeeRate = 0;
@@ -120,7 +123,7 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
     }
 
     function getWithdrawFee(uint amount) public view override returns (uint fee) {
-        uint collateralizationRatio = _getCollatalizationRatio(assets - amount, liabilities - amount);
+        uint collateralizationRatio = _calcCollatalizationRatio(assets - amount, liabilities - amount);
         uint withdrawFeeRate;
         if (collateralizationRatio >= 1 ether) {
             withdrawFeeRate = 0;
@@ -136,7 +139,7 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
     }
 
     function getSlippage(uint amount, uint newAssets, uint newLiabilities) public override pure returns (uint slippage) {
-        uint collateralizationRatio = _getCollatalizationRatio(newAssets, newLiabilities);
+        uint collateralizationRatio = _calcCollatalizationRatio(newAssets, newLiabilities);
         uint slippageRate;
         if (collateralizationRatio >= 1 ether) {
             slippageRate = 0;
@@ -149,12 +152,12 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
     }
 
     function getTradingFees(uint amount) public view override returns (uint lockedFee, uint adminFee, uint lpFee) {
-        (, uint updateTime) = IOracle(ISingularityFactory(factory).oracle()).getPriceUSD(token);
+        (, uint updatedAt) = ISingularityOracle(ISingularityFactory(factory).oracle()).getPriceUSD(token);
         uint rate;
         if (isStablecoin) {
             rate = baseFee;
         } else {
-            uint timeDiff = block.timestamp - updateTime;
+            uint timeDiff = block.timestamp - updatedAt;
             if (timeDiff >= 60) {
                 rate = baseFee * 2;
             } else {
@@ -166,7 +169,7 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         lpFee = rate * amount / (3 * MULTIPLIER);
     }
 
-    function deposit(uint amount, address to) external override onlyRouter notPaused lock returns (uint amountMinted) {
+    function deposit(uint amount, address to) external override onlyRouter notPaused nonReentrant returns (uint amountMinted) {
         require(amount != 0, "SingularityPool: AMOUNT_IS_0");
         require(amount + liabilities <= depositCap, "SingularityPool: DEPOSIT_EXCEEDS_CAP");
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
@@ -184,7 +187,7 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         emit Deposit(msg.sender, amount, amountMinted, to);
     }
 
-    function withdraw(uint amount, address to) external override onlyRouter notPaused lock returns (uint amountWithdrawn) {
+    function withdraw(uint amount, address to) external override onlyRouter notPaused nonReentrant returns (uint amountWithdrawn) {
         require(amount != 0, "SingularityPool: AMOUNT_IS_0");
         _burn(msg.sender, amount);
         uint liquidityValue = amount * getPricePerShare() / MULTIPLIER;
@@ -197,7 +200,7 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         emit Withdraw(msg.sender, amount, amountWithdrawn, to);
     }
 
-    function swapIn(uint amountIn) external override onlyRouter notPaused lock returns (uint amountOut) {
+    function swapIn(uint amountIn) external override onlyRouter notPaused nonReentrant returns (uint amountOut) {
         require(amountIn != 0, "SingularityPool: AMOUNT_IS_0");
         IERC20(token).safeTransferFrom(msg.sender, address(this), amountIn);
 
@@ -213,13 +216,13 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         liabilities += lpFee;
         amountIn -= lockedFee + adminFee + lpFee;
         assets += amountIn;
-        amountOut = amountToValue(amountIn);
+        amountOut = getAmountToValue(amountIn);
         emit SwapIn(msg.sender, amountIn, amountOut);
     }
 
-    function swapOut(uint amountIn, address to) external override onlyRouter notPaused lock returns (uint amountOut) {
+    function swapOut(uint amountIn, address to) external override onlyRouter notPaused nonReentrant returns (uint amountOut) {
         require(amountIn != 0, "SingularityPool: AMOUNT_IS_0");
-        amountOut = valueToAmount(amountIn);
+        amountOut = getValueToAmount(amountIn);
 
         // Apply slippage (negative)
         uint slippage = getSlippage(amountOut, assets - amountOut, liabilities);
@@ -237,7 +240,7 @@ contract SingularityPool is ISingularityPool, SingularityERC20 {
         emit SwapOut(msg.sender, amountIn, amountOut, to);
     }
 
-    function _getCollatalizationRatio(uint _assets, uint _liabilities) internal pure returns (uint newCollateralizationRatio) {
+    function _calcCollatalizationRatio(uint _assets, uint _liabilities) internal pure returns (uint newCollateralizationRatio) {
         if (_liabilities == 0) {
             newCollateralizationRatio = type(uint).max;
         } else {

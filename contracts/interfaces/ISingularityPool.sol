@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: No License
+
 pragma solidity ^0.8.11;
 
 interface ISingularityPool {
@@ -28,10 +30,11 @@ interface ISingularityPool {
     function baseFee() external view returns (uint);
 
     function getAssetsAndLiabilities() external view returns (uint, uint);
-    function getTokenPrice() external view returns (uint);
-    function amountToValue(uint amount) external view returns (uint);
-    function valueToAmount(uint value) external view returns (uint);
+    function getCollateralizationRatio() external view returns (uint);
     function getPricePerShare() external view returns (uint);
+    function getTokenPrice() external view returns (uint);
+    function getAmountToValue(uint amount) external view returns (uint);
+    function getValueToAmount(uint value) external view returns (uint);
     
     function getDepositFee(uint amount) external view returns (uint);
     function getWithdrawFee(uint amount) external view returns (uint);

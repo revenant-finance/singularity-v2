@@ -1,19 +1,20 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: No License
 
 pragma solidity ^0.8.11;
 
-import './interfaces/IOracle.sol';
+import './interfaces/ISingularityOracle.sol';
 
 /**
  * @title Singularity Oracle
  * @author Revenant Labs
  */
-contract Oracle is IOracle {
+contract SingularityOracle is ISingularityOracle {
 	struct PriceData {
 		uint256 price;
-		uint256 updateTime;
+		uint256 updatedAt;
 		uint256 nonce;
 	}
+
 	address admin;
 	mapping(address => bool) public pushers;
 	mapping(address => PriceData[]) public allPrices;
@@ -26,12 +27,12 @@ contract Oracle is IOracle {
 		}
 	}
 
-	function getPriceUSD(address _token) external view override returns (uint256 price, uint256 updateTime) {
+	function getPriceUSD(address _token) external view override returns (uint256 price, uint256 updatedAt) {
 		PriceData[] memory prices = allPrices[_token];
 		price = prices[prices.length - 1].price;
-		updateTime = prices[prices.length - 1].updateTime;
+		updatedAt = prices[prices.length - 1].updatedAt;
 		require(price > 0, "SingularityOracle: INVALID_PRICE");
-		require(updateTime > 0, "SingularityOracle: INVALID_ORACLE");
+		require(updatedAt > 0, "SingularityOracle: INVALID_ORACLE");
 	}
 
 	function pushPrices(address[] calldata tokens, uint256[] calldata prices) external {
@@ -44,7 +45,7 @@ contract Oracle is IOracle {
 	function pushPrice(address _token, uint256 _price) public {
 		require(pushers[msg.sender], "SingularityOracle: NOT_PUSHER");
 		PriceData[] storage prices = allPrices[_token];
-		prices.push(PriceData({ price: _price, updateTime: block.timestamp, nonce: prices.length }));
+		prices.push(PriceData({ price: _price, updatedAt: block.timestamp, nonce: prices.length }));
 	}
 
 	function setAdmin(address _admin) external {

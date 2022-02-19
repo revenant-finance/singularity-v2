@@ -1,12 +1,10 @@
-// SPDX-License-Identifier: bsl-1.1
+// SPDX-License-Identifier: No License
 
 pragma solidity ^0.8.11;
 
 import "./interfaces/ISingularityRouter.sol";
 import "./interfaces/ISingularityFactory.sol";
 import "./interfaces/ISingularityPool.sol";
-import "./interfaces/ISingularityERC20.sol";
-import "./interfaces/IOracle.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IWETH.sol";
 import "./utils/SafeERC20.sol";
@@ -54,10 +52,10 @@ contract SingularityRouter is ISingularityRouter {
         amountIn += slippageIn;
         (uint lockedFee, uint adminFee, uint lpFee) = ISingularityPool(poolIn).getTradingFees(amountIn);
         amountIn -= lockedFee + adminFee + lpFee;
-        uint swapInAmountOut = ISingularityPool(poolIn).amountToValue(amountIn);
+        uint swapInAmountOut = ISingularityPool(poolIn).getAmountToValue(amountIn);
 
         address poolOut = poolFor(tokenOut);
-        uint swapOutAmountOut = ISingularityPool(poolOut).valueToAmount(swapInAmountOut);
+        uint swapOutAmountOut = ISingularityPool(poolOut).getValueToAmount(swapInAmountOut);
         (assets, liabilities) = getAssetsAndLiabilities(tokenOut);
         uint slippageOut = ISingularityPool(poolOut).getSlippage(swapOutAmountOut, assets - swapOutAmountOut, liabilities);
         swapOutAmountOut -= slippageOut;
@@ -174,8 +172,14 @@ contract SingularityRouter is ISingularityRouter {
         _safeTransferETH(to, amount);
     }
 
-    function _safeTransferETH(address to, uint value) internal {
-        (bool success,) = to.call{value:value}(new bytes(0));
-        require(success, "SingularityRouter: ETH_TRANSFER_FAILED");
+    function _safeTransferETH(address to, uint256 amount) internal {
+        bool callStatus;
+
+        assembly {
+            // Transfer the ETH and store if it succeeded or not.
+            callStatus := call(gas(), to, amount, 0, 0, 0, 0)
+        }
+
+        require(callStatus, "ETH_TRANSFER_FAILED");
     }
 }

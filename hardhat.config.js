@@ -11,13 +11,13 @@ module.exports = {
 		settings: {
 			optimizer: {
 				enabled: true,
-				runs: 20000,
+				runs: 200,
 			},
 		},
 	},
 	optimizer: {
 		enabled: true,
-		runs: 20000,
+		runs: 200,
 	},
 	networks: {
 		hardhat: {
@@ -38,6 +38,7 @@ module.exports = {
 		token: "FTM",
 		coinmarketcap: "cba8a113-8f85-4dd7-838d-f50a59231e28",
 		excludeContracts: ["testing/"],
+		gasPriceApi: "https://api.ftmscan.com/api?module=proxy&action=eth_gasPrice",
 	},
 	etherscan: {
 		apiKey: process.env.ETHERSCAN_API_KEY,

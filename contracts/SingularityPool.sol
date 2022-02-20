@@ -52,26 +52,25 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         factory = msg.sender;
     }
 
-    /// @notice Only initializable once by factory
+    // Only called once by factory in factory.createPool(...)
     function initialize(address _token, bool _isStablecoin, uint _baseFee) external override onlyFactory {
         token = _token;
         isStablecoin = _isStablecoin;
-        name = string(abi.encodePacked(
-            "Singularity ", 
-            IERC20(_token).symbol(), 
-            " Pool (", 
-            ISingularityFactory(factory).tranche(), 
-            ")"
-        ));
-        symbol = string(abi.encodePacked(
-            "SPT-", 
-            IERC20(_token).symbol(), 
-            " (", 
-            ISingularityFactory(factory).tranche(), 
-            ")"
-        ));
-        decimals = IERC20(_token).decimals();
         baseFee = _baseFee;
+        
+        string memory tranche = ISingularityFactory(factory).tranche();
+        string memory tokenSymbol = IERC20(_token).symbol();
+        name = string(
+            abi.encodePacked(
+                "Singularity ", tokenSymbol, " Pool (", tranche, ")"
+            )
+        );
+        symbol = string(
+            abi.encodePacked(
+                "SPT-", tokenSymbol, " (", tranche, ")"
+            )
+        );
+        decimals = IERC20(_token).decimals();
     }
 
     function getAssetsAndLiabilities() external view override returns (uint _assets, uint _liabilities) {

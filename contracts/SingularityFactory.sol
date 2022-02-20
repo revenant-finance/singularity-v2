@@ -37,7 +37,12 @@ import "./SingularityPool.sol";
         feeTo = _feeTo;
     }
 
-    function allPoolsLength() external override view returns (uint) {
+    function INIT_CODE_HASH() external pure returns (bytes32 initCodeHash) {
+        bytes memory bytecode = type(SingularityPool).creationCode;
+        initCodeHash = keccak256(abi.encodePacked(bytecode));
+    }
+
+    function allPoolsLength() external view override returns (uint) {
         return allPools.length;
     }
 
@@ -46,7 +51,7 @@ import "./SingularityPool.sol";
     /// @notice Creates pool for token
     /// @dev Only one pool can exist per token
     /// @param token The pool token
-    /// @param isStablecoin If token is a stablecoin (bypasses oracle fee)
+    /// @param isStablecoin If token is a stablecoin (bypasses oracle penalty)
     /// @param baseFee The base fee for the pool
     /// @return pool The address of the pool created
     function createPool(

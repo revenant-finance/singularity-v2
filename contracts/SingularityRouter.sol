@@ -33,19 +33,24 @@ contract SingularityRouter is ISingularityRouter {
         assert(msg.sender == WETH);
     }
 
-    function poolFor(address token) public view override returns (address pool) {
-        pool = ISingularityFactory(factory).getPool(token);
+    function poolFor(address _factory, address token) public pure override returns (address pool) {
+        pool = address(uint160(uint(keccak256(abi.encodePacked(
+                hex'ff',
+                _factory,
+                keccak256(abi.encodePacked(token)),
+                hex'37bdd4daf3b1c9171897010e59c1202813849599cc0d8d5fc54a7c7c2f3abdac' // init code hash
+            )))));
         require(pool != address(0), "SingularityRouter: POOL_DOES_NOT_EXIST");
     }
 
     function getAssetsAndLiabilities(address token) public view override returns (uint assets, uint liabilities) {
-        address pool = poolFor(token);
+        address pool = poolFor(factory, token);
         (assets, liabilities) = ISingularityPool(pool).getAssetsAndLiabilities();
     }
 
     function getAmountOut(uint amountIn, address tokenIn, address tokenOut) public view override returns (uint amountOut) {
         require(amountIn != 0, "SingularityRouter: INSUFFICIENT_INPUT_AMOUNT");
-        address poolIn = poolFor(tokenIn);
+        address poolIn = poolFor(factory, tokenIn);
         (uint assets, uint liabilities) = getAssetsAndLiabilities(tokenIn);
         uint slippageIn = ISingularityPool(poolIn).getSlippage(amountIn, assets + amountIn, liabilities);
         amountIn += slippageIn;
@@ -53,7 +58,7 @@ contract SingularityRouter is ISingularityRouter {
         amountIn -= lockedFee + adminFee + lpFee;
         uint swapInAmountOut = ISingularityPool(poolIn).getAmountToUSD(amountIn);
 
-        address poolOut = poolFor(tokenOut);
+        address poolOut = poolFor(factory, tokenOut);
         uint swapOutAmountOut = ISingularityPool(poolOut).getUSDToAmount(swapInAmountOut);
         (assets, liabilities) = getAssetsAndLiabilities(tokenOut);
         uint slippageOut = ISingularityPool(poolOut).getSlippage(swapOutAmountOut, assets - swapOutAmountOut, liabilities);
@@ -108,10 +113,10 @@ contract SingularityRouter is ISingularityRouter {
     }
 
     function _swap(uint amountIn, address tokenIn, address tokenOut, address to) internal virtual {
-        address poolIn = poolFor(tokenIn);
+        address poolIn = poolFor(factory, tokenIn);
         IERC20(tokenIn).safeIncreaseAllowance(poolIn, amountIn);
         uint amountOut = ISingularityPool(poolIn).swapIn(amountIn);
-        address poolOut = poolFor(tokenOut);
+        address poolOut = poolFor(factory, tokenOut);
         ISingularityPool(poolOut).swapOut(amountOut, to);
     }
 
@@ -141,7 +146,7 @@ contract SingularityRouter is ISingularityRouter {
         uint minLiquidity,
         address to
     ) internal returns (uint liquidity) {
-        address pool = poolFor(token);
+        address pool = poolFor(factory, token);
         IERC20(token).safeIncreaseAllowance(pool, amount);
         liquidity = ISingularityPool(pool).deposit(amount, to);
         require(liquidity >= minLiquidity, "SingularityRouter: INSUFFICIENT_LIQUIDITY_AMOUNT");
@@ -154,7 +159,7 @@ contract SingularityRouter is ISingularityRouter {
         address to,
         uint deadline
     ) public override ensure(deadline) returns (uint amount) {
-        address pool = poolFor(token);
+        address pool = poolFor(factory, token);
         IERC20(pool).safeTransferFrom(msg.sender, address(this), liquidity);
         amount = ISingularityPool(pool).withdraw(liquidity, to);
         require(amount >= amountMin, "SingularityRouter: INSUFFICIENT_TOKEN_AMOUNT");
@@ -179,7 +184,7 @@ contract SingularityRouter is ISingularityRouter {
         uint deadline,
         bool approveMax, uint8 v, bytes32 r, bytes32 s
     ) external override returns (uint amount) {
-        address pool = poolFor(token);
+        address pool = poolFor(factory, token);
         uint value = approveMax ? type(uint).max : liquidity;
         ISingularityPool(pool).permit(msg.sender, address(this), value, deadline, v, r, s);
         amount = removeLiquidity(token, liquidity, amountMin, to, deadline);
@@ -192,7 +197,7 @@ contract SingularityRouter is ISingularityRouter {
         uint deadline,
         bool approveMax, uint8 v, bytes32 r, bytes32 s
     ) external override returns (uint amount) {
-        address pool = poolFor(WETH);
+        address pool = poolFor(factory, WETH);
         uint value = approveMax ? type(uint).max : liquidity;
         ISingularityPool(pool).permit(msg.sender, address(this), value, deadline, v, r, s);
         amount = removeLiquidityETH(liquidity, amountMin, to, deadline);

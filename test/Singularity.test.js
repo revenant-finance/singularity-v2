@@ -160,6 +160,7 @@ describe("Singularity Swap", () => {
 
 	it("Should have correct initial state values", async () => {
 		// Factory
+		console.log(`Init Code Hash: ${(await factory.INIT_CODE_HASH())}`)
 		expect(await factory.tranche()).to.equal(trancheName);
 		expect(await factory.admin()).to.equal(ownerAddress);
 		expect(await factory.oracle()).to.equal(oracle.address);
@@ -203,6 +204,7 @@ describe("Singularity Swap", () => {
 		expect((await DAI.pool.getOracleData())[0]).to.equal(numToBN(DAI.price));
 		expect(await DAI.pool.getAmountToUSD(numToBN(1, DAI.decimals))).to.equal(numToBN(DAI.price));
 		expect(await DAI.pool.getUSDToAmount(numToBN(DAI.price))).to.equal(numToBN(1, DAI.decimals));
+		expect(await router.poolFor(factory.address, DAI.address)).to.equal(DAI.poolAddress);
 	});
 
 	it("Should add liquidity", async () => {

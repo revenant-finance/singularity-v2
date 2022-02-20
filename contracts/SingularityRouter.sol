@@ -166,13 +166,40 @@ contract SingularityRouter is ISingularityRouter {
         uint amountMin,
         address to,
         uint deadline
-    ) external payable override ensure(deadline) returns (uint amount) {
+    ) public payable override ensure(deadline) returns (uint amount) {
         amount = removeLiquidity(WETH, liquidity, amountMin, address(this), deadline);
         IWETH(WETH).withdraw(amount);
         _safeTransferETH(to, amount);
     }
 
-    function _safeTransferETH(address to, uint256 amount) internal {
+    function removeLiquidityWithPermit(
+        address token,
+        uint liquidity,
+        uint amountMin,
+        address to,
+        uint deadline,
+        bool approveMax, uint8 v, bytes32 r, bytes32 s
+    ) external override returns (uint amount) {
+        address pool = poolFor(token);
+        uint value = approveMax ? type(uint).max : liquidity;
+        ISingularityPool(pool).permit(msg.sender, address(this), value, deadline, v, r, s);
+        amount = removeLiquidity(token, liquidity, amountMin, to, deadline);
+    }
+
+    function removeLiquidityETHWithPermit(
+        uint liquidity,
+        uint amountMin,
+        address to,
+        uint deadline,
+        bool approveMax, uint8 v, bytes32 r, bytes32 s
+    ) external override returns (uint amount) {
+        address pool = poolFor(WETH);
+        uint value = approveMax ? type(uint).max : liquidity;
+        ISingularityPool(pool).permit(msg.sender, address(this), value, deadline, v, r, s);
+        amount = removeLiquidityETH(liquidity, amountMin, to, deadline);
+    }
+
+    function _safeTransferETH(address to, uint amount) internal {
         bool callStatus;
 
         assembly {

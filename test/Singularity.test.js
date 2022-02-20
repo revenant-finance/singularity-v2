@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-describe("SingularityV2", () => {
+describe("Singularity Swap", () => {
 	let ownerAccount, ownerAddress, otherAccount, otherAddress;
 	let Factory, Router, Oracle, ERC20, Pool, Wftm;
 	let factory, router, oracle, wftm, eth, usdc, dai;

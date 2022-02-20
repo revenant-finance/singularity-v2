@@ -2,7 +2,9 @@
 
 pragma solidity ^0.8.11;
 
-interface ISingularityPool {
+import "./ISingularityPoolToken.sol";
+
+interface ISingularityPool is ISingularityPoolToken {
     event Deposit(address indexed sender, uint indexed amountDeposited, uint amountMinted, address indexed to);
     event Withdraw(address indexed sender, uint indexed amountBurned, uint amountWithdrawn, address indexed to);
     event SwapIn(
@@ -43,8 +45,8 @@ interface ISingularityPool {
 
     function deposit(uint amount, address to) external returns (uint);
     function withdraw(uint amount, address to) external returns (uint);
-    function swapIn(uint256 amountIn) external returns (uint);
-    function swapOut(uint256 amountIn, address to) external returns (uint);
+    function swapIn(uint amountIn) external returns (uint);
+    function swapOut(uint amountIn, address to) external returns (uint);
 
     function collectFees() external;
     function setDepositCap(uint newDepositCap) external;

@@ -42,7 +42,7 @@ interface ISingularityRouter {
         uint minLiquidity,
         address to,
         uint deadline
-    ) external returns (uint);
+    ) external returns (uint liquidity);
 
     function addLiquidityETH(
         uint minLiquidity,
@@ -64,4 +64,21 @@ interface ISingularityRouter {
         address to,
         uint deadline
     ) external payable returns (uint amount);
+
+    function removeLiquidityWithPermit(
+        address token,
+        uint liquidity,
+        uint minLiquidity,
+        address to,
+        uint deadline,
+        bool approveMax, uint8 v, bytes32 r, bytes32 s
+    ) external returns (uint amount);
+
+    function removeLiquidityETHWithPermit(
+        uint liquidity,
+        uint amountMin,
+        address to,
+        uint deadline,
+        bool approveMax, uint8 v, bytes32 r, bytes32 s
+    ) external returns (uint amount);
 }

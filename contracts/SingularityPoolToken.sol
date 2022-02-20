@@ -2,37 +2,35 @@
 
 pragma solidity ^0.8.11;
 
+import "./interfaces/ISingularityPoolToken.sol";
+
 /**
  * @title Singularity Pool Token
  * @author Revenant Labs
- * @author Modified from Solmate (https://github.com/Rari-Capital/solmate/blob/main/src/tokens/ERC20.sol)
  */
-abstract contract SingularityPoolToken {
-    event Transfer(address indexed from, address indexed to, uint256 amount);
-    event Approval(address indexed owner, address indexed spender, uint256 amount);
-
-    // name, symbol, decimals initialized in SingularityPool.initialize(...)
+contract SingularityPoolToken is ISingularityPoolToken {
+    // name, symbol, decimals are initialized in SingularityPool.initialize(...)
     // and are unchangeable after initialization
-    string public name;
-    string public symbol;
-    uint8 public decimals;
+    string public override name;
+    string public override symbol;
+    uint8 public override decimals;
 
-    uint  public totalSupply;
+    uint public override totalSupply;
 
-    mapping(address => uint) public balanceOf;
-    mapping(address => mapping(address => uint)) public allowance;
+    mapping(address => uint) public override balanceOf;
+    mapping(address => mapping(address => uint)) public override allowance;
 
-    uint256 internal immutable INITIAL_CHAIN_ID;
+    uint internal immutable INITIAL_CHAIN_ID;
     bytes32 internal immutable INITIAL_DOMAIN_SEPARATOR;
 
-    mapping(address => uint) public nonces;
+    mapping(address => uint) public override nonces;
 
     constructor() {
         INITIAL_CHAIN_ID = block.chainid;
         INITIAL_DOMAIN_SEPARATOR = computeDomainSeparator();
     }
 
-    function approve(address spender, uint value) public virtual returns (bool) {
+    function approve(address spender, uint value) external override returns (bool) {
         allowance[msg.sender][spender] = value;
 
         emit Approval(msg.sender, spender, value);
@@ -40,7 +38,7 @@ abstract contract SingularityPoolToken {
         return true;
     }
 
-    function transfer(address to, uint value) public virtual returns (bool) {
+    function transfer(address to, uint value) external override returns (bool) {
         balanceOf[msg.sender] -= value;
 
         // Cannot overflow because the sum of all user
@@ -54,7 +52,7 @@ abstract contract SingularityPoolToken {
         return true;
     }
 
-    function transferFrom(address from, address to, uint value) public virtual returns (bool) {
+    function transferFrom(address from, address to, uint value) external override returns (bool) {
         uint allowed = allowance[from][msg.sender]; // Saves gas for limited approvals.
 
         if (allowed != type(uint).max) allowance[from][msg.sender] = allowed - value;
@@ -72,7 +70,7 @@ abstract contract SingularityPoolToken {
         return true;
     }
 
-    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) public virtual {
+    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) public override {
         require(deadline >= block.timestamp, "SingularityPoolToken: EXPIRED");
 
         // Unchecked because the only math done is incrementing
@@ -107,11 +105,11 @@ abstract contract SingularityPoolToken {
         emit Approval(owner, spender, value);
     }
 
-    function DOMAIN_SEPARATOR() public view virtual returns (bytes32) {
+    function DOMAIN_SEPARATOR() public view override returns (bytes32) {
         return block.chainid == INITIAL_CHAIN_ID ? INITIAL_DOMAIN_SEPARATOR : computeDomainSeparator();
     }
 
-    function computeDomainSeparator() internal view virtual returns (bytes32) {
+    function computeDomainSeparator() internal view returns (bytes32) {
         return
             keccak256(
                 abi.encode(

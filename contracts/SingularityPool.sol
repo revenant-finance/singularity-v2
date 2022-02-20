@@ -8,6 +8,7 @@ import "./interfaces/ISingularityFactory.sol";
 import "./interfaces/ISingularityOracle.sol";
 import "./interfaces/IERC20.sol";
 import "./utils/SafeERC20.sol";
+import "./utils/FixedPointMathLib.sol";
 import "./utils/ReentrancyGuard.sol";
 
 /**
@@ -16,6 +17,7 @@ import "./utils/ReentrancyGuard.sol";
  */
 contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGuard {
     using SafeERC20 for IERC20;
+    using FixedPointMathLib for uint;
 
     bool public override paused;
     bool public override isStablecoin;
@@ -84,15 +86,15 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         if (liabilities == 0) {
             collateralizationRatio = type(uint).max;
         } else {
-            collateralizationRatio = MULTIPLIER * assets / liabilities;
+            collateralizationRatio = assets.divWadDown(liabilities);
         }
     }
 
     function getPricePerShare() public view override returns (uint pricePerShare) {
         if (totalSupply == 0) {
-            pricePerShare = MULTIPLIER;
+            pricePerShare = 1e18;
         } else {
-            pricePerShare = MULTIPLIER * liabilities / totalSupply;
+            pricePerShare = liabilities.divWadDown(totalSupply);
         }
     }
 
@@ -102,14 +104,32 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         require(updatedAt != 0, "SingularityPool: INVALID_ORACLE_UPDATE_TIMESTAMP");
     }
 
-    function getAmountToValue(uint amount) public override view returns (uint value) {
+    /// @notice Calculates the equivalent USD value of given the number of tokens
+    /// @dev USD value is in 1e18
+    /// @param amount The amount of tokens to calculate the value of
+    /// @return value The USD value equivalent to the number of tokens
+    function getAmountToUSD(uint amount) public override view returns (uint value) {
         (uint tokenPrice, ) = getOracleData();
-        value = amount * 10**(18 - decimals) * tokenPrice / MULTIPLIER;
+        value = amount.mulWadDown(tokenPrice);
+        if (decimals <= 18) {
+            value *= 10**(18 - decimals);
+        } else {
+            value /= 10**(decimals - 18);
+        }
     }
 
-    function getValueToAmount(uint value) public override view returns (uint amount) {
+    /// @notice Calculates the equivalent number of tokens given the USD value
+    /// @dev USD value is in 1e18
+    /// @param value The USD value of tokens to calculate the amount of
+    /// @return amount The number of tokens equivalent to the USD value
+    function getUSDToAmount(uint value) public override view returns (uint amount) {
         (uint tokenPrice, ) = getOracleData();
-        amount = value * MULTIPLIER / (tokenPrice * 10**(18 - decimals));
+        amount = value.divWadDown(tokenPrice);
+        if (decimals <= 18) {
+            amount /= 10**(18 - decimals);
+        } else {
+            amount *= 10**(decimals - 18);
+        }
     }
 
     function getDepositFee(uint amount) public view override returns (uint fee) {
@@ -219,13 +239,13 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         liabilities += lpFee;
         amountIn -= lockedFee + adminFee + lpFee;
         assets += amountIn;
-        amountOut = getAmountToValue(amountIn);
+        amountOut = getAmountToUSD(amountIn);
         emit SwapIn(msg.sender, amountIn, amountOut);
     }
 
     function swapOut(uint amountIn, address to) external override onlyRouter notPaused nonReentrant returns (uint amountOut) {
         require(amountIn != 0, "SingularityPool: AMOUNT_IS_0");
-        amountOut = getValueToAmount(amountIn);
+        amountOut = getUSDToAmount(amountIn);
 
         // Apply slippage (negative)
         uint slippage = getSlippage(amountOut, assets - amountOut, liabilities);

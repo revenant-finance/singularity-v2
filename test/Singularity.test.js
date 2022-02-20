@@ -44,7 +44,7 @@ describe("Singularity Swap", () => {
 		address: "",
 		name: "Dai Stablecoin",
 		symbol: "DAI",
-		decimals: 18,
+		decimals: 21,
 		price: 1,
 		balance: 1000000,
 		baseFee: numToBN(0.0015),
@@ -201,8 +201,8 @@ describe("Singularity Swap", () => {
 		expect(await DAI.pool.getCollateralizationRatio()).to.equal(MAX);
 		expect(await DAI.pool.getPricePerShare()).to.equal(numToBN(1));
 		expect((await DAI.pool.getOracleData())[0]).to.equal(numToBN(DAI.price));
-		expect(await DAI.pool.getAmountToValue(numToBN(1, DAI.decimals))).to.equal(numToBN(DAI.price));
-		expect(await DAI.pool.getValueToAmount(numToBN(DAI.price))).to.equal(numToBN(1, DAI.decimals));
+		expect(await DAI.pool.getAmountToUSD(numToBN(1, DAI.decimals))).to.equal(numToBN(DAI.price));
+		expect(await DAI.pool.getUSDToAmount(numToBN(DAI.price))).to.equal(numToBN(1, DAI.decimals));
 	});
 
 	it("Should add liquidity", async () => {

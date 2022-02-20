@@ -52,10 +52,10 @@ contract SingularityRouter is ISingularityRouter {
         amountIn += slippageIn;
         (uint lockedFee, uint adminFee, uint lpFee) = ISingularityPool(poolIn).getTradingFees(amountIn);
         amountIn -= lockedFee + adminFee + lpFee;
-        uint swapInAmountOut = ISingularityPool(poolIn).getAmountToValue(amountIn);
+        uint swapInAmountOut = ISingularityPool(poolIn).getAmountToUSD(amountIn);
 
         address poolOut = poolFor(tokenOut);
-        uint swapOutAmountOut = ISingularityPool(poolOut).getValueToAmount(swapInAmountOut);
+        uint swapOutAmountOut = ISingularityPool(poolOut).getUSDToAmount(swapInAmountOut);
         (assets, liabilities) = getAssetsAndLiabilities(tokenOut);
         uint slippageOut = ISingularityPool(poolOut).getSlippage(swapOutAmountOut, assets - swapOutAmountOut, liabilities);
         swapOutAmountOut -= slippageOut;

@@ -18,7 +18,6 @@ contract SingularityRouter is ISingularityRouter {
 
     address public immutable override factory;
     address public immutable override WETH;
-    uint private constant MULTIPLIER = 10**18;
 
     modifier ensure(uint deadline) {
         require(deadline >= block.timestamp, "SingularityRouter: EXPIRED");

@@ -32,9 +32,6 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     uint public override baseFee;
     uint public override adminFees;
     uint public override lockedFees;
-    
-    uint private constant MULTIPLIER = 10**18;
-    uint private locked = 1;
 
     modifier notPaused() {
         require(paused == false, "SingularityPool: PAUSED");
@@ -132,17 +129,25 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         }
     }
 
+    function getLpFeeRate(uint collateralizationRatio) public pure override returns (uint lpFeeRate) {
+        uint truncatedCRatio = collateralizationRatio / 10**15; // truncate collateralization ratio precision to 3
+        uint numerator = 50 ether;
+        uint denominator = truncatedCRatio.rpow(8, 1);
+        lpFeeRate = numerator.divWadUp(denominator);
+    }
+
     function getDepositFee(uint amount) public view override returns (uint fee) {
         uint collateralizationRatio = _calcCollatalizationRatio(assets + amount, liabilities + amount);
         uint depositFeeRate;
         if (collateralizationRatio <= 1 ether) {
             depositFeeRate = 0;
         } else {
-            depositFeeRate = 0.0000005 ether * MULTIPLIER / (collateralizationRatio / 10**16)**8;
+            depositFeeRate = getLpFeeRate(collateralizationRatio);
         }
-        uint percentOfPool = 100 * amount * MULTIPLIER / (liabilities + amount);
-        depositFeeRate = depositFeeRate * percentOfPool / MULTIPLIER;
-        fee = amount * depositFeeRate / MULTIPLIER;
+        uint percentOfPool = amount.divWadUp(liabilities + amount) * 100;
+        depositFeeRate = depositFeeRate.mulWadUp(percentOfPool);
+        fee = amount.mulWadUp(depositFeeRate);
+        if (fee > amount) fee = amount;
     }
 
     function getWithdrawFee(uint amount) public view override returns (uint fee) {
@@ -151,14 +156,18 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         if (collateralizationRatio >= 1 ether) {
             withdrawFeeRate = 0;
         } else {
-            withdrawFeeRate = 0.0000005 ether * MULTIPLIER / (collateralizationRatio / 10**16)**8;
+            withdrawFeeRate = getLpFeeRate(collateralizationRatio);
         }
-        uint percentOfPool = liabilities != 0 ? 100 * amount * MULTIPLIER / liabilities : 100 ether;
-        withdrawFeeRate = withdrawFeeRate * percentOfPool / MULTIPLIER;
-        fee = amount * withdrawFeeRate / MULTIPLIER;
-        if (fee > amount) {
-            fee = amount;
+
+        uint percentOfPool;
+        if (liabilities > amount) {
+            percentOfPool = amount.divWadUp(liabilities - amount);
+        } else {
+            percentOfPool = 100 ether;
         }
+        withdrawFeeRate = withdrawFeeRate.mulWadUp(percentOfPool);
+        fee = amount.mulWadUp(withdrawFeeRate);
+        if (fee > amount) fee = amount;
     }
 
     function getSlippage(uint amount, uint newAssets, uint newLiabilities) public override pure returns (uint slippage) {
@@ -167,11 +176,14 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         if (collateralizationRatio >= 1 ether) {
             slippageRate = 0;
         } else if (collateralizationRatio > 0.33 ether) {
-            slippageRate = 0.000000014 ether * MULTIPLIER / (collateralizationRatio / 10**16)**8;
+            uint truncatedCRatio = collateralizationRatio / 10**15; // truncate collateralization ratio precision to 3
+            uint numerator = 140 ether;
+            uint denominator = truncatedCRatio.rpow(8, 1);
+            slippageRate = numerator.divWadUp(denominator);
         } else {
             slippageRate = 0.01 ether;
         }
-        slippage = amount * slippageRate / MULTIPLIER;
+        slippage = amount.mulWadUp(slippageRate);
     }
 
     function getTradingFees(uint amount) public view override returns (uint lockedFee, uint adminFee, uint lpFee) {
@@ -187,9 +199,11 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
                 rate = baseFee + baseFee * timeDiff / 60;
             }
         }
-        lockedFee = rate * amount / (3 * MULTIPLIER);
-        adminFee = rate * amount / (3 * MULTIPLIER);
-        lpFee = rate * amount / (3 * MULTIPLIER);
+        // TODO: adjust later
+        uint fee = rate.mulWadUp(amount) / 3;
+        lockedFee = fee;
+        adminFee = fee;
+        lpFee = fee;
     }
 
     function deposit(uint amount, address to) external override onlyRouter notPaused nonReentrant returns (uint amountMinted) {
@@ -199,7 +213,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         if (liabilities == 0) {
             amountMinted = amount;
         } else {
-            amountMinted = amount * MULTIPLIER / getPricePerShare();
+            amountMinted = amount.divWadDown(getPricePerShare());
         }
         uint depositFee = getDepositFee(amount);
         amount -= depositFee;
@@ -213,7 +227,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     function withdraw(uint amount, address to) external override onlyRouter notPaused nonReentrant returns (uint amountWithdrawn) {
         require(amount != 0, "SingularityPool: AMOUNT_IS_0");
         _burn(msg.sender, amount);
-        uint liquidityValue = amount * getPricePerShare() / MULTIPLIER;
+        uint liquidityValue = amount.mulWadDown(getPricePerShare());
         uint withdrawFee = getWithdrawFee(amount);
         amountWithdrawn = liquidityValue - withdrawFee;
         adminFees += withdrawFee;
@@ -267,7 +281,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         if (_liabilities == 0) {
             newCollateralizationRatio = type(uint).max;
         } else {
-            newCollateralizationRatio = MULTIPLIER * _assets / _liabilities;
+            newCollateralizationRatio = _assets.divWadDown(_liabilities);
         }
     }
 

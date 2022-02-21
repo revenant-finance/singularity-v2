@@ -25,9 +25,9 @@
         <span class='fraction'>68/68</span>
       </div>
       <div class='fl pad1y space-right2'>
-        <span class="strong">59.09% </span>
+        <span class="strong">75% </span>
         <span class="quiet">Branches</span>
-        <span class='fraction'>13/22</span>
+        <span class='fraction'>15/20</span>
       </div>
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
@@ -258,7 +258,8 @@
 213
 214
 215
-216</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+216
+217</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -280,11 +281,13 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">32×</span>
-<span class="cline-any cline-yes">32×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">34×</span>
+<span class="cline-any cline-yes">34×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">39×</span>
 <span class="cline-any cline-yes">39×</span>
 <span class="cline-any cline-yes">39×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -294,13 +297,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">65×</span>
+<span class="cline-any cline-yes">66×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">65×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -309,7 +311,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-yes">8×</span>
 <span class="cline-any cline-yes">7×</span>
 <span class="cline-any cline-yes">7×</span>
 <span class="cline-any cline-yes">7×</span>
@@ -348,11 +350,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
 <span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-yes">1×</span>
-<span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -363,7 +365,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">2×</span>
 <span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-yes">1×</span>
@@ -493,6 +495,7 @@ contract SingularityRouter is ISingularityRouter {
 &nbsp;
     address public immutable override factory;
     address public immutable override WETH;
+    bytes32 public immutable override poolCodeHash;
 &nbsp;
     modifier ensure(uint256 deadline) {
         <span class="missing-if-branch" title="else path not taken" >E</span>require(deadline &gt;= block.timestamp, "SingularityRouter: EXPIRED");
@@ -502,20 +505,20 @@ contract SingularityRouter is ISingularityRouter {
     constructor(address _factory, address _WETH) {
         factory = _factory;
         WETH = _WETH;
+        poolCodeHash = ISingularityFactory(_factory).poolCodeHash();
     }
 &nbsp;
     receive() external payable {
         assert(msg.sender == WETH);
     }
 &nbsp;
-    function poolFor(address _factory, address token) public pure override returns (address pool) {
+    function poolFor(address _factory, address token) public view override returns (address pool) {
         pool = address(uint160(uint256(keccak256(abi.encodePacked(
                 hex'ff',
                 _factory,
                 keccak256(abi.encodePacked(token)),
-                hex'3ea52be61ef739e1bd4a11d5f7298c2de16dc8f4852d5feb3220ef341e263cb3' // init code hash
-            )))));
-        <span class="missing-if-branch" title="else path not taken" >E</span>require(pool != address(0), "SingularityRouter: POOL_DOES_NOT_EXIST");
+                poolCodeHash
+        )))));
     }
 &nbsp;
     function getAssetsAndLiabilities(address token) public view override returns (uint256 assets, uint256 liabilities) {
@@ -524,7 +527,7 @@ contract SingularityRouter is ISingularityRouter {
     }
 &nbsp;
     function getAmountOut(uint256 amountIn, address tokenIn, address tokenOut) public view override returns (uint256 amountOut) {
-        <span class="missing-if-branch" title="else path not taken" >E</span>require(amountIn != 0, "SingularityRouter: INSUFFICIENT_INPUT_AMOUNT");
+        require(amountIn != 0, "SingularityRouter: INSUFFICIENT_INPUT_AMOUNT");
         address poolIn = poolFor(factory, tokenIn);
         (uint256 assets, uint256 liabilities) = getAssetsAndLiabilities(tokenIn);
         uint256 slippageIn = ISingularityPool(poolIn).getSlippage(amountIn, assets + amountIn, liabilities);
@@ -563,7 +566,7 @@ contract SingularityRouter is ISingularityRouter {
         address to, 
         uint256 deadline
     ) external payable override ensure(deadline) returns (uint256 amountOut) {
-        <span class="missing-if-branch" title="else path not taken" >E</span>require(tokenIn == WETH, "SingularityRouter: INVALID_PATH");
+        require(tokenIn == WETH, "SingularityRouter: INVALID_IN_TOKEN");
         amountOut = getAmountOut(msg.value, tokenIn, tokenOut);
         <span class="missing-if-branch" title="else path not taken" >E</span>require(amountOut &gt;= minAmountOut, "SingularityRouter: INSUFFICIENT_OUTPUT_AMOUNT");
         IWETH(WETH).deposit{value: msg.value}();
@@ -578,7 +581,7 @@ contract SingularityRouter is ISingularityRouter {
         address to, 
         uint256 deadline
     ) external override ensure(deadline) returns (uint256 amountOut) {
-        <span class="missing-if-branch" title="else path not taken" >E</span>require(tokenOut == WETH, "SingularityRouter: INVALID_PATH");
+        require(tokenOut == WETH, "SingularityRouter: INVALID_OUT_TOKEN");
         amountOut = getAmountOut(amountIn, tokenIn, tokenOut);
         <span class="missing-if-branch" title="else path not taken" >E</span>require(amountOut &gt;= minAmountOut, "SingularityRouter: INSUFFICIENT_OUTPUT_AMOUNT");
         IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
@@ -694,7 +697,7 @@ contract SingularityRouter is ISingularityRouter {
 </div><!-- /wrapper -->
 <div class='footer quiet pad2 space-top1 center small'>
   Code coverage
-  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Sun Feb 20 2022 19:52:23 GMT-0600 (Central Standard Time)
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Sun Feb 20 2022 22:45:43 GMT-0600 (Central Standard Time)
 </div>
 </div>
 <script src="../prettify.js"></script>

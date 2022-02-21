@@ -188,10 +188,7 @@ describe("Singularity Swap", () => {
 		await createPool(USDC);
 
 		// set deposit caps
-		await factory.setDepositCaps(
-			[WFTM.poolAddress, ETH.poolAddress, USDC.poolAddress],
-			[MAX, MAX, MAX]
-		);
+		await factory.setDepositCaps([WFTM.address, ETH.address, USDC.address], [MAX, MAX, MAX]);
 
 		// Approve pools
 		await wftm.approve(WFTM.poolAddress, MAX);
@@ -207,18 +204,23 @@ describe("Singularity Swap", () => {
 		await USDC.pool.approve(router.address, MAX);
 	});
 
-	it("Should have correct initial state values", async () => {
+	it("Should have correct view return values", async () => {
 		// Factory
-		console.log(`Init Code Hash: ${await factory.poolInitCodeHash()}`);
 		expect(await factory.tranche()).to.equal(trancheName);
 		expect(await factory.admin()).to.equal(ownerAddress);
 		expect(await factory.oracle()).to.equal(oracle.address);
 		expect(await factory.feeTo()).to.equal(otherAddress);
 		expect(await factory.router()).to.equal(router.address);
+		expect(await factory.allPoolsLength()).to.equal(3);
 
 		// Router
 		expect(await router.factory()).to.equal(factory.address);
 		expect(await router.WETH()).to.equal(WFTM.address);
+
+		expect(await router.poolCodeHash()).to.equal(await factory.poolCodeHash());
+		expect(await router.poolFor(factory.address, wftm.address)).to.equal(
+			await factory.getPool(wftm.address)
+		);
 	});
 
 	it("createPool", async () => {
@@ -288,11 +290,11 @@ describe("Singularity Swap", () => {
 				MAX
 			)
 		).to.be.revertedWith("SingularityRouter: INSUFFICIENT_LIQUIDITY_AMOUNT");
-		await factory.setDepositCaps([USDC.poolAddress], [numToBN(50, USDC.decimals)]);
+		await factory.setDepositCaps([USDC.address], [numToBN(50, USDC.decimals)]);
 		await expect(
 			router.addLiquidity(usdc.address, numToBN(amountToMint, 6), 0, ownerAddress, MAX)
 		).to.be.revertedWith("SingularityPool: DEPOSIT_EXCEEDS_CAP");
-		await factory.setDepositCaps([USDC.poolAddress], [MAX]);
+		await factory.setDepositCaps([USDC.address], [MAX]);
 
 		await addLiquidity(USDC, amountToMint);
 		expect(await usdc.balanceOf(ownerAddress)).to.equal(
@@ -488,8 +490,17 @@ describe("Singularity Swap", () => {
 		await addLiquidity(WFTM, 1000);
 		await addLiquidity(USDC, 2000);
 
+		await expect(
+			router.swapExactETHForTokens(usdc.address, usdc.address, 0, ownerAddress, MAX, {
+				value: numToBN(amountToSwap, WFTM.decimals),
+			})
+		).to.be.revertedWith("SingularityRouter: INVALID_IN_TOKEN");
+
 		const ftmBal = await getFtmBalance();
 		const usdcBal = await usdc.balanceOf(ownerAddress);
+		await expect(router.getAmountOut(0, wftm.address, usdc.address)).to.be.revertedWith(
+			"SingularityRouter: INSUFFICIENT_INPUT_AMOUNT"
+		);
 		const expectedOut = await router.getAmountOut(
 			numToBN(amountToSwap, WFTM.decimals),
 			wftm.address,
@@ -510,6 +521,17 @@ describe("Singularity Swap", () => {
 		await wftm.deposit({ value: numToBN(1000) });
 		await addLiquidity(WFTM, 1000);
 		await addLiquidity(USDC, 2000);
+
+		await expect(
+			router.swapExactTokensForETH(
+				usdc.address,
+				usdc.address,
+				numToBN(amountToSwap, USDC.decimals),
+				0,
+				ownerAddress,
+				MAX
+			)
+		).to.be.revertedWith("SingularityRouter: INVALID_OUT_TOKEN");
 
 		const ftmBal = await getFtmBalance();
 		const usdcBal = await usdc.balanceOf(ownerAddress);
@@ -535,7 +557,9 @@ describe("Singularity Swap", () => {
 	});
 
 	it("collectFees", async () => {
-		await expect(factory.connect(otherAccount).collectFees()).to.be.revertedWith("SingularityFactory: NOT_ADMIN");
+		await expect(factory.connect(otherAccount).collectFees()).to.be.revertedWith(
+			"SingularityFactory: NOT_ADMIN"
+		);
 		await addLiquidity(ETH, 100);
 		await addLiquidity(USDC, 2000);
 		await router.swapExactTokensForTokens(
@@ -554,5 +578,16 @@ describe("Singularity Swap", () => {
 	});
 
 	it("setBaseFee", async () => {
+		await expect(
+			factory.connect(otherAccount).setBaseFees([WFTM.address], [numToBN(0.01)])
+		).to.be.revertedWith("SingularityFactory: NOT_ADMIN");
+		await expect(
+			factory.setBaseFees([WFTM.address], [numToBN(0.01), numToBN(0.01)])
+		).to.be.revertedWith("SingularityFactory: NOT_SAME_LENGTH");
+		await expect(factory.setBaseFees([WFTM.address], [0])).to.be.revertedWith(
+			"SingularityFactory: BASE_FEE_IS_0"
+		);
+		await factory.setBaseFees([WFTM.address], [numToBN(0.01)]);
+		expect(await WFTM.pool.baseFee()).to.equal(numToBN(0.01));
 	});
 });

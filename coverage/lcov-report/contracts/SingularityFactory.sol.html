@@ -20,24 +20,24 @@
     </h1>
     <div class='clearfix'>
       <div class='fl pad1y space-right2'>
-        <span class="strong">66.67% </span>
+        <span class="strong">77.78% </span>
         <span class="quiet">Statements</span>
-        <span class='fraction'>28/42</span>
+        <span class='fraction'>35/45</span>
       </div>
       <div class='fl pad1y space-right2'>
-        <span class="strong">44.12% </span>
+        <span class="strong">55.88% </span>
         <span class="quiet">Branches</span>
-        <span class='fraction'>15/34</span>
+        <span class='fraction'>19/34</span>
       </div>
       <div class='fl pad1y space-right2'>
-        <span class="strong">57.14% </span>
+        <span class="strong">71.43% </span>
         <span class="quiet">Functions</span>
-        <span class='fraction'>8/14</span>
+        <span class='fraction'>10/14</span>
       </div>
       <div class='fl pad1y space-right2'>
-        <span class="strong">68.18% </span>
+        <span class="strong">78.72% </span>
         <span class="quiet">Lines</span>
-        <span class='fraction'>30/44</span>
+        <span class='fraction'>37/47</span>
       </div>
     </div>
   </div>
@@ -175,7 +175,10 @@
 130
 131
 132
-133</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+133
+134
+135
+136</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -206,8 +209,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">77×</span>
-<span class="cline-any cline-yes">76×</span>
+<span class="cline-any cline-yes">81×</span>
+<span class="cline-any cline-yes">79×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -219,14 +222,14 @@
 <span class="cline-any cline-yes">39×</span>
 <span class="cline-any cline-yes">39×</span>
 <span class="cline-any cline-yes">39×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">40×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -284,18 +287,21 @@
 <span class="cline-any cline-yes">15×</span>
 <span class="cline-any cline-yes">15×</span>
 <span class="cline-any cline-yes">41×</span>
+<span class="cline-any cline-yes">41×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -335,7 +341,7 @@ import "./SingularityPool.sol";
     mapping(address =&gt; address) public override getPool;
     address[] public override allPools;
 &nbsp;
-    event PoolCreated(address indexed token, address indexed pool, uint256 index);
+    event PoolCreated(address indexed token, bool isStablecoin, uint256 baseFee, address pool, uint256);
 &nbsp;
     modifier onlyAdmin() {
         require(msg.sender == admin, "SingularityFactory: NOT_ADMIN");
@@ -353,11 +359,11 @@ import "./SingularityPool.sol";
         feeTo = _feeTo;
     }
 &nbsp;
-<span class="fstat-no" title="function not covered" >    function allPoolsLength() external view override returns (uint256) {</span>
-<span class="cstat-no" title="statement not covered" >        return allPools.length;</span>
+    function allPoolsLength() external view override returns (uint256) {
+        return allPools.length;
     }
 &nbsp;
-    function poolInitCodeHash() external pure override returns (bytes32) {
+    function poolCodeHash() external pure override returns (bytes32) {
         return keccak256(type(SingularityPool).creationCode);
     }
 &nbsp;
@@ -383,7 +389,7 @@ import "./SingularityPool.sol";
         delete poolParams;
         getPool[token] = pool;
         allPools.push(pool);
-        emit PoolCreated(token, pool, allPools.length);
+        emit PoolCreated(token, isStablecoin, baseFee, pool, allPools.length);
     }
 &nbsp;
 <span class="fstat-no" title="function not covered" >    function setAdmin(address _admin) external override onlyAdmin {</span>
@@ -412,31 +418,34 @@ import "./SingularityPool.sol";
         }
     }
 &nbsp;
-    function setDepositCaps(address[] calldata pools, uint256[] calldata caps) external override onlyAdmin {
-        <span class="missing-if-branch" title="else path not taken" >E</span>require(pools.length == caps.length, "SingularityFactory: NOT_SAME_LENGTH");
-        for (uint256 i; i &lt; pools.length; i++) {
-            ISingularityPool(pools[i]).setDepositCap(caps[i]);
+    function setDepositCaps(address[] calldata tokens, uint256[] calldata caps) external override onlyAdmin {
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(tokens.length == caps.length, "SingularityFactory: NOT_SAME_LENGTH");
+        for (uint256 i; i &lt; tokens.length; i++) {
+            address pool = getPool[tokens[i]];
+            ISingularityPool(pool).setDepositCap(caps[i]);
         }
     }
 &nbsp;
-<span class="fstat-no" title="function not covered" >    function setBaseFees(address[] calldata pools, uint256[] calldata baseFees) external override onlyAdmin {</span>
-<span class="cstat-no" title="statement not covered" >        require(pools.length == baseFees.length, "SingularityFactory: NOT_SAME_LENGTH")</span>;
-<span class="cstat-no" title="statement not covered" >        for (uint256 i; i &lt; pools.length; i++) {</span>
-<span class="cstat-no" title="statement not covered" >            require(baseFees[i] &gt; 0, "SingularityFactory: FEE_IS_0")</span>;
-<span class="cstat-no" title="statement not covered" >            ISingularityPool(pools[i]).setBaseFee(baseFees[i])</span>;
+    function setBaseFees(address[] calldata tokens, uint256[] calldata baseFees) external override onlyAdmin {
+        require(tokens.length == baseFees.length, "SingularityFactory: NOT_SAME_LENGTH");
+        for (uint256 i; i &lt; tokens.length; i++) {
+            require(baseFees[i] &gt; 0, "SingularityFactory: BASE_FEE_IS_0");
+            address pool = getPool[tokens[i]];
+            ISingularityPool(pool).setBaseFee(baseFees[i]);
         }
     }
 &nbsp;
-<span class="fstat-no" title="function not covered" >    function setPaused(address[] calldata pools, bool[] calldata paused) external override onlyAdmin {</span>
-<span class="cstat-no" title="statement not covered" >        require(pools.length == paused.length, "SingularityFactory: NOT_SAME_LENGTH")</span>;
-<span class="cstat-no" title="statement not covered" >        for (uint256 i; i &lt; pools.length; i++) {</span>
-<span class="cstat-no" title="statement not covered" >            ISingularityPool(pools[i]).setPaused(paused[i])</span>;
+<span class="fstat-no" title="function not covered" >    function setPaused(address[] calldata tokens, bool[] calldata states) external override onlyAdmin {</span>
+<span class="cstat-no" title="statement not covered" >        require(tokens.length == states.length, "SingularityFactory: NOT_SAME_LENGTH")</span>;
+<span class="cstat-no" title="statement not covered" >        for (uint256 i; i &lt; tokens.length; i++) {</span>
+<span class="cstat-no" title="statement not covered" >            address pool = getPool[tokens[i]];</span>
+<span class="cstat-no" title="statement not covered" >            ISingularityPool(pool).setPaused(states[i])</span>;
         }
     }
 &nbsp;
-    function setPausedForAll(bool paused) external override onlyAdmin {
+    function setPausedForAll(bool state) external override onlyAdmin {
         for (uint256 i; i &lt; allPools.length; i++) {
-            ISingularityPool(allPools[i]).setPaused(paused);
+            ISingularityPool(allPools[i]).setPaused(state);
         }
     }
 }</pre></td></tr>
@@ -445,7 +454,7 @@ import "./SingularityPool.sol";
 </div><!-- /wrapper -->
 <div class='footer quiet pad2 space-top1 center small'>
   Code coverage
-  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Sun Feb 20 2022 19:52:23 GMT-0600 (Central Standard Time)
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Sun Feb 20 2022 22:45:43 GMT-0600 (Central Standard Time)
 </div>
 </div>
 <script src="../prettify.js"></script>

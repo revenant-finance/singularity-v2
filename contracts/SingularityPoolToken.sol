@@ -8,7 +8,7 @@ import "./interfaces/ISingularityPoolToken.sol";
  * @title Singularity Pool Token
  * @author Revenant Labs
  */
-contract SingularityPoolToken is ISingularityPoolToken {
+abstract contract SingularityPoolToken is ISingularityPoolToken {
     string public override name;
     string public override symbol;
     uint8 public override decimals;

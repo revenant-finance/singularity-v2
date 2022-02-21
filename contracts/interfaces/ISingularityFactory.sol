@@ -14,7 +14,7 @@ interface ISingularityFactory {
     function getPool(address token) external view returns (address pool);
     function allPools(uint256) external view returns (address pool);
     function allPoolsLength() external view returns (uint256);
-    function poolInitCodeHash() external pure returns (bytes32 initCodeHash);
+    function poolCodeHash() external pure returns (bytes32);
 
     function createPool(address token, bool isStablecoin, uint256 baseFee) external returns (address pool);
 
@@ -24,8 +24,8 @@ interface ISingularityFactory {
     function setRouter(address _router) external;
     
     function collectFees() external;
-    function setDepositCaps(address[] calldata pools, uint256[] calldata caps) external;
-    function setBaseFees(address[] calldata pools, uint256[] calldata baseFees) external;
-    function setPaused(address[] calldata pools, bool[] calldata paused) external;
-    function setPausedForAll(bool paused) external;
+    function setDepositCaps(address[] calldata tokens, uint256[] calldata caps) external;
+    function setBaseFees(address[] calldata tokens, uint256[] calldata baseFees) external;
+    function setPaused(address[] calldata tokens, bool[] calldata states) external;
+    function setPausedForAll(bool state) external;
 }

@@ -20,9 +20,10 @@ interface ISingularityPool is ISingularityPoolToken {
     );
 
     function paused() external view returns (bool);
+    function isStablecoin() external view returns (bool);
+
     function factory() external view returns (address);
     function token() external view returns (address);
-    function isStablecoin() external view returns (bool);
 
     function depositCap() external view returns (uint256);
     function assets() external view returns (uint256);
@@ -52,5 +53,5 @@ interface ISingularityPool is ISingularityPoolToken {
     function collectFees() external;
     function setDepositCap(uint256 newDepositCap) external;
     function setBaseFee(uint256 newBaseFee) external;
-    function setPaused(bool paused) external;
+    function setPaused(bool state) external;
 }

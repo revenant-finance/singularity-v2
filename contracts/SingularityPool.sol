@@ -20,10 +20,10 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     using FixedPointMathLib for uint256;
 
     bool public override paused;
-    bool public override isStablecoin;
+    bool public immutable override isStablecoin;
 
     address public immutable override factory;
-    address public override token;
+    address public immutable override token;
 
     uint256 public override depositCap;
     uint256 public override assets;
@@ -295,7 +295,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         baseFee = newBaseFee;
     }
 
-    function setPaused(bool _paused) external override onlyFactory {
-        paused = _paused;
+    function setPaused(bool state) external override onlyFactory {
+        paused = state;
     }
 }

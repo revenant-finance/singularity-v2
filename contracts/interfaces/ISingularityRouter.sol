@@ -5,6 +5,7 @@ pragma solidity ^0.8.11;
 interface ISingularityRouter {
     function factory() external returns (address);
     function WETH() external returns (address);
+    function poolCodeHash() external returns (bytes32);
 
     function poolFor(address factory, address token) external view returns (address pool);
     function getAssetsAndLiabilities(address token) external view returns (uint256 assets, uint256 liabilities);

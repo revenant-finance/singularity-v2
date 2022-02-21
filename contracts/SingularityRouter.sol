@@ -18,6 +18,7 @@ contract SingularityRouter is ISingularityRouter {
 
     address public immutable override factory;
     address public immutable override WETH;
+    bytes32 public immutable override poolCodeHash;
 
     modifier ensure(uint256 deadline) {
         require(deadline >= block.timestamp, "SingularityRouter: EXPIRED");
@@ -27,20 +28,20 @@ contract SingularityRouter is ISingularityRouter {
     constructor(address _factory, address _WETH) {
         factory = _factory;
         WETH = _WETH;
+        poolCodeHash = ISingularityFactory(_factory).poolCodeHash();
     }
 
     receive() external payable {
         assert(msg.sender == WETH);
     }
 
-    function poolFor(address _factory, address token) public pure override returns (address pool) {
+    function poolFor(address _factory, address token) public view override returns (address pool) {
         pool = address(uint160(uint256(keccak256(abi.encodePacked(
                 hex'ff',
                 _factory,
                 keccak256(abi.encodePacked(token)),
-                hex'3ea52be61ef739e1bd4a11d5f7298c2de16dc8f4852d5feb3220ef341e263cb3' // init code hash
-            )))));
-        require(pool != address(0), "SingularityRouter: POOL_DOES_NOT_EXIST");
+                poolCodeHash
+        )))));
     }
 
     function getAssetsAndLiabilities(address token) public view override returns (uint256 assets, uint256 liabilities) {
@@ -88,7 +89,7 @@ contract SingularityRouter is ISingularityRouter {
         address to, 
         uint256 deadline
     ) external payable override ensure(deadline) returns (uint256 amountOut) {
-        require(tokenIn == WETH, "SingularityRouter: INVALID_PATH");
+        require(tokenIn == WETH, "SingularityRouter: INVALID_IN_TOKEN");
         amountOut = getAmountOut(msg.value, tokenIn, tokenOut);
         require(amountOut >= minAmountOut, "SingularityRouter: INSUFFICIENT_OUTPUT_AMOUNT");
         IWETH(WETH).deposit{value: msg.value}();
@@ -103,7 +104,7 @@ contract SingularityRouter is ISingularityRouter {
         address to, 
         uint256 deadline
     ) external override ensure(deadline) returns (uint256 amountOut) {
-        require(tokenOut == WETH, "SingularityRouter: INVALID_PATH");
+        require(tokenOut == WETH, "SingularityRouter: INVALID_OUT_TOKEN");
         amountOut = getAmountOut(amountIn, tokenIn, tokenOut);
         require(amountOut >= minAmountOut, "SingularityRouter: INSUFFICIENT_OUTPUT_AMOUNT");
         IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);

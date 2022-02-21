@@ -1,10 +1,19 @@
+require("dotenv").config();
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
+const ethjs = require("ethereumjs-util");
 
 describe("Singularity Swap", () => {
 	let ownerAccount, ownerAddress, otherAccount, otherAddress;
 	let Factory, Router, Oracle, ERC20, Pool, Wftm;
 	let factory, router, oracle, wftm, eth, usdc, dai;
+
+	const PERMIT_TYPEHASH = ethers.utils.keccak256(
+		ethers.utils.toUtf8Bytes(
+			"Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
+		)
+	);
+	const chainId = 31337;
 	const trancheName = "Tranche A";
 	const MAX = ethers.constants.MaxUint256;
 	const ZERO_ADDR = ethers.constants.AddressZero;
@@ -52,6 +61,7 @@ describe("Singularity Swap", () => {
 		pool: "",
 	};
 	const amountToSwap = 1;
+	const amountToMint = 100;
 
 	function numToBN(number, decimals = 18) {
 		return ethers.utils.parseUnits(number.toString(), decimals);
@@ -101,6 +111,45 @@ describe("Singularity Swap", () => {
 		await router.addLiquidity(asset.address, numToBN(amount, asset.decimals), 0, ownerAddress, MAX);
 	}
 
+	function getDomainSeparator(name, tokenAddress) {
+		return ethers.utils.keccak256(
+			ethers.utils.defaultAbiCoder.encode(
+				["bytes32", "bytes32", "bytes32", "uint256", "address"],
+				[
+					ethers.utils.keccak256(
+						ethers.utils.toUtf8Bytes(
+							"EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+						)
+					),
+					ethers.utils.keccak256(ethers.utils.toUtf8Bytes(name)),
+					ethers.utils.keccak256(ethers.utils.toUtf8Bytes("1")),
+					chainId,
+					tokenAddress,
+				]
+			)
+		);
+	}
+
+	function getApprovalDigest(token, approve, nonce, deadline) {
+		const DOMAIN_SEPARATOR = getDomainSeparator(token.name, token.address);
+		return ethers.utils.keccak256(
+			ethers.utils.solidityPack(
+				["bytes1", "bytes1", "bytes32", "bytes32"],
+				[
+					"0x19",
+					"0x01",
+					DOMAIN_SEPARATOR,
+					ethers.utils.keccak256(
+						ethers.utils.defaultAbiCoder.encode(
+							["bytes32", "address", "address", "uint256", "uint256", "uint256"],
+							[PERMIT_TYPEHASH, approve.owner, approve.spender, approve.value, nonce, deadline]
+						)
+					),
+				]
+			)
+		);
+	}
+
 	before(async () => {
 		const accounts = await ethers.getSigners();
 		[ownerAccount, otherAccount] = accounts;
@@ -126,7 +175,7 @@ describe("Singularity Swap", () => {
 		await updatePrices();
 
 		// deploy factory
-		factory = await Factory.deploy(trancheName, ownerAddress, oracle.address, ownerAddress);
+		factory = await Factory.deploy(trancheName, ownerAddress, oracle.address, otherAddress);
 		await factory.deployed();
 
 		// deploy router
@@ -160,11 +209,11 @@ describe("Singularity Swap", () => {
 
 	it("Should have correct initial state values", async () => {
 		// Factory
-		console.log(`Init Code Hash: ${(await factory.INIT_CODE_HASH())}`)
+		console.log(`Init Code Hash: ${await factory.poolInitCodeHash()}`);
 		expect(await factory.tranche()).to.equal(trancheName);
 		expect(await factory.admin()).to.equal(ownerAddress);
 		expect(await factory.oracle()).to.equal(oracle.address);
-		expect(await factory.feeTo()).to.equal(ownerAddress);
+		expect(await factory.feeTo()).to.equal(otherAddress);
 		expect(await factory.router()).to.equal(router.address);
 
 		// Router
@@ -172,7 +221,7 @@ describe("Singularity Swap", () => {
 		expect(await router.WETH()).to.equal(WFTM.address);
 	});
 
-	it("Should create pool correct pool values", async () => {
+	it("createPool", async () => {
 		await expect(factory.createPool(ZERO_ADDR, true, DAI.baseFee)).to.be.revertedWith(
 			"SingularityFactory: ZERO_ADDRESS"
 		);
@@ -199,68 +248,135 @@ describe("Singularity Swap", () => {
 		expect(await DAI.pool.name()).to.equal(`Singularity ${DAI.symbol} Pool (${trancheName})`);
 		expect(await DAI.pool.symbol()).to.equal(`SPT-${DAI.symbol} (${trancheName})`);
 		expect(await DAI.pool.decimals()).to.equal(DAI.decimals);
+		expect(await DAI.pool.totalSupply()).to.equal(0);
+		expect(await DAI.pool.balanceOf(ownerAddress)).to.equal(0);
+		expect(await DAI.pool.nonces(ownerAddress)).to.equal(0);
+		expect(await DAI.pool.DOMAIN_SEPARATOR()).to.equal(
+			getDomainSeparator(`Singularity ${DAI.symbol} Pool (${trancheName})`, DAI.poolAddress)
+		);
 		expect(await DAI.pool.getCollateralizationRatio()).to.equal(MAX);
 		expect(await DAI.pool.getPricePerShare()).to.equal(numToBN(1));
+		await oracle.pushPrices([DAI.address], [0]);
+		await expect(DAI.pool.getOracleData()).to.be.revertedWith(
+			"SingularityPool: INVALID_ORACLE_PRICE"
+		);
+		await oracle.pushPrices([DAI.address], [numToBN(DAI.price)]);
 		expect((await DAI.pool.getOracleData())[0]).to.equal(numToBN(DAI.price));
 		expect(await DAI.pool.getAmountToUSD(numToBN(1, DAI.decimals))).to.equal(numToBN(DAI.price));
 		expect(await DAI.pool.getUSDToAmount(numToBN(DAI.price))).to.equal(numToBN(1, DAI.decimals));
 		expect(await router.poolFor(factory.address, DAI.address)).to.equal(DAI.poolAddress);
 	});
 
-	it("Should add liquidity", async () => {
-		const mintAmount = 100;
+	it("addLiquidity", async () => {
 		await expect(
-			USDC.pool.deposit(numToBN(mintAmount, USDC.decimals), ownerAddress)
+			USDC.pool.deposit(numToBN(amountToMint, USDC.decimals), ownerAddress)
 		).to.be.revertedWith("SingularityPool: NOT_ROUTER");
+		await factory.setPausedForAll(true);
+		await expect(
+			router.addLiquidity(usdc.address, numToBN(amountToMint, 6), 0, ownerAddress, MAX)
+		).to.be.revertedWith("SingularityPool: PAUSED");
+		await factory.setPausedForAll(false);
+		await expect(router.addLiquidity(usdc.address, 0, 0, ownerAddress, MAX)).to.be.revertedWith(
+			"SingularityPool: AMOUNT_IS_0"
+		);
 		await expect(
 			router.addLiquidity(
 				usdc.address,
-				numToBN(mintAmount, 6),
-				numToBN(mintAmount + 1, 6),
+				numToBN(amountToMint, 6),
+				numToBN(amountToMint + 1, 6),
 				ownerAddress,
 				MAX
 			)
 		).to.be.revertedWith("SingularityRouter: INSUFFICIENT_LIQUIDITY_AMOUNT");
 		await factory.setDepositCaps([USDC.poolAddress], [numToBN(50, USDC.decimals)]);
 		await expect(
-			router.addLiquidity(usdc.address, numToBN(mintAmount, 6), 0, ownerAddress, MAX)
+			router.addLiquidity(usdc.address, numToBN(amountToMint, 6), 0, ownerAddress, MAX)
 		).to.be.revertedWith("SingularityPool: DEPOSIT_EXCEEDS_CAP");
 		await factory.setDepositCaps([USDC.poolAddress], [MAX]);
 
-		await addLiquidity(USDC, mintAmount);
+		await addLiquidity(USDC, amountToMint);
 		expect(await usdc.balanceOf(ownerAddress)).to.equal(
-			numToBN(USDC.balance - mintAmount, USDC.decimals)
+			numToBN(USDC.balance - amountToMint, USDC.decimals)
 		);
-		expect(await usdc.balanceOf(USDC.poolAddress)).to.equal(numToBN(mintAmount, USDC.decimals));
-		expect(await USDC.pool.balanceOf(ownerAddress)).to.equal(numToBN(mintAmount, USDC.decimals));
-		expect(await USDC.pool.liabilities()).to.equal(numToBN(mintAmount, USDC.decimals));
-		expect(await USDC.pool.assets()).to.equal(numToBN(mintAmount, USDC.decimals));
+		expect(await usdc.balanceOf(USDC.poolAddress)).to.equal(numToBN(amountToMint, USDC.decimals));
+		expect(await USDC.pool.balanceOf(ownerAddress)).to.equal(numToBN(amountToMint, USDC.decimals));
+		expect(await USDC.pool.liabilities()).to.equal(numToBN(amountToMint, USDC.decimals));
+		expect(await USDC.pool.assets()).to.equal(numToBN(amountToMint, USDC.decimals));
 		expect(await USDC.pool.getCollateralizationRatio()).to.equal(numToBN(1));
 
-		const ftmBal = await getFtmBalance();
-		await router.addLiquidityETH(0, ownerAddress, MAX, { value: numToBN(mintAmount) });
-		const ftmBalDiff = ftmBal.sub(await getFtmBalance());
-		expect(ftmBalDiff).to.be.closeTo(numToBN(mintAmount), numToBN(1, 16));
+		await addLiquidity(USDC, amountToMint);
+		expect(await usdc.balanceOf(USDC.poolAddress)).to.equal(
+			numToBN(amountToMint * 2, USDC.decimals)
+		);
+		expect(await USDC.pool.balanceOf(ownerAddress)).to.equal(
+			numToBN(amountToMint * 2, USDC.decimals)
+		);
+		expect(await USDC.pool.liabilities()).to.equal(numToBN(amountToMint * 2, USDC.decimals));
+		expect(await USDC.pool.assets()).to.equal(numToBN(amountToMint * 2, USDC.decimals));
+		expect(await USDC.pool.getCollateralizationRatio()).to.equal(numToBN(1));
+
+		// Test pool token functionality
+		await USDC.pool.transfer(otherAddress, numToBN(1, USDC.decimals));
+		await expect(
+			USDC.pool.transferFrom(ownerAddress, otherAddress, numToBN(1, USDC.decimals))
+		).to.be.revertedWith("");
+
+		const name = await USDC.pool.name();
+		const nonce = await USDC.pool.nonces(ownerAddress);
+		const digest = getApprovalDigest(
+			{ name: name, address: USDC.poolAddress },
+			{ owner: ownerAddress, spender: otherAddress, value: MAX },
+			nonce,
+			0
+		);
+		const { v, r, s } = ethjs.ecsign(
+			Buffer.from(digest.slice(2), "hex"),
+			Buffer.from(
+				"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80".slice(2),
+				"hex"
+			)
+		);
+		await expect(
+			USDC.pool.permit(ownerAddress, otherAddress, MAX, nonce, v, r, s)
+		).to.be.revertedWith("SingularityPoolToken: EXPIRED");
 	});
 
-	it("Should remove liquidity", async () => {
-		const mintAmount = 100;
-		await addLiquidity(USDC, mintAmount);
+	it("addLiquidityETH", async () => {
+		const ftmBal = await getFtmBalance();
+		await router.addLiquidityETH(0, ownerAddress, MAX, { value: numToBN(amountToMint) });
+		const ftmBalDiff = ftmBal.sub(await getFtmBalance());
+		expect(ftmBalDiff).to.be.closeTo(numToBN(amountToMint), numToBN(1, 16));
+	});
+
+	it("removeLiquidity", async () => {
+		await addLiquidity(USDC, amountToMint);
 		await expect(router.removeLiquidity(usdc.address, 0, 0, ownerAddress, MAX)).to.be.revertedWith(
 			"SingularityPool: AMOUNT_IS_0"
 		);
 		await expect(
 			router.removeLiquidity(
 				usdc.address,
-				numToBN(mintAmount, USDC.decimals),
-				numToBN(mintAmount + 1, USDC.decimals),
+				numToBN(amountToMint, USDC.decimals),
+				numToBN(amountToMint + 1, USDC.decimals),
 				ownerAddress,
 				MAX
 			)
 		).to.be.revertedWith("SingularityRouter: INSUFFICIENT_TOKEN_AMOUNT");
+		await factory.setPausedForAll(true);
+		await expect(
+			router.removeLiquidity(
+				usdc.address,
+				numToBN(amountToMint, USDC.decimals),
+				0,
+				ownerAddress,
+				MAX
+			)
+		).to.be.revertedWith("SingularityPool: PAUSED");
+		await factory.setPausedForAll(false);
+
 		await router.removeLiquidity(
 			usdc.address,
-			numToBN(mintAmount, USDC.decimals),
+			numToBN(amountToMint, USDC.decimals),
 			0,
 			ownerAddress,
 			MAX
@@ -269,15 +385,76 @@ describe("Singularity Swap", () => {
 		expect(await usdc.balanceOf(USDC.poolAddress)).to.equal(0);
 		expect(await USDC.pool.balanceOf(ownerAddress)).to.equal(0);
 		expect(await USDC.pool.liabilities()).to.equal(0);
-
-		await router.addLiquidityETH(0, ownerAddress, MAX, { value: numToBN(mintAmount) });
-		const ftmBal = await getFtmBalance();
-		await router.removeLiquidityETH(numToBN(mintAmount), 0, ownerAddress, MAX);
-		const ftmBalDiff = (await getFtmBalance()).sub(ftmBal);
-		expect(ftmBalDiff).to.be.closeTo(numToBN(mintAmount), numToBN(1, 16));
 	});
 
-	it("Should swapExactTokensForTokens", async () => {
+	it("removeLiquidityETH", async () => {
+		await router.addLiquidityETH(0, ownerAddress, MAX, { value: numToBN(amountToMint) });
+		const ftmBal = await getFtmBalance();
+		await router.removeLiquidityETH(numToBN(amountToMint), 0, ownerAddress, MAX);
+		const ftmBalDiff = (await getFtmBalance()).sub(ftmBal);
+		expect(ftmBalDiff).to.be.closeTo(numToBN(amountToMint), numToBN(1, 16));
+	});
+
+	it("removeLiquidityWithPermit", async () => {
+		await addLiquidity(USDC, amountToMint);
+		const name = await USDC.pool.name();
+		const nonce = await USDC.pool.nonces(ownerAddress);
+		const digest = getApprovalDigest(
+			{ name: name, address: USDC.poolAddress },
+			{ owner: ownerAddress, spender: router.address, value: MAX },
+			nonce,
+			MAX
+		);
+		const { v, r, s } = ethjs.ecsign(
+			Buffer.from(digest.slice(2), "hex"),
+			Buffer.from(
+				"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80".slice(2),
+				"hex"
+			)
+		);
+		await router.removeLiquidityWithPermit(
+			usdc.address,
+			numToBN(amountToMint, USDC.decimals),
+			0,
+			ownerAddress,
+			MAX,
+			true,
+			v,
+			r,
+			s
+		);
+	});
+
+	it("removeLiquidityETHWithPermit", async () => {
+		await router.addLiquidityETH(0, ownerAddress, MAX, { value: numToBN(amountToMint) });
+		const name = await WFTM.pool.name();
+		const nonce = await WFTM.pool.nonces(ownerAddress);
+		const digest = getApprovalDigest(
+			{ name: name, address: WFTM.poolAddress },
+			{ owner: ownerAddress, spender: router.address, value: MAX },
+			nonce,
+			MAX
+		);
+		const { v, r, s } = ethjs.ecsign(
+			Buffer.from(digest.slice(2), "hex"),
+			Buffer.from(
+				"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80".slice(2),
+				"hex"
+			)
+		);
+		await router.removeLiquidityETHWithPermit(
+			numToBN(amountToMint),
+			0,
+			ownerAddress,
+			MAX,
+			true,
+			v,
+			r,
+			s
+		);
+	});
+
+	it("swapExactTokensForTokens", async () => {
 		await addLiquidity(ETH, 100);
 		await addLiquidity(USDC, 2000);
 
@@ -306,7 +483,7 @@ describe("Singularity Swap", () => {
 		expect(await USDC.pool.getPricePerShare()).to.be.gt(numToBN(1));
 	});
 
-	it("Should swapExactETHForTokens", async () => {
+	it("swapExactETHForTokens", async () => {
 		await wftm.deposit({ value: numToBN(1000) });
 		await addLiquidity(WFTM, 1000);
 		await addLiquidity(USDC, 2000);
@@ -329,7 +506,7 @@ describe("Singularity Swap", () => {
 		expect(ftmSpent).to.be.closeTo(numToBN(amountToSwap, WFTM.decimals), numToBN(1, 16)); // account for gas cost
 	});
 
-	it("Should swapExactTokensForETH", async () => {
+	it("swapExactTokensForETH", async () => {
 		await wftm.deposit({ value: numToBN(1000) });
 		await addLiquidity(WFTM, 1000);
 		await addLiquidity(USDC, 2000);
@@ -355,5 +532,27 @@ describe("Singularity Swap", () => {
 		const ftmBought = ftmBalAfter.sub(ftmBal);
 		expect(usdcSpent).to.equal(numToBN(amountToSwap, USDC.decimals));
 		expect(ftmBought).to.be.closeTo(expectedOut, numToBN(1, 16)); // account for gas cost
+	});
+
+	it("collectFees", async () => {
+		await expect(factory.connect(otherAccount).collectFees()).to.be.revertedWith("SingularityFactory: NOT_ADMIN");
+		await addLiquidity(ETH, 100);
+		await addLiquidity(USDC, 2000);
+		await router.swapExactTokensForTokens(
+			eth.address,
+			usdc.address,
+			numToBN(amountToSwap, ETH.decimals),
+			0,
+			ownerAddress,
+			MAX
+		);
+		await factory.collectFees();
+		expect(await ETH.pool.adminFees()).to.equal(0);
+		expect(await USDC.pool.adminFees()).to.equal(0);
+		expect(await eth.balanceOf(otherAddress)).to.be.gt(0);
+		expect(await usdc.balanceOf(otherAddress)).to.be.gt(0);
+	});
+
+	it("setBaseFee", async () => {
 	});
 });

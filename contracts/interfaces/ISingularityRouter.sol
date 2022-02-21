@@ -7,78 +7,78 @@ interface ISingularityRouter {
     function WETH() external returns (address);
 
     function poolFor(address factory, address token) external view returns (address pool);
-    function getAssetsAndLiabilities(address token) external view returns (uint assets, uint liabilities);
-    function getAmountOut(uint amountIn, address tokenIn, address tokenOut) external view returns (uint amountOut);
+    function getAssetsAndLiabilities(address token) external view returns (uint256 assets, uint256 liabilities);
+    function getAmountOut(uint256 amountIn, address tokenIn, address tokenOut) external view returns (uint256 amountOut);
 
     function swapExactTokensForTokens(
         address tokenIn,
         address tokenOut, 
-        uint amountIn, 
-        uint minAmountOut, 
+        uint256 amountIn, 
+        uint256 minAmountOut, 
         address to, 
-        uint deadline
-    ) external returns (uint amountOut);
+        uint256 deadline
+    ) external returns (uint256 amountOut);
 
     function swapExactETHForTokens(
         address tokenIn,
         address tokenOut, 
-        uint minAmountOut, 
+        uint256 minAmountOut, 
         address to, 
-        uint deadline
-    ) external payable returns (uint amountOut);
+        uint256 deadline
+    ) external payable returns (uint256 amountOut);
 
     function swapExactTokensForETH(
         address tokenIn,
         address tokenOut, 
-        uint amountIn, 
-        uint minAmountOut, 
+        uint256 amountIn, 
+        uint256 minAmountOut, 
         address to, 
-        uint deadline
-    ) external returns (uint amountOut);
+        uint256 deadline
+    ) external returns (uint256 amountOut);
 
     function addLiquidity(
         address token,
-        uint amount,
-        uint minLiquidity,
+        uint256 amount,
+        uint256 minLiquidity,
         address to,
-        uint deadline
-    ) external returns (uint liquidity);
+        uint256 deadline
+    ) external returns (uint256 liquidity);
 
     function addLiquidityETH(
-        uint minLiquidity,
+        uint256 minLiquidity,
         address to,
-        uint deadline
-    ) external payable returns (uint liquidity);
+        uint256 deadline
+    ) external payable returns (uint256 liquidity);
 
     function removeLiquidity(
         address token,
-        uint liquidity,
-        uint amountMin,
+        uint256 liquidity,
+        uint256 amountMin,
         address to,
-        uint deadline
-    ) external returns (uint amount);
+        uint256 deadline
+    ) external returns (uint256 amount);
 
     function removeLiquidityETH(
-        uint liquidity,
-        uint amountMin,
+        uint256 liquidity,
+        uint256 amountMin,
         address to,
-        uint deadline
-    ) external payable returns (uint amount);
+        uint256 deadline
+    ) external payable returns (uint256 amount);
 
     function removeLiquidityWithPermit(
         address token,
-        uint liquidity,
-        uint minLiquidity,
+        uint256 liquidity,
+        uint256 minLiquidity,
         address to,
-        uint deadline,
+        uint256 deadline,
         bool approveMax, uint8 v, bytes32 r, bytes32 s
-    ) external returns (uint amount);
+    ) external returns (uint256 amount);
 
     function removeLiquidityETHWithPermit(
-        uint liquidity,
-        uint amountMin,
+        uint256 liquidity,
+        uint256 amountMin,
         address to,
-        uint deadline,
+        uint256 deadline,
         bool approveMax, uint8 v, bytes32 r, bytes32 s
-    ) external returns (uint amount);
+    ) external returns (uint256 amount);
 }

@@ -9,28 +9,26 @@ import "./interfaces/ISingularityPoolToken.sol";
  * @author Revenant Labs
  */
 contract SingularityPoolToken is ISingularityPoolToken {
-    // name, symbol, decimals are initialized in SingularityPool.initialize(...)
-    // and are unchangeable after initialization
     string public override name;
     string public override symbol;
     uint8 public override decimals;
 
-    uint public override totalSupply;
+    uint256 public override totalSupply;
 
-    mapping(address => uint) public override balanceOf;
-    mapping(address => mapping(address => uint)) public override allowance;
+    mapping(address => uint256) public override balanceOf;
+    mapping(address => mapping(address => uint256)) public override allowance;
 
-    uint internal immutable INITIAL_CHAIN_ID;
-    bytes32 internal immutable INITIAL_DOMAIN_SEPARATOR;
+    uint256 internal INITIAL_CHAIN_ID;
+    bytes32 internal INITIAL_DOMAIN_SEPARATOR;
 
-    mapping(address => uint) public override nonces;
+    mapping(address => uint256) public override nonces;
 
-    constructor() {
+    function _initialize() internal {
         INITIAL_CHAIN_ID = block.chainid;
         INITIAL_DOMAIN_SEPARATOR = computeDomainSeparator();
     }
 
-    function approve(address spender, uint value) external override returns (bool) {
+    function approve(address spender, uint256 value) external override returns (bool) {
         allowance[msg.sender][spender] = value;
 
         emit Approval(msg.sender, spender, value);
@@ -38,7 +36,7 @@ contract SingularityPoolToken is ISingularityPoolToken {
         return true;
     }
 
-    function transfer(address to, uint value) external override returns (bool) {
+    function transfer(address to, uint256 value) external override returns (bool) {
         balanceOf[msg.sender] -= value;
 
         // Cannot overflow because the sum of all user
@@ -52,10 +50,10 @@ contract SingularityPoolToken is ISingularityPoolToken {
         return true;
     }
 
-    function transferFrom(address from, address to, uint value) external override returns (bool) {
-        uint allowed = allowance[from][msg.sender]; // Saves gas for limited approvals.
+    function transferFrom(address from, address to, uint256 value) external override returns (bool) {
+        uint256 allowed = allowance[from][msg.sender]; // Saves gas for limited approvals.
 
-        if (allowed != type(uint).max) allowance[from][msg.sender] = allowed - value;
+        if (allowed != type(uint256).max) allowance[from][msg.sender] = allowed - value;
 
         balanceOf[from] -= value;
 
@@ -70,7 +68,7 @@ contract SingularityPoolToken is ISingularityPoolToken {
         return true;
     }
 
-    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) public override {
+    function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) public override {
         require(deadline >= block.timestamp, "SingularityPoolToken: EXPIRED");
 
         // Unchecked because the only math done is incrementing
@@ -96,7 +94,6 @@ contract SingularityPoolToken is ISingularityPoolToken {
             );
 
             address recoveredAddress = ecrecover(digest, v, r, s);
-
             require(recoveredAddress != address(0) && recoveredAddress == owner, "SingularityPoolToken: INVALID_SIGNER");
 
             allowance[recoveredAddress][spender] = value;
@@ -122,7 +119,7 @@ contract SingularityPoolToken is ISingularityPoolToken {
             );
     }
 
-    function _mint(address to, uint value) internal {
+    function _mint(address to, uint256 value) internal {
         totalSupply += value;
 
         // Cannot overflow because the sum of all user
@@ -134,7 +131,7 @@ contract SingularityPoolToken is ISingularityPoolToken {
         emit Transfer(address(0), to, value);
     }
 
-    function _burn(address from, uint value) internal {
+    function _burn(address from, uint256 value) internal {
         balanceOf[from] -= value;
 
         // Cannot underflow because a user's balance

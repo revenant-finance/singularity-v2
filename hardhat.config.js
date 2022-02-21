@@ -6,6 +6,14 @@ require("hardhat-gas-reporter");
 require("hardhat-contract-sizer");
 require("solidity-coverage");
 
+task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
+	const accounts = await hre.ethers.getSigners();
+
+	for (const account of accounts) {
+		console.log(account.address);
+	}
+});
+
 module.exports = {
 	contractSizer: {
 		alphaSort: true,
@@ -26,10 +34,6 @@ module.exports = {
 			initialBaseFeePerGas: 0,
 			allowUnlimitedContractSize: true,
 		},
-		ropsten: {
-			url: process.env.ROPSTEN_URL || "",
-			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-		},
 		ftm: {
 			url: "https://rpc.ftm.tools",
 			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
@@ -43,7 +47,7 @@ module.exports = {
 		enabled: true,
 		currency: "USD",
 		token: "FTM",
-		coinmarketcap: "cba8a113-8f85-4dd7-838d-f50a59231e28",
+		coinmarketcap: process.env.CMC_API_KEY,
 		excludeContracts: ["testing/"],
 		gasPriceApi: "https://api.ftmscan.com/api?module=proxy&action=eth_gasPrice",
 	},

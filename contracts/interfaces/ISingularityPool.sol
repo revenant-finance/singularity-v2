@@ -5,17 +5,17 @@ pragma solidity ^0.8.11;
 import "./ISingularityPoolToken.sol";
 
 interface ISingularityPool is ISingularityPoolToken {
-    event Deposit(address indexed sender, uint indexed amountDeposited, uint amountMinted, address indexed to);
-    event Withdraw(address indexed sender, uint indexed amountBurned, uint amountWithdrawn, address indexed to);
+    event Deposit(address indexed sender, uint256 indexed amountDeposited, uint256 amountMinted, address indexed to);
+    event Withdraw(address indexed sender, uint256 indexed amountBurned, uint256 amountWithdrawn, address indexed to);
     event SwapIn(
         address indexed sender,
-        uint indexed amountIn,
-        uint amountOut
+        uint256 indexed amountIn,
+        uint256 amountOut
     );
     event SwapOut(
         address indexed sender,
-        uint indexed amountIn,
-        uint amountOut,
+        uint256 indexed amountIn,
+        uint256 amountOut,
         address indexed to
     );
 
@@ -24,39 +24,33 @@ interface ISingularityPool is ISingularityPoolToken {
     function token() external view returns (address);
     function isStablecoin() external view returns (bool);
 
-    function depositCap() external view returns (uint);
-    function assets() external view returns (uint);
-    function liabilities() external view returns (uint);
-    function adminFees() external view returns (uint);
-    function lockedFees() external view returns (uint);
-    function baseFee() external view returns (uint);
+    function depositCap() external view returns (uint256);
+    function assets() external view returns (uint256);
+    function liabilities() external view returns (uint256);
+    function adminFees() external view returns (uint256);
+    function lockedFees() external view returns (uint256);
+    function baseFee() external view returns (uint256);
 
-    function getAssetsAndLiabilities() external view returns (uint, uint);
-    function getCollateralizationRatio() external view returns (uint);
-    function getPricePerShare() external view returns (uint);
-    function getOracleData() external view returns (uint, uint);
-    function getAmountToUSD(uint amount) external view returns (uint);
-    function getUSDToAmount(uint value) external view returns (uint);
+    function getAssetsAndLiabilities() external view returns (uint256, uint256);
+    function getCollateralizationRatio() external view returns (uint256);
+    function getPricePerShare() external view returns (uint256);
+    function getOracleData() external view returns (uint256, uint256);
+    function getAmountToUSD(uint256 amount) external view returns (uint256);
+    function getUSDToAmount(uint256 value) external view returns (uint256);
     
-    function getLpFeeRate(uint collateralizationRatio) external pure returns (uint);
-    function getDepositFee(uint amount) external view returns (uint);
-    function getWithdrawFee(uint amount) external view returns (uint);
-    function getSlippage(uint amount, uint newAssets, uint newLiabilities) external pure returns (uint);
-    function getTradingFees(uint amount) external view returns (uint, uint, uint);
+    function getLpFeeRate(uint256 collateralizationRatio) external pure returns (uint256);
+    function getDepositFee(uint256 amount) external view returns (uint256);
+    function getWithdrawFee(uint256 amount) external view returns (uint256);
+    function getSlippage(uint256 amount, uint256 newAssets, uint256 newLiabilities) external pure returns (uint256);
+    function getTradingFees(uint256 amount) external view returns (uint256, uint256, uint256);
 
-    function deposit(uint amount, address to) external returns (uint);
-    function withdraw(uint amount, address to) external returns (uint);
-    function swapIn(uint amountIn) external returns (uint);
-    function swapOut(uint amountIn, address to) external returns (uint);
+    function deposit(uint256 amount, address to) external returns (uint256);
+    function withdraw(uint256 amount, address to) external returns (uint256);
+    function swapIn(uint256 amountIn) external returns (uint256);
+    function swapOut(uint256 amountIn, address to) external returns (uint256);
 
     function collectFees() external;
-    function setDepositCap(uint newDepositCap) external;
-    function setBaseFee(uint newBaseFee) external;
+    function setDepositCap(uint256 newDepositCap) external;
+    function setBaseFee(uint256 newBaseFee) external;
     function setPaused(bool paused) external;
-
-    function initialize(
-        address token, 
-        bool isStablecoin, 
-        uint baseFee
-    ) external;
 }

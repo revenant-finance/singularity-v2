@@ -10,19 +10,26 @@ import "./SingularityPool.sol";
  * @author Revenant Labs
  */
  contract SingularityFactory is ISingularityFactory {
+    struct PoolParams {
+        address token;
+        bool isStablecoin;
+        uint256 baseFee;
+    }
     string public override tranche;
     address public override admin;
     address public override oracle;
     address public override feeTo;
     address public override router;
+
+    PoolParams public override poolParams;
     
     mapping(address => address) public override getPool;
     address[] public override allPools;
 
-    event PoolCreated(address indexed token, address indexed pool, uint index);
+    event PoolCreated(address indexed token, address indexed pool, uint256 index);
 
     modifier onlyAdmin() {
-        require(msg.sender == admin, "SingularityFactory: FORBIDDEN");
+        require(msg.sender == admin, "SingularityFactory: NOT_ADMIN");
         _;
     }
 
@@ -37,13 +44,12 @@ import "./SingularityPool.sol";
         feeTo = _feeTo;
     }
 
-    function INIT_CODE_HASH() external pure returns (bytes32 initCodeHash) {
-        bytes memory bytecode = type(SingularityPool).creationCode;
-        initCodeHash = keccak256(abi.encodePacked(bytecode));
+    function allPoolsLength() external view override returns (uint256) {
+        return allPools.length;
     }
 
-    function allPoolsLength() external view override returns (uint) {
-        return allPools.length;
+    function poolInitCodeHash() external pure override returns (bytes32) {
+        return keccak256(type(SingularityPool).creationCode);
     }
 
     /* ========== ADMIN FUNCTIONS ========== */
@@ -57,18 +63,15 @@ import "./SingularityPool.sol";
     function createPool(
         address token, 
         bool isStablecoin, 
-        uint baseFee
+        uint256 baseFee
     ) external override onlyAdmin returns (address pool) {
         require(router != address(0), "SingularityFactory: ROUTER_IS_0");
         require(token != address(0), "SingularityFactory: ZERO_ADDRESS");
         require(getPool[token] == address(0), "SingularityFactory: POOL_EXISTS");
         require(baseFee > 0, "SingularityFactory: FEE_IS_0");
-        bytes memory bytecode = type(SingularityPool).creationCode;
-        bytes32 salt = keccak256(abi.encodePacked(token));
-        assembly {
-            pool := create2(0, add(bytecode, 32), mload(bytecode), salt)
-        }
-        SingularityPool(pool).initialize(token, isStablecoin, baseFee);
+        poolParams = PoolParams({token: token, isStablecoin: isStablecoin, baseFee: baseFee});
+        pool = address(new SingularityPool{salt: keccak256(abi.encodePacked(token))}());
+        delete poolParams;
         getPool[token] = pool;
         allPools.push(pool);
         emit PoolCreated(token, pool, allPools.length);
@@ -95,21 +98,21 @@ import "./SingularityPool.sol";
     }
 
     function collectFees() external override onlyAdmin {
-        for (uint i; i < allPools.length; i++) {
+        for (uint256 i; i < allPools.length; i++) {
             ISingularityPool(allPools[i]).collectFees();
         }
     }
 
-    function setDepositCaps(address[] calldata pools, uint[] calldata caps) external override onlyAdmin {
+    function setDepositCaps(address[] calldata pools, uint256[] calldata caps) external override onlyAdmin {
         require(pools.length == caps.length, "SingularityFactory: NOT_SAME_LENGTH");
-        for (uint i; i < pools.length; i++) {
+        for (uint256 i; i < pools.length; i++) {
             ISingularityPool(pools[i]).setDepositCap(caps[i]);
         }
     }
 
-    function setBaseFees(address[] calldata pools, uint[] calldata baseFees) external override onlyAdmin {
+    function setBaseFees(address[] calldata pools, uint256[] calldata baseFees) external override onlyAdmin {
         require(pools.length == baseFees.length, "SingularityFactory: NOT_SAME_LENGTH");
-        for (uint i; i < pools.length; i++) {
+        for (uint256 i; i < pools.length; i++) {
             require(baseFees[i] > 0, "SingularityFactory: FEE_IS_0");
             ISingularityPool(pools[i]).setBaseFee(baseFees[i]);
         }
@@ -117,13 +120,13 @@ import "./SingularityPool.sol";
 
     function setPaused(address[] calldata pools, bool[] calldata paused) external override onlyAdmin {
         require(pools.length == paused.length, "SingularityFactory: NOT_SAME_LENGTH");
-        for (uint i; i < pools.length; i++) {
+        for (uint256 i; i < pools.length; i++) {
             ISingularityPool(pools[i]).setPaused(paused[i]);
         }
     }
 
     function setPausedForAll(bool paused) external override onlyAdmin {
-        for (uint i; i < allPools.length; i++) {
+        for (uint256 i; i < allPools.length; i++) {
             ISingularityPool(allPools[i]).setPaused(paused);
         }
     }

@@ -109,7 +109,41 @@
 64
 65
 66
-67</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -183,71 +217,88 @@ interface ISingularityRouter {
     function factory() external returns (address);
     function WETH() external returns (address);
 &nbsp;
-    function poolFor(address token) external view returns (address pool);
-    function getAssetsAndLiabilities(address token) external view returns (uint assets, uint liabilities);
-    function getAmountOut(uint amountIn, address tokenIn, address tokenOut) external view returns (uint amountOut);
+    function poolFor(address factory, address token) external view returns (address pool);
+    function getAssetsAndLiabilities(address token) external view returns (uint256 assets, uint256 liabilities);
+    function getAmountOut(uint256 amountIn, address tokenIn, address tokenOut) external view returns (uint256 amountOut);
 &nbsp;
     function swapExactTokensForTokens(
         address tokenIn,
         address tokenOut, 
-        uint amountIn, 
-        uint minAmountOut, 
+        uint256 amountIn, 
+        uint256 minAmountOut, 
         address to, 
-        uint deadline
-    ) external returns (uint amountOut);
+        uint256 deadline
+    ) external returns (uint256 amountOut);
 &nbsp;
     function swapExactETHForTokens(
         address tokenIn,
         address tokenOut, 
-        uint minAmountOut, 
+        uint256 minAmountOut, 
         address to, 
-        uint deadline
-    ) external payable returns (uint amountOut);
+        uint256 deadline
+    ) external payable returns (uint256 amountOut);
 &nbsp;
     function swapExactTokensForETH(
         address tokenIn,
         address tokenOut, 
-        uint amountIn, 
-        uint minAmountOut, 
+        uint256 amountIn, 
+        uint256 minAmountOut, 
         address to, 
-        uint deadline
-    ) external returns (uint amountOut);
+        uint256 deadline
+    ) external returns (uint256 amountOut);
 &nbsp;
     function addLiquidity(
         address token,
-        uint amount,
-        uint minLiquidity,
+        uint256 amount,
+        uint256 minLiquidity,
         address to,
-        uint deadline
-    ) external returns (uint);
+        uint256 deadline
+    ) external returns (uint256 liquidity);
 &nbsp;
     function addLiquidityETH(
-        uint minLiquidity,
+        uint256 minLiquidity,
         address to,
-        uint deadline
-    ) external payable returns (uint liquidity);
+        uint256 deadline
+    ) external payable returns (uint256 liquidity);
 &nbsp;
     function removeLiquidity(
         address token,
-        uint liquidity,
-        uint amountMin,
+        uint256 liquidity,
+        uint256 amountMin,
         address to,
-        uint deadline
-    ) external returns (uint amount);
+        uint256 deadline
+    ) external returns (uint256 amount);
 &nbsp;
     function removeLiquidityETH(
-        uint liquidity,
-        uint amountMin,
+        uint256 liquidity,
+        uint256 amountMin,
         address to,
-        uint deadline
-    ) external payable returns (uint amount);
+        uint256 deadline
+    ) external payable returns (uint256 amount);
+&nbsp;
+    function removeLiquidityWithPermit(
+        address token,
+        uint256 liquidity,
+        uint256 minLiquidity,
+        address to,
+        uint256 deadline,
+        bool approveMax, uint8 v, bytes32 r, bytes32 s
+    ) external returns (uint256 amount);
+&nbsp;
+    function removeLiquidityETHWithPermit(
+        uint256 liquidity,
+        uint256 amountMin,
+        address to,
+        uint256 deadline,
+        bool approveMax, uint8 v, bytes32 r, bytes32 s
+    ) external returns (uint256 amount);
 }</pre></td></tr>
 </table></pre>
 <div class='push'></div><!-- for sticky footer -->
 </div><!-- /wrapper -->
 <div class='footer quiet pad2 space-top1 center small'>
   Code coverage
-  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Sat Feb 19 2022 16:50:44 GMT-0600 (Central Standard Time)
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Sun Feb 20 2022 19:51:52 GMT-0600 (Central Standard Time)
 </div>
 </div>
 <script src="../../prettify.js"></script>

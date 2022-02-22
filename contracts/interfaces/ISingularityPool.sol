@@ -5,8 +5,8 @@ pragma solidity ^0.8.11;
 import "./ISingularityPoolToken.sol";
 
 interface ISingularityPool is ISingularityPoolToken {
-    event Deposit(address indexed sender, uint256 indexed amountDeposited, uint256 amountMinted, address indexed to);
-    event Withdraw(address indexed sender, uint256 indexed amountBurned, uint256 amountWithdrawn, address indexed to);
+    event Deposit(address indexed sender, uint256 indexed amountDeposited, uint256 mintAmount, address indexed to);
+    event Withdraw(address indexed sender, uint256 indexed amountBurned, uint256 withdrawAmount, address indexed to);
     event SwapIn(
         address indexed sender,
         uint256 indexed amountIn,
@@ -42,8 +42,10 @@ interface ISingularityPool is ISingularityPoolToken {
     function getLpFeeRate(uint256 collateralizationRatio) external pure returns (uint256);
     function getDepositFee(uint256 amount) external view returns (uint256);
     function getWithdrawFee(uint256 amount) external view returns (uint256);
-    function getSlippage(uint256 amount, uint256 newAssets, uint256 newLiabilities) external pure returns (uint256);
-    function getTradingFees(uint256 amount) external view returns (uint256, uint256, uint256);
+    function getSlippageIn(uint256 amount) external view returns (uint256 slippageIn);
+    function getSlippageOut(uint256 amount) external view returns (uint256 slippageOut);
+
+    function getTradingFees(uint256 amount) external view returns (uint256, uint256, uint256, uint256);
 
     function deposit(uint256 amount, address to) external returns (uint256);
     function withdraw(uint256 amount, address to) external returns (uint256);

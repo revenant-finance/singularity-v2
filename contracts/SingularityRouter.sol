@@ -52,20 +52,18 @@ contract SingularityRouter is ISingularityRouter {
     function getAmountOut(uint256 amountIn, address tokenIn, address tokenOut) public view override returns (uint256 amountOut) {
         require(amountIn != 0, "SingularityRouter: INSUFFICIENT_INPUT_AMOUNT");
         address poolIn = poolFor(factory, tokenIn);
-        (uint256 assets, uint256 liabilities) = getAssetsAndLiabilities(tokenIn);
-        uint256 slippageIn = ISingularityPool(poolIn).getSlippage(amountIn, assets + amountIn, liabilities);
+        uint256 slippageIn = ISingularityPool(poolIn).getSlippageIn(amountIn);
         amountIn += slippageIn;
-        (uint256 lockedFee, uint256 adminFee, uint256 lpFee) = ISingularityPool(poolIn).getTradingFees(amountIn);
-        amountIn -= lockedFee + adminFee + lpFee;
+        (uint256 totalFee, , ,) = ISingularityPool(poolIn).getTradingFees(amountIn);
+        amountIn -= totalFee;
         uint256 swapInAmountOut = ISingularityPool(poolIn).getAmountToUSD(amountIn);
 
         address poolOut = poolFor(factory, tokenOut);
-        uint256 swapOutAmountOut = ISingularityPool(poolOut).getUSDToAmount(swapInAmountOut);
-        (assets, liabilities) = getAssetsAndLiabilities(tokenOut);
-        uint256 slippageOut = ISingularityPool(poolOut).getSlippage(swapOutAmountOut, assets - swapOutAmountOut, liabilities);
-        swapOutAmountOut -= slippageOut;
-        (lockedFee, adminFee, lpFee) = ISingularityPool(poolOut).getTradingFees(swapOutAmountOut);
-        amountOut = swapOutAmountOut - lockedFee - adminFee - lpFee;
+        amountOut = ISingularityPool(poolOut).getUSDToAmount(swapInAmountOut);
+        (totalFee, , ,) = ISingularityPool(poolOut).getTradingFees(amountOut);
+        amountOut -= totalFee;
+        uint256 slippageOut = ISingularityPool(poolOut).getSlippageOut(amountOut);
+        amountOut -= slippageOut;
     }
 
     function swapExactTokensForTokens(

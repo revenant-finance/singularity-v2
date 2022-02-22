@@ -60,7 +60,7 @@ describe("Singularity Swap", () => {
 		poolAddress: "",
 		pool: "",
 	};
-	const amountToSwap = 1;
+	const amountToSwap = 0.5;
 	const amountToMint = 100;
 
 	function numToBN(number, decimals = 18) {
@@ -77,7 +77,7 @@ describe("Singularity Swap", () => {
 		eth = await ERC20.deploy(ETH.name, ETH.symbol, ETH.decimals);
 		await eth.deployed();
 		ETH.address = eth.address;
-		await eth.mint(ownerAddress, numToBN(ETH.balance, ETH.decimals));
+		await eth.mint(ownerAddress, numToBN(1000000, ETH.decimals));
 
 		usdc = await ERC20.deploy(USDC.name, USDC.symbol, USDC.decimals);
 		await usdc.deployed();
@@ -457,8 +457,8 @@ describe("Singularity Swap", () => {
 	});
 
 	it("swapExactTokensForTokens", async () => {
-		await addLiquidity(ETH, 100);
-		await addLiquidity(USDC, 2000);
+		await addLiquidity(ETH, 10);
+		await addLiquidity(USDC, 20000);
 
 		const ethBal = await eth.balanceOf(ownerAddress);
 		const usdcBal = await usdc.balanceOf(ownerAddress);
@@ -479,6 +479,7 @@ describe("Singularity Swap", () => {
 		const usdcBalAfter = await usdc.balanceOf(ownerAddress);
 		const usdcBought = usdcBalAfter.sub(usdcBal);
 		const ethSpent = ethBal.sub(ethBalAfter);
+
 		expect(usdcBought).to.be.closeTo(expectedOut, numToBN(1, USDC.decimals));
 		expect(ethSpent).to.equal(numToBN(amountToSwap, ETH.decimals));
 		expect(await ETH.pool.getPricePerShare()).to.be.gt(numToBN(1));
@@ -487,8 +488,8 @@ describe("Singularity Swap", () => {
 
 	it("swapExactETHForTokens", async () => {
 		await wftm.deposit({ value: numToBN(1000) });
-		await addLiquidity(WFTM, 1000);
-		await addLiquidity(USDC, 2000);
+		await addLiquidity(ETH, 10);
+		await addLiquidity(USDC, 20000);
 
 		await expect(
 			router.swapExactETHForTokens(usdc.address, usdc.address, 0, ownerAddress, MAX, {
@@ -518,9 +519,8 @@ describe("Singularity Swap", () => {
 	});
 
 	it("swapExactTokensForETH", async () => {
-		await wftm.deposit({ value: numToBN(1000) });
-		await addLiquidity(WFTM, 1000);
-		await addLiquidity(USDC, 2000);
+		await addLiquidity(ETH, 10);
+		await addLiquidity(USDC, 20000);
 
 		await expect(
 			router.swapExactTokensForETH(
@@ -560,12 +560,12 @@ describe("Singularity Swap", () => {
 		await expect(factory.connect(otherAccount).collectFees()).to.be.revertedWith(
 			"SingularityFactory: NOT_ADMIN"
 		);
-		await addLiquidity(ETH, 100);
-		await addLiquidity(USDC, 2000);
+		await addLiquidity(ETH, 10);
+		await addLiquidity(USDC, 20000);
 		await router.swapExactTokensForTokens(
 			eth.address,
 			usdc.address,
-			numToBN(amountToSwap, ETH.decimals),
+			numToBN(0.2, ETH.decimals),
 			0,
 			ownerAddress,
 			MAX

@@ -25,19 +25,19 @@
         <span class='fraction'>13/20</span>
       </div>
       <div class='fl pad1y space-right2'>
-        <span class="strong">16.67% </span>
+        <span class="strong">33.33% </span>
         <span class="quiet">Branches</span>
-        <span class='fraction'>2/12</span>
+        <span class='fraction'>4/12</span>
       </div>
       <div class='fl pad1y space-right2'>
-        <span class="strong">57.14% </span>
+        <span class="strong">71.43% </span>
         <span class="quiet">Functions</span>
-        <span class='fraction'>4/7</span>
+        <span class='fraction'>5/7</span>
       </div>
       <div class='fl pad1y space-right2'>
-        <span class="strong">60% </span>
+        <span class="strong">65% </span>
         <span class="quiet">Lines</span>
-        <span class='fraction'>12/20</span>
+        <span class='fraction'>13/20</span>
       </div>
     </div>
   </div>
@@ -133,48 +133,48 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">42×</span>
+<span class="cline-any cline-yes">42×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">38×</span>
+<span class="cline-any cline-yes">38×</span>
+<span class="cline-any cline-yes">38×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">39×</span>
-<span class="cline-any cline-yes">39×</span>
-<span class="cline-any cline-yes">39×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">58×</span>
+<span class="cline-any cline-yes">58×</span>
+<span class="cline-any cline-yes">58×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">48×</span>
-<span class="cline-any cline-yes">48×</span>
-<span class="cline-any cline-yes">48×</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">16×</span>
+<span class="cline-any cline-yes">16×</span>
+<span class="cline-any cline-yes">58×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-yes">54×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">54×</span>
-<span class="cline-any cline-yes">54×</span>
-<span class="cline-any cline-yes">15×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">15×</span>
-<span class="cline-any cline-yes">54×</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">14×</span>
+<span class="cline-any cline-yes">14×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// SPDX-License-Identifier: No License
@@ -199,8 +199,8 @@ contract SingularityOracle is ISingularityOracle {
 	mapping(address =&gt; bool) public pushers;
 	mapping(address =&gt; PriceData[]) public allPrices;
 &nbsp;
-<span class="fstat-no" title="function not covered" >	constructor(address _admin) {</span>
-<span class="cstat-no" title="statement not covered" >		require(_admin != address(0), "SingularityOracle: ADMIN_IS_0")</span>;
+	constructor(address _admin) {
+		<span class="missing-if-branch" title="else path not taken" >E</span>require(_admin != address(0), "SingularityOracle: ADMIN_IS_0");
 		admin = _admin;
 	}
 &nbsp;
@@ -212,16 +212,16 @@ contract SingularityOracle is ISingularityOracle {
 		updatedAt = prices[prices.length - 1].updatedAt;
 	}
 &nbsp;
-	function getLatestRounds(address[] calldata tokens) external view returns (uint256[] memory prices, uint256[] memory updatedAts) {
-		for (uint256 i; i &lt; tokens.length; i++) {
-			(uint256 price, uint256 updatedAt) = getLatestRound(tokens[i]);
+<span class="fstat-no" title="function not covered" >	function getLatestRounds(address[] calldata tokens) external view returns (uint256[] memory prices, uint256[] memory updatedAts) {</span>
+<span class="cstat-no" title="statement not covered" >		for (uint256 i; i &lt; tokens.length; i++) {</span>
+<span class="cstat-no" title="statement not covered" >			(uint256 price, uint256 updatedAt) = getLatestRound(tokens[i]);</span>
 <span class="cstat-no" title="statement not covered" >			prices[i] = price</span>;
 <span class="cstat-no" title="statement not covered" >			updatedAts[i] = updatedAt</span>;
 		}
 	}
 &nbsp;
-<span class="fstat-no" title="function not covered" >	function pushPrice(address _token, uint256 _price) public {</span>
-<span class="cstat-no" title="statement not covered" >		require(pushers[msg.sender], "SingularityOracle: NOT_PUSHER")</span>;
+	function pushPrice(address _token, uint256 _price) public {
+		<span class="missing-if-branch" title="else path not taken" >E</span>require(pushers[msg.sender], "SingularityOracle: NOT_PUSHER");
 		PriceData[] storage prices = allPrices[_token];
 		prices.push(PriceData({ price: _price, updatedAt: block.timestamp, nonce: prices.length }));
 	}
@@ -233,14 +233,14 @@ contract SingularityOracle is ISingularityOracle {
 		}
 	}
 &nbsp;
-	function setAdmin(address _admin) external {
-		require(msg.sender == admin, "SingularityOracle: NOT_ADMIN");
+<span class="fstat-no" title="function not covered" >	function setAdmin(address _admin) external {</span>
+<span class="cstat-no" title="statement not covered" >		require(msg.sender == admin, "SingularityOracle: NOT_ADMIN")</span>;
 <span class="cstat-no" title="statement not covered" >		require(_admin != address(0), "SingularityOracle: ADMIN_IS_0")</span>;
 <span class="cstat-no" title="statement not covered" >		admin = _admin</span>;
 	}
 &nbsp;
-<span class="fstat-no" title="function not covered" >	function setPusher(address _pusher, bool _allowed) external {</span>
-<span class="cstat-no" title="statement not covered" >		require(msg.sender == admin, "SingularityOracle: NOT_ADMIN")</span>;
+	function setPusher(address _pusher, bool _allowed) external {
+		<span class="missing-if-branch" title="else path not taken" >E</span>require(msg.sender == admin, "SingularityOracle: NOT_ADMIN");
 		pushers[_pusher] = _allowed;
 	}
 }
@@ -250,7 +250,7 @@ contract SingularityOracle is ISingularityOracle {
 </div><!-- /wrapper -->
 <div class='footer quiet pad2 space-top1 center small'>
   Code coverage
-  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Sun Feb 20 2022 22:45:43 GMT-0600 (Central Standard Time)
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Wed Feb 23 2022 18:48:14 GMT-0600 (Central Standard Time)
 </div>
 </div>
 <script src="../prettify.js"></script>

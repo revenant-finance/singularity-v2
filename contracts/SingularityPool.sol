@@ -67,11 +67,6 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         _initialize();
     }
 
-    function getAssetsAndLiabilities() external view override returns (uint256 _assets, uint256 _liabilities) {
-        _assets = assets;
-        _liabilities = liabilities;
-    }
-
     function getCollateralizationRatio() external view override returns (uint256 collateralizationRatio) {
         if (liabilities == 0) {
             collateralizationRatio = type(uint256).max;
@@ -122,6 +117,9 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     }
 
     function getLpFeeRate(uint256 collateralizationRatio) public pure override returns (uint256 lpFeeRate) {
+        if (collateralizationRatio == 0) {
+            return 0;
+        }
         uint256 truncatedCRatio = collateralizationRatio / 10**15; // truncate collateralization ratio precision to 3
         uint256 numerator = 50 ether;
         uint256 denominator = truncatedCRatio.rpow(8, 1);
@@ -192,6 +190,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         } else {
             (, uint256 updatedAt) = getOracleData();
             uint256 timeDiff = block.timestamp - updatedAt;
+            require(timeDiff <= 70, "SingularityPool: STALE_ORACLE");
             if (timeDiff >= 60) {
                 rate = baseFee * 2;
             } else {

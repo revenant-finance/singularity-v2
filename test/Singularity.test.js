@@ -23,7 +23,8 @@ describe("Singularity Swap", () => {
 		symbol: "wFTM",
 		decimals: 18,
 		price: 2,
-		baseFee: numToBN(0.0015),
+		isStablecoin: false,
+		baseFee: 0.0015,
 		poolAddress: "",
 		pool: "",
 	};
@@ -34,7 +35,8 @@ describe("Singularity Swap", () => {
 		decimals: 18,
 		price: 2000,
 		balance: 1000,
-		baseFee: numToBN(0.0015),
+		isStablecoin: false,
+		baseFee: 0.0015,
 		poolAddress: "",
 		pool: "",
 	};
@@ -45,7 +47,8 @@ describe("Singularity Swap", () => {
 		decimals: 6,
 		price: 1,
 		balance: 1000000,
-		baseFee: numToBN(0.0015),
+		isStablecoin: true,
+		baseFee: 0.0015,
 		poolAddress: "",
 		pool: "",
 	};
@@ -56,7 +59,8 @@ describe("Singularity Swap", () => {
 		decimals: 21,
 		price: 1,
 		balance: 1000000,
-		baseFee: numToBN(0.0015),
+		isStablecoin: true,
+		baseFee: 0.0015,
 		poolAddress: "",
 		pool: "",
 	};
@@ -65,6 +69,11 @@ describe("Singularity Swap", () => {
 
 	function numToBN(number, decimals = 18) {
 		return ethers.utils.parseUnits(number.toString(), decimals);
+	}
+
+	function advanceTime(seconds) {
+		ethers.provider.send("evm_increaseTime", [seconds]);
+		ethers.provider.send("evm_mine");
 	}
 
 	async function deployTestTokens() {
@@ -91,7 +100,7 @@ describe("Singularity Swap", () => {
 	}
 
 	async function createPool(asset) {
-		await factory.createPool(asset.address, false, asset.baseFee);
+		await factory.createPool(asset.address, asset.isStablecoin, numToBN(asset.baseFee));
 		asset.poolAddress = await factory.getPool(asset.address);
 		asset.pool = await Pool.attach(asset.poolAddress);
 	}
@@ -148,6 +157,10 @@ describe("Singularity Swap", () => {
 				]
 			)
 		);
+	}
+
+	function calculateLpFeeRate(cRatio) {
+		return numToBN((0.00005 / cRatio ** 8).toFixed(18));
 	}
 
 	before(async () => {
@@ -224,27 +237,27 @@ describe("Singularity Swap", () => {
 	});
 
 	it("createPool", async () => {
-		await expect(factory.createPool(ZERO_ADDR, true, DAI.baseFee)).to.be.revertedWith(
-			"SingularityFactory: ZERO_ADDRESS"
-		);
-		await expect(factory.createPool(WFTM.address, true, WFTM.baseFee)).to.be.revertedWith(
-			"SingularityFactory: POOL_EXISTS"
-		);
-		await expect(factory.createPool(DAI.address, true, 0)).to.be.revertedWith(
+		await expect(
+			factory.createPool(ZERO_ADDR, DAI.isStablecoin, numToBN(DAI.baseFee))
+		).to.be.revertedWith("SingularityFactory: ZERO_ADDRESS");
+		await expect(
+			factory.createPool(WFTM.address, DAI.isStablecoin, numToBN(WFTM.baseFee))
+		).to.be.revertedWith("SingularityFactory: POOL_EXISTS");
+		await expect(factory.createPool(DAI.address, DAI.isStablecoin, 0)).to.be.revertedWith(
 			"SingularityFactory: FEE_IS_0"
 		);
-		await factory.createPool(DAI.address, true, DAI.baseFee);
+		await factory.createPool(DAI.address, DAI.isStablecoin, numToBN(DAI.baseFee));
 		DAI.poolAddress = await factory.getPool(DAI.address);
 		DAI.pool = await Pool.attach(DAI.poolAddress);
 
 		expect(await DAI.pool.paused()).to.equal(false);
 		expect(await DAI.pool.factory()).to.equal(factory.address);
 		expect(await DAI.pool.token()).to.equal(DAI.address);
-		expect(await DAI.pool.isStablecoin()).to.equal(true);
+		expect(await DAI.pool.isStablecoin()).to.equal(DAI.isStablecoin);
 		expect(await DAI.pool.depositCap()).to.equal(0);
 		expect(await DAI.pool.assets()).to.equal(0);
 		expect(await DAI.pool.liabilities()).to.equal(0);
-		expect(await DAI.pool.baseFee()).to.equal(DAI.baseFee);
+		expect(await DAI.pool.baseFee()).to.equal(numToBN(DAI.baseFee));
 		expect(await DAI.pool.adminFees()).to.equal(0);
 		expect(await DAI.pool.lockedFees()).to.equal(0);
 		expect(await DAI.pool.name()).to.equal(`Singularity ${DAI.symbol} Pool (${trancheName})`);
@@ -589,5 +602,29 @@ describe("Singularity Swap", () => {
 		);
 		await factory.setBaseFees([WFTM.address], [numToBN(0.01)]);
 		expect(await WFTM.pool.baseFee()).to.equal(numToBN(0.01));
+	});
+
+	it("getTradingFees", async () => {
+		let { totalFee, lockedFee, adminFee, lpFee } = await USDC.pool.getTradingFees(
+			numToBN(amountToSwap, USDC.decimals)
+		);
+		expect(totalFee).to.equal(numToBN(amountToSwap * USDC.baseFee, USDC.decimals));
+		expect(lockedFee).to.equal(numToBN((amountToSwap * USDC.baseFee) / 3, USDC.decimals));
+		expect(adminFee).to.equal(numToBN((amountToSwap * USDC.baseFee) / 3, USDC.decimals));
+		expect(lpFee).to.equal(numToBN((amountToSwap * USDC.baseFee) / 3, USDC.decimals));
+
+		advanceTime(100);
+		await expect(WFTM.pool.getTradingFees(numToBN(amountToSwap, WFTM.decimals))).to.be.revertedWith(
+			"SingularityPool: STALE_ORACLE"
+		);
+	});
+
+	it("getLpFeeRate", async () => {
+		for (let i = 0.1; i < 1.5; i += 0.1) {
+			expect(await USDC.pool.getLpFeeRate(numToBN(i))).to.be.closeTo(
+				calculateLpFeeRate(i),
+				numToBN(1, 16)
+			);
+		}
 	});
 });

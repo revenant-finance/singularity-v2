@@ -44,11 +44,6 @@ contract SingularityRouter is ISingularityRouter {
         )))));
     }
 
-    function getAssetsAndLiabilities(address token) public view override returns (uint256 assets, uint256 liabilities) {
-        address pool = poolFor(factory, token);
-        (assets, liabilities) = ISingularityPool(pool).getAssetsAndLiabilities();
-    }
-
     function getAmountOut(uint256 amountIn, address tokenIn, address tokenOut) public view override returns (uint256 amountOut) {
         require(amountIn != 0, "SingularityRouter: INSUFFICIENT_INPUT_AMOUNT");
         address poolIn = poolFor(factory, tokenIn);

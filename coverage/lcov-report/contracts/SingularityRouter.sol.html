@@ -22,7 +22,7 @@
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
         <span class="quiet">Statements</span>
-        <span class='fraction'>68/68</span>
+        <span class='fraction'>64/64</span>
       </div>
       <div class='fl pad1y space-right2'>
         <span class="strong">75% </span>
@@ -32,12 +32,12 @@
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
         <span class="quiet">Functions</span>
-        <span class='fraction'>17/17</span>
+        <span class='fraction'>16/16</span>
       </div>
       <div class='fl pad1y space-right2'>
         <span class="strong">100% </span>
         <span class="quiet">Lines</span>
-        <span class='fraction'>71/71</span>
+        <span class='fraction'>67/67</span>
       </div>
     </div>
   </div>
@@ -252,14 +252,7 @@
 207
 208
 209
-210
-211
-212
-213
-214
-215
-216
-217</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+210</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -287,27 +280,22 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">39×</span>
-<span class="cline-any cline-yes">39×</span>
-<span class="cline-any cline-yes">39×</span>
+<span class="cline-any cline-yes">42×</span>
+<span class="cline-any cline-yes">42×</span>
+<span class="cline-any cline-yes">42×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">2×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">66×</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">52×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">14×</span>
-<span class="cline-any cline-yes">14×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -318,9 +306,7 @@
 <span class="cline-any cline-yes">7×</span>
 <span class="cline-any cline-yes">7×</span>
 <span class="cline-any cline-yes">7×</span>
-<span class="cline-any cline-yes">7×</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">7×</span>
 <span class="cline-any cline-yes">7×</span>
 <span class="cline-any cline-yes">7×</span>
 <span class="cline-any cline-yes">7×</span>
@@ -521,28 +507,21 @@ contract SingularityRouter is ISingularityRouter {
         )))));
     }
 &nbsp;
-    function getAssetsAndLiabilities(address token) public view override returns (uint256 assets, uint256 liabilities) {
-        address pool = poolFor(factory, token);
-        (assets, liabilities) = ISingularityPool(pool).getAssetsAndLiabilities();
-    }
-&nbsp;
     function getAmountOut(uint256 amountIn, address tokenIn, address tokenOut) public view override returns (uint256 amountOut) {
         require(amountIn != 0, "SingularityRouter: INSUFFICIENT_INPUT_AMOUNT");
         address poolIn = poolFor(factory, tokenIn);
-        (uint256 assets, uint256 liabilities) = getAssetsAndLiabilities(tokenIn);
-        uint256 slippageIn = ISingularityPool(poolIn).getSlippage(amountIn, assets + amountIn, liabilities);
+        uint256 slippageIn = ISingularityPool(poolIn).getSlippageIn(amountIn);
         amountIn += slippageIn;
-        (uint256 lockedFee, uint256 adminFee, uint256 lpFee) = ISingularityPool(poolIn).getTradingFees(amountIn);
-        amountIn -= lockedFee + adminFee + lpFee;
+        (uint256 totalFee, , ,) = ISingularityPool(poolIn).getTradingFees(amountIn);
+        amountIn -= totalFee;
         uint256 swapInAmountOut = ISingularityPool(poolIn).getAmountToUSD(amountIn);
 &nbsp;
         address poolOut = poolFor(factory, tokenOut);
-        uint256 swapOutAmountOut = ISingularityPool(poolOut).getUSDToAmount(swapInAmountOut);
-        (assets, liabilities) = getAssetsAndLiabilities(tokenOut);
-        uint256 slippageOut = ISingularityPool(poolOut).getSlippage(swapOutAmountOut, assets - swapOutAmountOut, liabilities);
-        swapOutAmountOut -= slippageOut;
-        (lockedFee, adminFee, lpFee) = ISingularityPool(poolOut).getTradingFees(swapOutAmountOut);
-        amountOut = swapOutAmountOut - lockedFee - adminFee - lpFee;
+        amountOut = ISingularityPool(poolOut).getUSDToAmount(swapInAmountOut);
+        (totalFee, , ,) = ISingularityPool(poolOut).getTradingFees(amountOut);
+        amountOut -= totalFee;
+        uint256 slippageOut = ISingularityPool(poolOut).getSlippageOut(amountOut);
+        amountOut -= slippageOut;
     }
 &nbsp;
     function swapExactTokensForTokens(
@@ -697,7 +676,7 @@ contract SingularityRouter is ISingularityRouter {
 </div><!-- /wrapper -->
 <div class='footer quiet pad2 space-top1 center small'>
   Code coverage
-  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Sun Feb 20 2022 22:45:43 GMT-0600 (Central Standard Time)
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Wed Feb 23 2022 18:48:14 GMT-0600 (Central Standard Time)
 </div>
 </div>
 <script src="../prettify.js"></script>

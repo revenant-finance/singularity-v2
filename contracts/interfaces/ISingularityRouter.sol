@@ -8,7 +8,6 @@ interface ISingularityRouter {
     function poolCodeHash() external returns (bytes32);
 
     function poolFor(address factory, address token) external view returns (address pool);
-    function getAssetsAndLiabilities(address token) external view returns (uint256 assets, uint256 liabilities);
     function getAmountOut(uint256 amountIn, address tokenIn, address tokenOut) external view returns (uint256 amountOut);
 
     function swapExactTokensForTokens(

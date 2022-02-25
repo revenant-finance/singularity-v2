@@ -480,6 +480,10 @@ describe("Singularity Swap", () => {
 			eth.address,
 			usdc.address
 		);
+		await expect(
+			router.swapExactTokensForTokens(eth.address, usdc.address, 0, 0, ownerAddress, MAX)
+		).to.be.revertedWith("SingularityRouter: INSUFFICIENT_INPUT_AMOUNT");
+
 		await router.swapExactTokensForTokens(
 			eth.address,
 			usdc.address,
@@ -512,9 +516,6 @@ describe("Singularity Swap", () => {
 
 		const ftmBal = await getFtmBalance();
 		const usdcBal = await usdc.balanceOf(ownerAddress);
-		await expect(router.getAmountOut(0, wftm.address, usdc.address)).to.be.revertedWith(
-			"SingularityRouter: INSUFFICIENT_INPUT_AMOUNT"
-		);
 		const expectedOut = await router.getAmountOut(
 			numToBN(amountToSwap, WFTM.decimals),
 			wftm.address,
@@ -605,18 +606,20 @@ describe("Singularity Swap", () => {
 	});
 
 	it("getTradingFees", async () => {
-		let { totalFee, lockedFee, adminFee, lpFee } = await USDC.pool.getTradingFees(
-			numToBN(amountToSwap, USDC.decimals)
+		expect(await USDC.pool.getTradingFeeRate()).to.equal(numToBN(USDC.baseFee));
+		const { totalFee, lockedFee, adminFee, lpFee } = await USDC.pool.getTradingFees(
+			numToBN(1, USDC.decimals)
 		);
-		expect(totalFee).to.equal(numToBN(amountToSwap * USDC.baseFee, USDC.decimals));
-		expect(lockedFee).to.equal(numToBN((amountToSwap * USDC.baseFee) / 3, USDC.decimals));
-		expect(adminFee).to.equal(numToBN((amountToSwap * USDC.baseFee) / 3, USDC.decimals));
-		expect(lpFee).to.equal(numToBN((amountToSwap * USDC.baseFee) / 3, USDC.decimals));
+		expect(totalFee).to.equal(numToBN(USDC.baseFee, 6));
+		expect(lockedFee).to.equal(numToBN(USDC.baseFee / 3, 6));
+		expect(adminFee).to.equal(numToBN(USDC.baseFee / 3, 6));
+		expect(lpFee).to.equal(numToBN(USDC.baseFee / 3, 6));
 
-		advanceTime(100);
-		await expect(WFTM.pool.getTradingFees(numToBN(amountToSwap, WFTM.decimals))).to.be.revertedWith(
-			"SingularityPool: STALE_ORACLE"
-		);
+		expect(await WFTM.pool.getTradingFeeRate()).to.be.gt(numToBN(WFTM.baseFee));
+		advanceTime(50); // tests >= 60 seconds condition
+		expect(await WFTM.pool.getTradingFeeRate()).to.equal(numToBN(WFTM.baseFee * 2));
+		advanceTime(100); // tests >= 70 seconds condition
+		await expect(WFTM.pool.getTradingFeeRate()).to.revertedWith("SingularityPool: STALE_ORACLE");
 	});
 
 	it("getLpFeeRate", async () => {

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: No License
+// SPDX-License-Identifier: AGPL-3.0-only
 
 pragma solidity ^0.8.11;
 
@@ -7,6 +7,7 @@ import "./interfaces/ISingularityPoolToken.sol";
 /**
  * @title Singularity Pool Token
  * @author Revenant Labs
+ * @author Modified from Solmate (https://github.com/Rari-Capital/solmate/blob/main/src/tokens/ERC20.sol)
  */
 abstract contract SingularityPoolToken is ISingularityPoolToken {
     string public override name;

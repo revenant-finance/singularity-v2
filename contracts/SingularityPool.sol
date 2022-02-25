@@ -183,22 +183,25 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         slippage = amount.mulWadUp(slippageRate);
     }
 
-    function getTradingFees(uint256 amount) public view override returns (uint256 totalFee, uint256 lockedFee, uint256 adminFee, uint256 lpFee) {
-        uint256 rate;
+    function getTradingFeeRate() public view override returns (uint256 tradingFeeRate) {
         if (isStablecoin) {
-            rate = baseFee;
+            tradingFeeRate = baseFee;
         } else {
             (, uint256 updatedAt) = getOracleData();
             uint256 timeDiff = block.timestamp - updatedAt;
             require(timeDiff <= 70, "SingularityPool: STALE_ORACLE");
             if (timeDiff >= 60) {
-                rate = baseFee * 2;
+                tradingFeeRate = baseFee * 2;
             } else {
-                rate = baseFee + baseFee * timeDiff / 60;
+                tradingFeeRate = baseFee + baseFee * timeDiff / 60;
             }
         }
+    }
+
+    function getTradingFees(uint256 amount) public view override returns (uint256 totalFee, uint256 lockedFee, uint256 adminFee, uint256 lpFee) {
+        uint256 tradingFeeRate = getTradingFeeRate();
         // TODO: adjust later
-        totalFee = amount.mulWadUp(rate);
+        totalFee = amount.mulWadUp(tradingFeeRate);
         lockedFee = totalFee / 3;
         adminFee = totalFee / 3;
         lpFee = totalFee / 3;

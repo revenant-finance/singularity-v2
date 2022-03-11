@@ -4,7 +4,7 @@ pragma solidity ^0.8.11;
 
 import "./TestERC20.sol";
 
-contract WFTM is ERC20 {
+contract WFTM is TestERC20 {
     // Error Code: No error.
     uint256 public constant ERR_NO_ERROR = 0x0;
 
@@ -12,7 +12,7 @@ contract WFTM is ERC20 {
     uint256 public constant ERR_INVALID_ZERO_VALUE = 0x01;
 
     // create instance of the wFTM token
-    constructor () ERC20("Wrapped FTM", "WFTM", 18) {
+    constructor () TestERC20("Wrapped FTM", "WFTM", 18) {
     }
 
     // deposit wraps received FTM tokens as wFTM in 1:1 ratio by minting
@@ -24,7 +24,7 @@ contract WFTM is ERC20 {
         }
 
         // we already received FTMs, mint the appropriate amount of wFTM
-        ERC20(address(this)).mint(msg.sender, msg.value);
+        TestERC20(address(this)).mint(msg.sender, msg.value);
 
         // all went well here
         return ERR_NO_ERROR;
@@ -40,7 +40,7 @@ contract WFTM is ERC20 {
         }
 
         // burn wFTM from the sender first to prevent re-entrance issue
-        ERC20(address(this)).burn(msg.sender, amount);
+        TestERC20(address(this)).burn(msg.sender, amount);
 
         // if wFTM were burned, transfer native tokens back to the sender
         payable(msg.sender).transfer(amount);

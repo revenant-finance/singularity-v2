@@ -4,7 +4,7 @@ pragma solidity ^0.8.11;
 
 import "../interfaces/IERC20.sol";
 
-contract ERC20 is IERC20 {
+contract TestERC20 is IERC20 {
     mapping(address => uint256) private _balances;
     mapping(address => mapping(address => uint256)) private _allowances;
     uint256 private _totalSupply;

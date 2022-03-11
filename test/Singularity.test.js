@@ -172,7 +172,7 @@ describe("Singularity Swap", () => {
 		Router = await ethers.getContractFactory("SingularityRouter");
 		Oracle = await ethers.getContractFactory("SingularityOracle");
 		Pool = await ethers.getContractFactory("SingularityPool");
-		ERC20 = await ethers.getContractFactory("ERC20");
+		ERC20 = await ethers.getContractFactory("TestERC20");
 		Wftm = await ethers.getContractFactory("WFTM");
 	});
 

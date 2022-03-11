@@ -245,6 +245,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         // Apply slippage (+)
         uint256 slippage = getSlippageIn(amountIn);
         amountIn += slippage;
+        assets -= slippage;
         liabilities -= slippage;
 
         // Apply trading fees
@@ -266,14 +267,16 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         // Apply slippage (-)
         uint256 slippage = getSlippageOut(amountOut);
         amountOut -= slippage;
+        assets += slippage;
         liabilities += slippage;
-        assets -= amountOut;
 
         // Apply trading fees
         (uint256 totalFee, uint256 lockedFee, uint256 adminFee, uint256 lpFee) = getTradingFees(amountOut);
         lockedFees += lockedFee;
         adminFees += adminFee;
         liabilities += lpFee;
+
+        assets -= amountOut;
         amountOut -= totalFee;
 
         IERC20(token).safeTransfer(to, amountOut);

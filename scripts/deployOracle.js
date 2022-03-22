@@ -8,9 +8,7 @@ async function main() {
 	await oracle.deployed();
 
 	console.log(`Oracle deployed to: ${oracle.address}`);
-
-	await new Promise(resolve => setTimeout(resolve, 10000));
-
+	
 	await run("verify:verify", {
 		address: oracle.address,
 		constructorArguments: [adminAddress],

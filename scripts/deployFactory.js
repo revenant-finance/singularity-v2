@@ -13,8 +13,6 @@ async function main() {
 
 	console.log(`Factory deployed to: ${factory.address}`);
 
-	await new Promise(resolve => setTimeout(resolve, 10000));
-
 	await run("verify:verify", {
 		address: factory.address,
 		constructorArguments: [trancheName, adminAddress, oracleAddress, feeToAddress],

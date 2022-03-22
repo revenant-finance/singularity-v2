@@ -2,10 +2,10 @@ const hre = require("hardhat");
 
 async function main() {
 	const Factory = await hre.ethers.getContractFactory("SingularityFactory");
-	const factoryAddress = "";
-	const factory = await Factory.attach(factoryAddress);
+	const factoryAddress = "0xD6c11141Dfcc8128c0523e3837a6053CF6229b58";
+	const factory = Factory.attach(factoryAddress);
 
-	const tokenAddress = "";
+	const tokenAddress = "0x512D083d9f03d424ae4FCe15255588C246Beb28B";
 	const isStablecoin = false;
 	const baseFee = numToBN(0.0015);
 	const tx = await factory.createPool(tokenAddress, isStablecoin, baseFee);

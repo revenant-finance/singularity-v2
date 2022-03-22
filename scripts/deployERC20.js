@@ -8,7 +8,7 @@ async function main() {
 	const erc20 = await ERC20.deploy(name, symbol, decimals);
 	await erc20.deployed();
 
-	console.log(`${symbol} ERC20 deployed to: ${erc20.address}`); //
+	console.log(`${symbol} ERC20 deployed to: ${erc20.address}`);
 
 	await run("verify:verify", {
 		address: erc20.address,

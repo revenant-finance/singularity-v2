@@ -7,7 +7,7 @@ async function main() {
 	const oracle = await Oracle.deploy(adminAddress);
 	await oracle.deployed();
 
-	console.log(`Oracle deployed to: ${oracle.address}`); // 0x6BecC50C02dEF1B4f5b0c758eCdD4449f1695a1B
+	console.log(`Oracle deployed to: ${oracle.address}`);
 
 	await new Promise(resolve => setTimeout(resolve, 10000));
 

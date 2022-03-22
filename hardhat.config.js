@@ -35,7 +35,7 @@ module.exports = {
 			allowUnlimitedContractSize: true,
 		},
 		ftm: {
-			url: "https://rpc.ftm.tools",
+			url: "https://rpc.ankr.com/fantom/09c5480d973de73d56110c6e85140402c805f6aec6b7380de71732e6e74eb16f",
 			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
 		},
 		ftmtest: {

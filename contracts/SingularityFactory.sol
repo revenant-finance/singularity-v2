@@ -34,7 +34,7 @@ import "./SingularityPool.sol";
     }
 
     constructor(string memory _tranche, address _admin, address _oracle, address _feeTo) {
-        require(bytes(_tranche).length > 0, "SingularityFactory: TRANCHE_IS_EMPTY");
+        require(bytes(_tranche).length != 0, "SingularityFactory: TRANCHE_IS_EMPTY");
         require(_admin != address(0), "SingularityFactory: ADMIN_IS_0");
         require(_oracle != address(0), "SingularityFactory: ORACLE_IS_0");
         require(_feeTo != address(0), "SingularityFactory: FEE_TO_IS_0");
@@ -68,7 +68,7 @@ import "./SingularityPool.sol";
         require(router != address(0), "SingularityFactory: ROUTER_IS_0");
         require(token != address(0), "SingularityFactory: ZERO_ADDRESS");
         require(getPool[token] == address(0), "SingularityFactory: POOL_EXISTS");
-        require(baseFee > 0, "SingularityFactory: FEE_IS_0");
+        require(baseFee != 0, "SingularityFactory: FEE_IS_0");
         poolParams = PoolParams({token: token, isStablecoin: isStablecoin, baseFee: baseFee});
         pool = address(new SingularityPool{salt: keccak256(abi.encodePacked(token))}());
         delete poolParams;
@@ -107,6 +107,7 @@ import "./SingularityPool.sol";
         require(tokens.length == caps.length, "SingularityFactory: NOT_SAME_LENGTH");
         for (uint256 i; i < tokens.length; i++) {
             address pool = getPool[tokens[i]];
+            require(pool != address(0), "SingularityFactory: POOL_DOESNT_EXIST");
             ISingularityPool(pool).setDepositCap(caps[i]);
         }
     }
@@ -114,8 +115,9 @@ import "./SingularityPool.sol";
     function setBaseFees(address[] calldata tokens, uint256[] calldata baseFees) external override onlyAdmin {
         require(tokens.length == baseFees.length, "SingularityFactory: NOT_SAME_LENGTH");
         for (uint256 i; i < tokens.length; i++) {
-            require(baseFees[i] > 0, "SingularityFactory: BASE_FEE_IS_0");
+            require(baseFees[i] != 0, "SingularityFactory: BASE_FEE_IS_0");
             address pool = getPool[tokens[i]];
+            require(pool != address(0), "SingularityFactory: POOL_DOESNT_EXIST");
             ISingularityPool(pool).setBaseFee(baseFees[i]);
         }
     }
@@ -124,6 +126,7 @@ import "./SingularityPool.sol";
         require(tokens.length == states.length, "SingularityFactory: NOT_SAME_LENGTH");
         for (uint256 i; i < tokens.length; i++) {
             address pool = getPool[tokens[i]];
+            require(pool != address(0), "SingularityFactory: POOL_DOESNT_EXIST");
             ISingularityPool(pool).setPaused(states[i]);
         }
     }

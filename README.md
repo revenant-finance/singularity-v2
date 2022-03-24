@@ -21,6 +21,9 @@
 
 
 ## Outputs
+#### Contract Sizes
+![](contract-sizes.png)
+
 #### Unit Tests
 ![](tests.png)
 

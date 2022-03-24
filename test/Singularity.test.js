@@ -5,8 +5,9 @@ const ethjs = require("ethereumjs-util");
 
 describe("Singularity Swap", () => {
 	let ownerAccount, ownerAddress, otherAccount, otherAddress;
-	let Factory, Router, Oracle, ERC20, Pool, Wftm;
+	let Factory, Router, Oracle, ChainlinkFeed, ERC20, Pool, Wftm;
 	let factory, router, oracle, wftm, eth, usdc, dai;
+	let wftmFeed, ethFeed, usdcFeed, daiFeed;
 
 	const PERMIT_TYPEHASH = ethers.utils.keccak256(
 		ethers.utils.toUtf8Bytes(
@@ -110,6 +111,22 @@ describe("Singularity Swap", () => {
 			[wftm.address, eth.address, usdc.address, dai.address],
 			[numToBN(WFTM.price), numToBN(ETH.price), numToBN(USDC.price), numToBN(DAI.price)]
 		);
+
+		wftmFeed = await ChainlinkFeed.deploy(numToBN(WFTM.price, 8));
+		await wftmFeed.deployed();
+		await oracle.setChainlinkFeed(wftm.address, wftmFeed.address);
+
+		ethFeed = await ChainlinkFeed.deploy(numToBN(ETH.price, 8));
+		await ethFeed.deployed();
+		await oracle.setChainlinkFeed(eth.address, ethFeed.address);
+
+		usdcFeed = await ChainlinkFeed.deploy(numToBN(USDC.price, 8));
+		await usdcFeed.deployed();
+		await oracle.setChainlinkFeed(usdc.address, usdcFeed.address);
+
+		daiFeed = await ChainlinkFeed.deploy(numToBN(DAI.price, 8));
+		await daiFeed.deployed();
+		await oracle.setChainlinkFeed(dai.address, daiFeed.address);
 	}
 
 	async function getFtmBalance() {
@@ -171,6 +188,7 @@ describe("Singularity Swap", () => {
 		Factory = await ethers.getContractFactory("SingularityFactory");
 		Router = await ethers.getContractFactory("SingularityRouter");
 		Oracle = await ethers.getContractFactory("SingularityOracle");
+		ChainlinkFeed = await ethers.getContractFactory("TestChainlinkFeed");
 		Pool = await ethers.getContractFactory("SingularityPool");
 		ERC20 = await ethers.getContractFactory("TestERC20");
 		Wftm = await ethers.getContractFactory("WFTM");
@@ -271,9 +289,9 @@ describe("Singularity Swap", () => {
 		);
 		expect(await DAI.pool.getCollateralizationRatio()).to.equal(MAX);
 		expect(await DAI.pool.getPricePerShare()).to.equal(numToBN(1));
-		await oracle.pushPrices([DAI.address], [0]);
+		await oracle.pushPrices([DAI.address], [numToBN(0.01)]);
 		await expect(DAI.pool.getOracleData()).to.be.revertedWith(
-			"SingularityPool: INVALID_ORACLE_PRICE"
+			"SingularityOracle: PRICE_DIFF_EXCEEDS_TOLERANCE"
 		);
 		await oracle.pushPrices([DAI.address], [numToBN(DAI.price)]);
 		expect((await DAI.pool.getOracleData())[0]).to.equal(numToBN(DAI.price));
@@ -607,6 +625,7 @@ describe("Singularity Swap", () => {
 
 	it("getTradingFees", async () => {
 		expect(await USDC.pool.getTradingFeeRate()).to.equal(numToBN(USDC.baseFee));
+		await updatePrices();
 		const { totalFee, lockedFee, adminFee, lpFee } = await USDC.pool.getTradingFees(
 			numToBN(1, USDC.decimals)
 		);
@@ -616,7 +635,7 @@ describe("Singularity Swap", () => {
 		expect(lpFee).to.equal(numToBN(USDC.baseFee / 3, 6));
 
 		expect(await WFTM.pool.getTradingFeeRate()).to.be.gt(numToBN(WFTM.baseFee));
-		advanceTime(50); // tests >= 60 seconds condition
+		advanceTime(60); // tests >= 60 seconds condition
 		expect(await WFTM.pool.getTradingFeeRate()).to.equal(numToBN(WFTM.baseFee * 2));
 		advanceTime(100); // tests >= 70 seconds condition
 		await expect(WFTM.pool.getTradingFeeRate()).to.revertedWith("SingularityPool: STALE_ORACLE");
@@ -629,5 +648,34 @@ describe("Singularity Swap", () => {
 				numToBN(1, 16)
 			);
 		}
+	});
+
+	it("setAdmin", async () => {
+		await expect(factory.setAdmin(ZERO_ADDR)).to.be.revertedWith(
+			"SingularityFactory: ZERO_ADDRESS"
+		);
+		await factory.setAdmin(otherAddress);
+		expect(await factory.admin()).to.equal(otherAddress);
+	});
+
+	it("setOracle", async () => {
+		await expect(factory.setOracle(ZERO_ADDR)).to.be.revertedWith(
+			"SingularityFactory: ZERO_ADDRESS"
+		);
+		await factory.setOracle(otherAddress);
+		expect(await factory.oracle()).to.equal(otherAddress);
+	});
+
+	it("setFeeTo", async () => {
+		await expect(factory.setFeeTo(ZERO_ADDR)).to.be.revertedWith(
+			"SingularityFactory: ZERO_ADDRESS"
+		);
+		await factory.setFeeTo(otherAddress);
+		expect(await factory.feeTo()).to.equal(otherAddress);
+	});
+
+	it("setPaused", async () => {
+		await factory.setPaused([USDC.address], [true]);
+		expect(await USDC.pool.paused()).to.equal(true);
 	});
 });

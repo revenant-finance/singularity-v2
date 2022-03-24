@@ -31,10 +31,10 @@ contract SingularityOracle is ISingularityOracle {
 
 	/// @dev Validates price is within bounds of reported Chainlink price
 	function getLatestRound(address token) public view override returns (uint256 price, uint256 updatedAt) {
-		(uint256 chainlinkPrice, uint256 chainlinkUpdatedAt) = _getChainlinkData(token);
+		(uint256 chainlinkPrice,) = _getChainlinkData(token);
 		require(chainlinkPrice != 0, "SingularityOracle: CHAINLINK_PRICE_IS_0");
 		if (onlyUseChainlink) {
-			return (chainlinkPrice, chainlinkUpdatedAt);
+			return (chainlinkPrice, block.timestamp);
 		}
 
 		PriceData[] memory prices = allPrices[token];

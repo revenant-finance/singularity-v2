@@ -627,18 +627,19 @@ describe("Singularity Swap", () => {
 		expect(await USDC.pool.getTradingFeeRate()).to.equal(numToBN(USDC.baseFee));
 		await updatePrices();
 		const { totalFee, lockedFee, adminFee, lpFee } = await USDC.pool.getTradingFees(
-			numToBN(1, USDC.decimals)
+			numToBN(amountToSwap, USDC.decimals)
 		);
-		expect(totalFee).to.equal(numToBN(USDC.baseFee, 6));
-		expect(lockedFee).to.equal(numToBN(USDC.baseFee / 3, 6));
-		expect(adminFee).to.equal(numToBN(USDC.baseFee / 3, 6));
-		expect(lpFee).to.equal(numToBN(USDC.baseFee / 3, 6));
+		const expectedTotal = numToBN(amountToSwap * USDC.baseFee, 6);
+		expect(totalFee).to.equal(expectedTotal);
+		expect(lockedFee).to.equal(expectedTotal.mul(45).div(100));
+		expect(adminFee).to.equal(expectedTotal.div(10), 6);
+		expect(lpFee).to.equal(expectedTotal.mul(45).div(100), 6);
 
 		expect(await WFTM.pool.getTradingFeeRate()).to.be.gt(numToBN(WFTM.baseFee));
 		advanceTime(60); // tests >= 60 seconds condition
 		expect(await WFTM.pool.getTradingFeeRate()).to.equal(numToBN(WFTM.baseFee * 2));
 		advanceTime(100); // tests >= 70 seconds condition
-		await expect(WFTM.pool.getTradingFeeRate()).to.revertedWith("SingularityPool: STALE_ORACLE");
+		expect(await WFTM.pool.getTradingFeeRate()).to.equal(MAX);
 	});
 
 	it("getLpFeeRate", async () => {

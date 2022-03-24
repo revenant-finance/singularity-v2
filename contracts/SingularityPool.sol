@@ -189,8 +189,9 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         } else {
             (, uint256 updatedAt) = getOracleData();
             uint256 timeDiff = block.timestamp - updatedAt;
-            require(timeDiff <= 70, "SingularityPool: STALE_ORACLE");
-            if (timeDiff >= 60) {
+            if (timeDiff > 70) {
+                tradingFeeRate = type(uint256).max; // Revert later to allow viewability
+            } else if (timeDiff >= 60) {
                 tradingFeeRate = baseFee * 2;
             } else {
                 tradingFeeRate = baseFee + baseFee * timeDiff / 60;
@@ -200,11 +201,13 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
 
     function getTradingFees(uint256 amount) public view override returns (uint256 totalFee, uint256 lockedFee, uint256 adminFee, uint256 lpFee) {
         uint256 tradingFeeRate = getTradingFeeRate();
-        // TODO: adjust later
+        if (tradingFeeRate == type(uint256).max) {
+            return (type(uint256).max, 0, 0, 0);
+        }
         totalFee = amount.mulWadUp(tradingFeeRate);
-        lockedFee = totalFee / 3;
-        adminFee = totalFee / 3;
-        lpFee = totalFee / 3;
+        lockedFee = totalFee * 45 / 100;
+        lpFee = totalFee * 45 / 100;
+        adminFee = totalFee - lockedFee - lpFee;
     }
 
     function deposit(uint256 amount, address to) external override onlyRouter notPaused nonReentrant returns (uint256 mintAmount) {
@@ -242,18 +245,19 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         require(amountIn != 0, "SingularityPool: AMOUNT_IS_0");
         IERC20(token).safeTransferFrom(msg.sender, address(this), amountIn);
 
+        // Apply trading fees
+        (uint256 totalFee, uint256 lockedFee, uint256 adminFee, uint256 lpFee) = getTradingFees(amountIn);
+        require(totalFee != type(uint256).max, "SingularityPool: STALE_ORACLE");
+        lockedFees += lockedFee;
+        adminFees += adminFee;
+        liabilities += lpFee;
+        amountIn -= totalFee;
+
         // Apply slippage (+)
         uint256 slippage = getSlippageIn(amountIn);
         amountIn += slippage;
         assets -= slippage;
         liabilities -= slippage;
-
-        // Apply trading fees
-        (uint256 totalFee, uint256 lockedFee, uint256 adminFee, uint256 lpFee) = getTradingFees(amountIn);
-        lockedFees += lockedFee;
-        adminFees += adminFee;
-        liabilities += lpFee;
-        amountIn -= totalFee;
 
         assets += amountIn;
         amountOut = getAmountToUSD(amountIn);
@@ -272,6 +276,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
 
         // Apply trading fees
         (uint256 totalFee, uint256 lockedFee, uint256 adminFee, uint256 lpFee) = getTradingFees(amountOut);
+        require(totalFee != type(uint256).max, "SingularityPool: STALE_ORACLE");
         lockedFees += lockedFee;
         adminFees += adminFee;
         liabilities += lpFee;

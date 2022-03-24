@@ -2,7 +2,7 @@ const hre = require("hardhat");
 
 async function main() {
 	const Factory = await hre.ethers.getContractFactory("SingularityFactory");
-	const factoryAddress = "0xD6c11141Dfcc8128c0523e3837a6053CF6229b58";
+	const factoryAddress = "0x7461dd01E68B11A6082A44FdE9c85a63cca134A2";
 	const factory = Factory.attach(factoryAddress);
 
 	const tokenAddress = "0x512D083d9f03d424ae4FCe15255588C246Beb28B";
@@ -12,6 +12,9 @@ async function main() {
 	await tx.wait(7);
 	const poolAddress = await factory.getPool(tokenAddress);
 	console.log(`${tokenAddress} pool deployed to: ${poolAddress}`);
+	await run("verify:verify", {
+		address: poolAddress,
+	});
 }
 
 function numToBN(number, decimals = 18) {

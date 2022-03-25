@@ -587,6 +587,36 @@ describe("Singularity Swap", () => {
 		expect(ftmBought).to.be.closeTo(expectedOut, numToBN(1, 16)); // account for gas cost
 	});
 
+	it("getTradingFees", async () => {
+		expect(await USDC.pool.getTradingFeeRate()).to.equal(numToBN(USDC.baseFee));
+		await updatePrices();
+		const { totalFee, lockedFee, adminFee, lpFee } = await USDC.pool.getTradingFees(
+			numToBN(amountToSwap, USDC.decimals)
+		);
+		const expectedTotal = numToBN(amountToSwap * USDC.baseFee, 6);
+		expect(totalFee).to.equal(expectedTotal);
+		expect(lockedFee).to.equal(expectedTotal.mul(45).div(100));
+		expect(lpFee).to.equal(expectedTotal.mul(45).div(100), 6);
+		expect(adminFee).to.equal(expectedTotal.sub(lockedFee).sub(lpFee), 6);
+
+		expect(await WFTM.pool.getTradingFeeRate()).to.be.gt(numToBN(WFTM.baseFee));
+		advanceTime(60); // tests >= 60 seconds condition
+		expect(await WFTM.pool.getTradingFeeRate()).to.equal(numToBN(WFTM.baseFee * 2));
+		advanceTime(100); // tests >= 70 seconds condition
+		expect(await WFTM.pool.getTradingFeeRate()).to.equal(MAX);
+	});
+
+	it("getLpFeeRate", async () => {
+		for (let i = 0.1; i < 1.5; i += 0.1) {
+			expect(await USDC.pool.getLpFeeRate(numToBN(i))).to.be.closeTo(
+				calculateLpFeeRate(i),
+				numToBN(1, 16)
+			);
+		}
+	});
+
+	// Factory specific
+
 	it("collectFees", async () => {
 		await expect(factory.connect(otherAccount).collectFees()).to.be.revertedWith(
 			"SingularityFactory: NOT_ADMIN"
@@ -621,36 +651,6 @@ describe("Singularity Swap", () => {
 		await factory.setBaseFees([WFTM.address], [numToBN(0.01)]);
 		expect(await WFTM.pool.baseFee()).to.equal(numToBN(0.01));
 	});
-
-	it("getTradingFees", async () => {
-		expect(await USDC.pool.getTradingFeeRate()).to.equal(numToBN(USDC.baseFee));
-		await updatePrices();
-		const { totalFee, lockedFee, adminFee, lpFee } = await USDC.pool.getTradingFees(
-			numToBN(amountToSwap, USDC.decimals)
-		);
-		const expectedTotal = numToBN(amountToSwap * USDC.baseFee, 6);
-		expect(totalFee).to.equal(expectedTotal);
-		expect(lockedFee).to.equal(expectedTotal.mul(45).div(100));
-		expect(lpFee).to.equal(expectedTotal.mul(45).div(100), 6);
-		expect(adminFee).to.equal(expectedTotal.sub(lockedFee).sub(lpFee), 6);
-
-		expect(await WFTM.pool.getTradingFeeRate()).to.be.gt(numToBN(WFTM.baseFee));
-		advanceTime(60); // tests >= 60 seconds condition
-		expect(await WFTM.pool.getTradingFeeRate()).to.equal(numToBN(WFTM.baseFee * 2));
-		advanceTime(100); // tests >= 70 seconds condition
-		expect(await WFTM.pool.getTradingFeeRate()).to.equal(MAX);
-	});
-
-	it("getLpFeeRate", async () => {
-		for (let i = 0.1; i < 1.5; i += 0.1) {
-			expect(await USDC.pool.getLpFeeRate(numToBN(i))).to.be.closeTo(
-				calculateLpFeeRate(i),
-				numToBN(1, 16)
-			);
-		}
-	});
-
-	// Factory specific
 
 	it("setAdmin", async () => {
 		await expect(factory.setAdmin(ZERO_ADDR)).to.be.revertedWith(

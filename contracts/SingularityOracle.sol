@@ -5,6 +5,8 @@ pragma solidity ^0.8.11;
 import './interfaces/ISingularityOracle.sol';
 import './interfaces/IChainlinkFeed.sol';
 
+import "hardhat/console.sol";
+
 /**
  * @title Singularity Oracle
  * @author Revenant Labs
@@ -45,7 +47,9 @@ contract SingularityOracle is ISingularityOracle {
 		updatedAt = prices[prices.length - 1].updatedAt;
 	}
 
-	function getLatestRounds(address[] calldata tokens) external view returns (uint256[] memory prices, uint256[] memory updatedAts) {
+	function getLatestRounds(address[] calldata tokens) external view override returns (uint256[] memory prices, uint256[] memory updatedAts) {
+		prices = new uint256[](tokens.length);
+		updatedAts = new uint256[](tokens.length);
 		for (uint256 i; i < tokens.length; i++) {
 			(uint256 price, uint256 updatedAt) = getLatestRound(tokens[i]);
 			prices[i] = price;

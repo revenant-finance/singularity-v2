@@ -5,7 +5,7 @@
 ### Protocol Contracts
 | Name | Address |
 | :--- | :--- |
-| SingularityOracle | [0xD316F76014Dd81E9Fe0aD6D0d68E4A141503795a](https://ftmscan.com/address/0xd316f76014dd81e9fe0ad6d0d68e4a141503795a#code) |
+| SingularityOracle | [0xC659b3879eD5B3079D5B7Fb89801143E6C1fD8Fa](https://ftmscan.com/address/0xC659b3879eD5B3079D5B7Fb89801143E6C1fD8Fa#code) |
 | SingularityFactory | [0x7461dd01E68B11A6082A44FdE9c85a63cca134A2](https://ftmscan.com/address/0x7461dd01e68b11a6082a44fde9c85a63cca134a2#code) |
 | SingularityRouter | [0xE9B5Cf1e1454B9F3F11BBDE9acECDf65c223E035](https://ftmscan.com/address/0xE9B5Cf1e1454B9F3F11BBDE9acECDf65c223E035#code) |
 
@@ -19,6 +19,12 @@
 | testBTC Pool | [0x62Ae0eE586a35a0603d0dC033a71CEf116203cd6](https://ftmscan.com/address/0x62Ae0eE586a35a0603d0dC033a71CEf116203cd6#code) |
 | testETH Pool | [0x0DA71A7537Ac931D97ddc0Aae7eE5edd021556c5](https://ftmscan.com/address/0x0DA71A7537Ac931D97ddc0Aae7eE5edd021556c5#code) |
 
+### Chainlink Feeds
+| Name | Address |
+| :--- | :--- |
+| USDC Feed | [0x2553f4eeb82d5A26427b8d1106C51499CBa5D99c](https://ftmscan.com/address/	0x2553f4eeb82d5A26427b8d1106C51499CBa5D99c#code) |
+| BTC Feed | [0x8e94C22142F4A64b99022ccDd994f4e9EC86E4B4](https://ftmscan.com/address/0x8e94C22142F4A64b99022ccDd994f4e9EC86E4B4#code) |
+| ETH Feed | [0x11DdD3d147E5b83D01cee7070027092397d63658](https://ftmscan.com/address/0x11DdD3d147E5b83D01cee7070027092397d63658#code) |
 
 ## Outputs
 #### Contract Sizes

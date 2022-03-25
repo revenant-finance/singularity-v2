@@ -651,6 +651,8 @@ describe("Singularity Swap", () => {
 		}
 	});
 
+	// Factory specific
+
 	it("setAdmin", async () => {
 		await expect(factory.setAdmin(ZERO_ADDR)).to.be.revertedWith(
 			"SingularityFactory: ZERO_ADDRESS"
@@ -678,5 +680,16 @@ describe("Singularity Swap", () => {
 	it("setPaused", async () => {
 		await factory.setPaused([USDC.address], [true]);
 		expect(await USDC.pool.paused()).to.equal(true);
+	});
+
+	// Oracle specific
+
+	it("getLatestRound", async () => {
+		const [price] = await oracle.getLatestRound(USDC.address);
+		expect(price).to.equal(numToBN(USDC.price));
+
+		const [prices] = await oracle.getLatestRounds([USDC.address, ETH.address]);
+		expect(prices[0]).to.equal(numToBN(USDC.price));
+		expect(prices[1]).to.equal(numToBN(ETH.price));
 	});
 });

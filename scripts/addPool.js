@@ -12,9 +12,9 @@ async function main() {
 	await tx.wait(7);
 	const poolAddress = await factory.getPool(tokenAddress);
 	console.log(`${tokenAddress} pool deployed to: ${poolAddress}`);
-	await run("verify:verify", {
-		address: poolAddress,
-	});
+	// await run("verify:verify", {
+	// 	address: poolAddress,
+	// });
 }
 
 function numToBN(number, decimals = 18) {

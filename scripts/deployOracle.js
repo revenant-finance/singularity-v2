@@ -16,7 +16,7 @@ async function main() {
 	});
 
 	let tx = await oracle.setOnlyUseChainlink(true);
-	await tx.wait(10);
+	await tx.wait(5);
 
 	const usdc = "0x69bbAcD89dB2588e8213Be96D4f88888b3D74B0c";
 	const btc = "0xfe95A6188E2C6FF991600bC43f1B119BC11EE5f6";
@@ -26,7 +26,7 @@ async function main() {
 	const btcFeed = "0x8e94C22142F4A64b99022ccDd994f4e9EC86E4B4";
 	const ethFeed = "0x11DdD3d147E5b83D01cee7070027092397d63658";
 	tx = await oracle.setChainlinkFeeds([usdc, btc, eth], [usdcFeed, btcFeed, ethFeed]);
-	await tx.wait(10);
+	await tx.wait(5);
 }
 
 main()

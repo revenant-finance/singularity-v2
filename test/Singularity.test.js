@@ -1,4 +1,3 @@
-require("dotenv").config();
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const ethjs = require("ethereumjs-util");
@@ -632,8 +631,8 @@ describe("Singularity Swap", () => {
 		const expectedTotal = numToBN(amountToSwap * USDC.baseFee, 6);
 		expect(totalFee).to.equal(expectedTotal);
 		expect(lockedFee).to.equal(expectedTotal.mul(45).div(100));
-		expect(adminFee).to.equal(expectedTotal.div(10), 6);
 		expect(lpFee).to.equal(expectedTotal.mul(45).div(100), 6);
+		expect(adminFee).to.equal(expectedTotal.sub(lockedFee).sub(lpFee), 6);
 
 		expect(await WFTM.pool.getTradingFeeRate()).to.be.gt(numToBN(WFTM.baseFee));
 		advanceTime(60); // tests >= 60 seconds condition
@@ -684,7 +683,7 @@ describe("Singularity Swap", () => {
 
 	// Oracle specific
 
-	it("getLatestRound", async () => {
+	it("getLatestRound(s)", async () => {
 		const [price] = await oracle.getLatestRound(USDC.address);
 		expect(price).to.equal(numToBN(USDC.price));
 

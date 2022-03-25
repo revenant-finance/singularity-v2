@@ -5,8 +5,6 @@ pragma solidity ^0.8.13;
 import './interfaces/ISingularityOracle.sol';
 import './interfaces/IChainlinkFeed.sol';
 
-import "hardhat/console.sol";
-
 /**
  * @title Singularity Oracle
  * @author Revenant Labs

@@ -23,6 +23,7 @@ describe("Singularity Swap", () => {
 		symbol: "wFTM",
 		decimals: 18,
 		price: 2,
+		balance: 100000,
 		isStablecoin: false,
 		baseFee: 0.0015,
 		poolAddress: "",
@@ -34,7 +35,7 @@ describe("Singularity Swap", () => {
 		symbol: "ETH",
 		decimals: 18,
 		price: 2000,
-		balance: 1000,
+		balance: 100000,
 		isStablecoin: false,
 		baseFee: 0.0015,
 		poolAddress: "",
@@ -46,7 +47,7 @@ describe("Singularity Swap", () => {
 		symbol: "USDC",
 		decimals: 6,
 		price: 1,
-		balance: 1000000,
+		balance: 100000,
 		isStablecoin: true,
 		baseFee: 0.0015,
 		poolAddress: "",
@@ -58,7 +59,7 @@ describe("Singularity Swap", () => {
 		symbol: "DAI",
 		decimals: 21,
 		price: 1,
-		balance: 1000000,
+		balance: 100000,
 		isStablecoin: true,
 		baseFee: 0.0015,
 		poolAddress: "",
@@ -86,7 +87,7 @@ describe("Singularity Swap", () => {
 		eth = await ERC20.deploy(ETH.name, ETH.symbol, ETH.decimals);
 		await eth.deployed();
 		ETH.address = eth.address;
-		await eth.mint(ownerAddress, numToBN(1000000, ETH.decimals));
+		await eth.mint(ownerAddress, numToBN(ETH.balance, ETH.decimals));
 
 		usdc = await ERC20.deploy(USDC.name, USDC.symbol, USDC.decimals);
 		await usdc.deployed();
@@ -497,6 +498,7 @@ describe("Singularity Swap", () => {
 			eth.address,
 			usdc.address
 		);
+		expect(expectedOut).to.be.gt(0);
 		await expect(
 			router.swapExactTokensForTokens(eth.address, usdc.address, 0, 0, ownerAddress, MAX)
 		).to.be.revertedWith("SingularityRouter: INSUFFICIENT_INPUT_AMOUNT");
@@ -522,7 +524,7 @@ describe("Singularity Swap", () => {
 
 	it("swapExactETHForTokens", async () => {
 		await wftm.deposit({ value: numToBN(1000) });
-		await addLiquidity(ETH, 10);
+		await addLiquidity(WFTM, 1000);
 		await addLiquidity(USDC, 20000);
 
 		await expect(
@@ -538,6 +540,7 @@ describe("Singularity Swap", () => {
 			wftm.address,
 			usdc.address
 		);
+		expect(expectedOut).to.be.gt(0);
 		await router.swapExactETHForTokens(wftm.address, usdc.address, 0, ownerAddress, MAX, {
 			value: numToBN(amountToSwap, WFTM.decimals),
 		});
@@ -550,7 +553,8 @@ describe("Singularity Swap", () => {
 	});
 
 	it("swapExactTokensForETH", async () => {
-		await addLiquidity(ETH, 10);
+		await wftm.deposit({ value: numToBN(1000) });
+		await addLiquidity(WFTM, 1000);
 		await addLiquidity(USDC, 20000);
 
 		await expect(
@@ -571,6 +575,7 @@ describe("Singularity Swap", () => {
 			usdc.address,
 			wftm.address
 		);
+		expect(expectedOut).to.be.gt(0);
 		await router.swapExactTokensForETH(
 			usdc.address,
 			wftm.address,

@@ -157,19 +157,39 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     }
 
     function getSlippageIn(uint256 amount) public view override returns (uint256 slippageIn) {
-        slippageIn = _getSlippage(amount, assets + amount, liabilities);
+        uint256 preCollateralizationRatio = _calcCollatalizationRatio(assets + lockedFees, liabilities);
+        uint256 postCollateralizationRatio = _calcCollatalizationRatio(assets + lockedFees + amount, liabilities);
+
+        uint256 preSlippageIn = _getSlippageRate(preCollateralizationRatio);
+        uint256 postSlippageIn = _getSlippageRate(postCollateralizationRatio);
+        uint256 slippageDiff = postSlippageIn - preSlippageIn;
+        if (postCollateralizationRatio - preCollateralizationRatio <= 0.01 ether) {
+            slippageIn = slippageDiff;
+        } else {
+            slippageIn = slippageDiff.divWadUp(postCollateralizationRatio - preCollateralizationRatio);
+        }
+        slippageIn = amount.mulWadDown(slippageIn);
     }
 
     function getSlippageOut(uint256 amount) public view override returns (uint256 slippageOut) {
-        if (amount >= assets) {
+        if (amount >= assets + lockedFees) {
             return amount;
         }
-        slippageOut = _getSlippage(amount, assets - amount, liabilities);
+        uint256 preCollateralizationRatio = _calcCollatalizationRatio(assets + lockedFees, liabilities);
+        uint256 postCollateralizationRatio = _calcCollatalizationRatio(assets + lockedFees - amount, liabilities);
+
+        uint256 preSlippageOut = _getSlippageRate(preCollateralizationRatio);
+        uint256 postSlippageOut = _getSlippageRate(postCollateralizationRatio);
+        uint256 slippageDiff = postSlippageOut - preSlippageOut;
+        if (preCollateralizationRatio - postCollateralizationRatio <= 0.01 ether) {
+            slippageOut = slippageDiff;
+        } else {
+            slippageOut = slippageDiff.divWadUp(preCollateralizationRatio - postCollateralizationRatio);
+        }
+        slippageOut = amount.mulWadUp(slippageOut);
     }
 
-    function _getSlippage(uint256 amount, uint256 newAssets, uint256 newLiabilities) internal view returns (uint256 slippage) {
-        uint256 collateralizationRatio = _calcCollatalizationRatio(newAssets, newLiabilities + lockedFees);
-        uint256 slippageRate;
+    function _getSlippageRate(uint256 collateralizationRatio) internal pure returns (uint256 slippageRate) {
         if (collateralizationRatio >= 1 ether) {
             slippageRate = 0;
         } else if (collateralizationRatio > 0.33 ether) {
@@ -178,9 +198,8 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
             uint256 denominator = truncatedCRatio.rpow(8, 1);
             slippageRate = numerator.divWadUp(denominator);
         } else {
-            return amount;
+            slippageRate = type(uint256).max;
         }
-        slippage = amount.mulWadUp(slippageRate);
     }
 
     function getTradingFeeRate() public view override returns (uint256 tradingFeeRate) {
@@ -202,7 +221,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     function getTradingFees(uint256 amount) public view override returns (uint256 totalFee, uint256 lockedFee, uint256 adminFee, uint256 lpFee) {
         uint256 tradingFeeRate = getTradingFeeRate();
         if (tradingFeeRate == type(uint256).max) {
-            return (type(uint256).max, 0, 0, 0);
+            return (type(uint256).max, type(uint256).max, type(uint256).max, type(uint256).max);
         }
         totalFee = amount.mulWadUp(tradingFeeRate);
         lockedFee = totalFee * 45 / 100;
@@ -288,11 +307,11 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         emit SwapOut(msg.sender, amountIn, amountOut, to);
     }
 
-    function _calcCollatalizationRatio(uint256 _assets, uint256 _liabilities) internal pure returns (uint256 newCollateralizationRatio) {
+    function _calcCollatalizationRatio(uint256 _assets, uint256 _liabilities) internal pure returns (uint256 postCollateralizationRatio) {
         if (_liabilities == 0) {
-            newCollateralizationRatio = type(uint256).max;
+            postCollateralizationRatio = type(uint256).max;
         } else {
-            newCollateralizationRatio = _assets.divWadDown(_liabilities);
+            postCollateralizationRatio = _assets.divWadDown(_liabilities);
         }
     }
 

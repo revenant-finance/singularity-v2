@@ -50,12 +50,14 @@ contract SingularityRouter is ISingularityRouter {
         uint256 slippageIn = ISingularityPool(poolIn).getSlippageIn(amountIn);
         amountIn += slippageIn;
         (uint256 totalFee, , ,) = ISingularityPool(poolIn).getTradingFees(amountIn);
+        require(totalFee != type(uint256).max, "SingularityRouter: STALE_ORACLE");
         amountIn -= totalFee;
         uint256 swapInAmountOut = ISingularityPool(poolIn).getAmountToUSD(amountIn);
 
         address poolOut = poolFor(factory, tokenOut);
         amountOut = ISingularityPool(poolOut).getUSDToAmount(swapInAmountOut);
         (totalFee, , ,) = ISingularityPool(poolOut).getTradingFees(amountOut);
+        require(totalFee != type(uint256).max, "SingularityRouter: STALE_ORACLE");
         amountOut -= totalFee;
         uint256 slippageOut = ISingularityPool(poolOut).getSlippageOut(amountOut);
         amountOut -= slippageOut;

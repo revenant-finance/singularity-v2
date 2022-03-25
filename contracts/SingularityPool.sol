@@ -163,7 +163,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         uint256 preSlippageIn = _getSlippageRate(preCollateralizationRatio);
         uint256 postSlippageIn = _getSlippageRate(postCollateralizationRatio);
         uint256 slippageDiff = postSlippageIn - preSlippageIn;
-        if (postCollateralizationRatio - preCollateralizationRatio <= 0.01 ether) {
+        if (postCollateralizationRatio <= preCollateralizationRatio + 0.0001 ether) {
             slippageIn = slippageDiff;
         } else {
             slippageIn = slippageDiff.divWadUp(postCollateralizationRatio - preCollateralizationRatio);
@@ -181,7 +181,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         uint256 preSlippageOut = _getSlippageRate(preCollateralizationRatio);
         uint256 postSlippageOut = _getSlippageRate(postCollateralizationRatio);
         uint256 slippageDiff = postSlippageOut - preSlippageOut;
-        if (preCollateralizationRatio - postCollateralizationRatio <= 0.01 ether) {
+        if (preCollateralizationRatio  <= postCollateralizationRatio + 0.0001 ether) {
             slippageOut = slippageDiff;
         } else {
             slippageOut = slippageDiff.divWadUp(preCollateralizationRatio - postCollateralizationRatio);

@@ -3,7 +3,7 @@ const hre = require("hardhat");
 async function main() {
 	const [deployer] = await ethers.getSigners();
 	const Factory = await hre.ethers.getContractFactory("SingularityFactory");
-	const trancheName = "Test Tranche v2";
+	const trancheName = "Test Tranche v3";
 	const adminAddress = deployer.address;
 	const oracleAddress = "0xC659b3879eD5B3079D5B7Fb89801143E6C1fD8Fa";
 	const feeToAddress = deployer.address;

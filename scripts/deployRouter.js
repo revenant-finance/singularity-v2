@@ -2,7 +2,7 @@ const hre = require("hardhat");
 
 async function main() {
 	const Router = await hre.ethers.getContractFactory("SingularityRouter");
-	const factoryAddress = "0x7461dd01E68B11A6082A44FdE9c85a63cca134A2";
+	const factoryAddress = "0x03bfA93B0582D38FC8E453cDaA5C718e4301842C";
 	const wftmAddress = "0x21be370d5312f44cb42ce377bc9b8a0cef1a4c83";
 	const router = await Router.deploy(factoryAddress, wftmAddress);
 	await router.deployed();

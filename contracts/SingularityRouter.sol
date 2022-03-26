@@ -47,20 +47,25 @@ contract SingularityRouter is ISingularityRouter {
     function getAmountOut(uint256 amountIn, address tokenIn, address tokenOut) public view override returns (uint256 amountOut) {
         require(amountIn != 0, "SingularityRouter: INSUFFICIENT_INPUT_AMOUNT");
         address poolIn = poolFor(factory, tokenIn);
-        uint256 slippageIn = ISingularityPool(poolIn).getSlippageIn(amountIn);
-        amountIn += slippageIn;
+
         (uint256 totalFee, , ,) = ISingularityPool(poolIn).getTradingFees(amountIn);
         require(totalFee != type(uint256).max, "SingularityRouter: STALE_ORACLE");
         amountIn -= totalFee;
+
+        uint256 slippageIn = ISingularityPool(poolIn).getSlippageIn(amountIn);
+        amountIn += slippageIn;
+    
         uint256 swapInAmountOut = ISingularityPool(poolIn).getAmountToUSD(amountIn);
 
         address poolOut = poolFor(factory, tokenOut);
         amountOut = ISingularityPool(poolOut).getUSDToAmount(swapInAmountOut);
+
+        uint256 slippageOut = ISingularityPool(poolOut).getSlippageOut(amountOut);
+        amountOut -= slippageOut;
+
         (totalFee, , ,) = ISingularityPool(poolOut).getTradingFees(amountOut);
         require(totalFee != type(uint256).max, "SingularityRouter: STALE_ORACLE");
         amountOut -= totalFee;
-        uint256 slippageOut = ISingularityPool(poolOut).getSlippageOut(amountOut);
-        amountOut -= slippageOut;
     }
 
     function swapExactTokensForTokens(

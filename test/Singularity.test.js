@@ -49,7 +49,7 @@ describe("Singularity Swap", () => {
 		price: 1,
 		balance: 100000,
 		isStablecoin: true,
-		baseFee: 0.0015,
+		baseFee: 0.0004,
 		poolAddress: "",
 		pool: "",
 	};
@@ -61,7 +61,7 @@ describe("Singularity Swap", () => {
 		price: 1,
 		balance: 100000,
 		isStablecoin: true,
-		baseFee: 0.0015,
+		baseFee: 0.0004,
 		poolAddress: "",
 		pool: "",
 	};
@@ -490,7 +490,14 @@ describe("Singularity Swap", () => {
 	it("swapExactTokensForTokens", async () => {
 		await addLiquidity(ETH, 10);
 		await addLiquidity(USDC, 20000);
-
+		await router.swapExactTokensForTokens(
+			usdc.address,
+			eth.address,
+			numToBN(amountToSwap, USDC.decimals),
+			0,
+			ownerAddress,
+			MAX
+		);
 		const ethBal = await eth.balanceOf(ownerAddress);
 		const usdcBal = await usdc.balanceOf(ownerAddress);
 		const expectedOut = await router.getAmountOut(
@@ -511,6 +518,7 @@ describe("Singularity Swap", () => {
 			ownerAddress,
 			MAX
 		);
+
 		const ethBalAfter = await eth.balanceOf(ownerAddress);
 		const usdcBalAfter = await usdc.balanceOf(ownerAddress);
 		const usdcBought = usdcBalAfter.sub(usdcBal);

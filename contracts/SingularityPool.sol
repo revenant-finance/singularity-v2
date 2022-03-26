@@ -127,78 +127,76 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     }
 
     function getDepositFee(uint256 amount) public view override returns (uint256 fee) {
-        if (liabilities == 0 || assets <= liabilities) {
+        uint256 currentCollateralizationRatio = _calcCollatalizationRatio(assets, liabilities);
+        if (currentCollateralizationRatio >= 1 ether) {
             return 0;
         }
-        uint256 collateralizationRatio = uint256(assets + amount).divWadDown(liabilities + amount);
-        uint256 depositFeeRate = getLpFeeRate(collateralizationRatio);
-        uint256 percentOfPool = amount.divWadUp(liabilities + amount) * 100;
-        depositFeeRate = depositFeeRate.mulWadUp(percentOfPool);
-        fee = amount.mulWadUp(depositFeeRate);
-        if (fee > amount) fee = amount;
+
+        uint256 gCurrent = getG(currentCollateralizationRatio);
+        uint256 afterCollateralizationRatio = _calcCollatalizationRatio(assets + amount, liabilities + amount);
+        uint256 gAfter = getG(afterCollateralizationRatio);
+        fee = (liabilities + amount).mulWadUp(gAfter) - liabilities.mulWadDown(gCurrent);
     }
 
     function getWithdrawFee(uint256 amount) public view override returns (uint256 fee) {
-        if (amount >= liabilities || assets >= liabilities) {
+        uint256 currentCollateralizationRatio = _calcCollatalizationRatio(assets, liabilities);
+        if (currentCollateralizationRatio >= 1 ether) {
             return 0;
         }
-        uint256 collateralizationRatio = uint256(assets - amount).divWadDown(liabilities - amount);
-        uint256 withdrawFeeRate = getLpFeeRate(collateralizationRatio);
 
-        uint256 percentOfPool;
-        if (liabilities > amount) {
-            percentOfPool = amount.divWadUp(liabilities - amount);
-        } else {
-            percentOfPool = 100 ether;
-        }
-        withdrawFeeRate = withdrawFeeRate.mulWadUp(percentOfPool);
-        fee = amount.mulWadUp(withdrawFeeRate);
-        if (fee > amount) fee = amount;
+        uint256 gCurrent = getG(currentCollateralizationRatio);
+        uint256 afterCollateralizationRatio = _calcCollatalizationRatio(assets - amount, liabilities - amount);
+        uint256 gAfter = getG(afterCollateralizationRatio);
+        fee = gAfter.mulWadUp(liabilities - amount) + getG(1 ether).mulWadUp(amount) - gCurrent.mulWadDown(liabilities);
     }
 
     function getSlippageIn(uint256 amount) public view override returns (uint256 slippageIn) {
-        uint256 preCollateralizationRatio = _calcCollatalizationRatio(assets + lockedFees, liabilities);
-        uint256 postCollateralizationRatio = _calcCollatalizationRatio(assets + lockedFees + amount, liabilities);
+        if (amount == 0) {
+            return 0;
+        }
 
-        uint256 preSlippageIn = _getSlippageRate(preCollateralizationRatio);
-        uint256 postSlippageIn = _getSlippageRate(postCollateralizationRatio);
-        uint256 slippageDiff = postSlippageIn - preSlippageIn;
-        if (postCollateralizationRatio <= preCollateralizationRatio + 0.0001 ether) {
-            slippageIn = slippageDiff;
+        uint256 currentCollateralizationRatio = _calcCollatalizationRatio(assets + lockedFees, liabilities);
+        uint256 gCurrent = getG(currentCollateralizationRatio);
+        uint256 afterCollateralizationRatio = _calcCollatalizationRatio(assets + lockedFees + amount, liabilities);
+        uint256 gAfter = getG(afterCollateralizationRatio);
+        uint256 gDiff = gCurrent - gAfter;
+        if (gDiff == 0) {
+            return 0;
         } else {
-            slippageIn = slippageDiff.divWadUp(postCollateralizationRatio - preCollateralizationRatio);
+            slippageIn = gDiff.divWadDown(afterCollateralizationRatio - currentCollateralizationRatio);
         }
         slippageIn = amount.mulWadDown(slippageIn);
     }
 
     function getSlippageOut(uint256 amount) public view override returns (uint256 slippageOut) {
+        if (amount == 0) {
+            return 0;
+        }
         if (amount >= assets + lockedFees) {
             return amount;
         }
-        uint256 preCollateralizationRatio = _calcCollatalizationRatio(assets + lockedFees, liabilities);
-        uint256 postCollateralizationRatio = _calcCollatalizationRatio(assets + lockedFees - amount, liabilities);
 
-        uint256 preSlippageOut = _getSlippageRate(preCollateralizationRatio);
-        uint256 postSlippageOut = _getSlippageRate(postCollateralizationRatio);
-        uint256 slippageDiff = postSlippageOut - preSlippageOut;
-        if (preCollateralizationRatio  <= postCollateralizationRatio + 0.0001 ether) {
-            slippageOut = slippageDiff;
+        uint256 currentCollateralizationRatio = _calcCollatalizationRatio(assets + lockedFees, liabilities);
+        uint256 afterCollateralizationRatio = _calcCollatalizationRatio(assets + lockedFees - amount, liabilities);
+        uint256 gCurrent = getG(currentCollateralizationRatio);
+        uint256 gAfter = getG(afterCollateralizationRatio);
+        uint256 gDiff = gAfter - gCurrent;
+        if (gDiff == 0) {
+            return 0;
         } else {
-            slippageOut = slippageDiff.divWadUp(preCollateralizationRatio - postCollateralizationRatio);
+            slippageOut = gDiff.divWadUp(currentCollateralizationRatio - afterCollateralizationRatio);
         }
         slippageOut = amount.mulWadUp(slippageOut);
     }
 
-    function _getSlippageRate(uint256 collateralizationRatio) internal pure returns (uint256 slippageRate) {
+    function getG(uint256 collateralizationRatio) public pure override returns (uint256 slippageRate) {
         if (collateralizationRatio >= 1 ether) {
-            slippageRate = 0;
-        } else if (collateralizationRatio > 0.33 ether) {
-            uint256 truncatedCRatio = collateralizationRatio / 10**15; // truncate collateralization ratio precision to 3
-            uint256 numerator = 140 ether;
-            uint256 denominator = truncatedCRatio.rpow(8, 1);
-            slippageRate = numerator.divWadUp(denominator);
+            slippageRate = 0.00002 ether;
         } else {
-            slippageRate = type(uint256).max;
+            uint256 truncatedCRatio = collateralizationRatio / 10**15; // truncate collateralization ratio precision to 3
+            uint256 numerator = 0.02 ether;
+            uint256 denominator = truncatedCRatio.rpow(7, 1);
+            slippageRate = numerator.divWadUp(denominator);
         }
     }
 
@@ -307,11 +305,11 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         emit SwapOut(msg.sender, amountIn, amountOut, to);
     }
 
-    function _calcCollatalizationRatio(uint256 _assets, uint256 _liabilities) internal pure returns (uint256 postCollateralizationRatio) {
+    function _calcCollatalizationRatio(uint256 _assets, uint256 _liabilities) internal pure returns (uint256 afterCollateralizationRatio) {
         if (_liabilities == 0) {
-            postCollateralizationRatio = type(uint256).max;
+            afterCollateralizationRatio = type(uint256).max;
         } else {
-            postCollateralizationRatio = _assets.divWadDown(_liabilities);
+            afterCollateralizationRatio = _assets.divWadDown(_liabilities);
         }
     }
 

@@ -7,7 +7,7 @@
 | :--- | :--- |
 | SingularityOracle | [0xC659b3879eD5B3079D5B7Fb89801143E6C1fD8Fa](https://ftmscan.com/address/0xC659b3879eD5B3079D5B7Fb89801143E6C1fD8Fa#code) |
 | SingularityFactory | [0x03bfA93B0582D38FC8E453cDaA5C718e4301842C](https://ftmscan.com/address/0x03bfa93b0582d38fc8e453cdaa5c718e4301842c#code) |
-| SingularityRouter | [0x96908e93e1F8A11dF629FCBB36c02DB5eed583Fa](https://ftmscan.com/address/0x96908e93e1F8A11dF629FCBB36c02DB5eed583Fa#code) |
+| SingularityRouter | [0x3E6Ab1E56f5E219011C90882c4d144e487602c82](https://ftmscan.com/address/0x3E6Ab1E56f5E219011C90882c4d144e487602c82#code) |
 
 ### Testing Contracts and Pools
 | Name | Address |

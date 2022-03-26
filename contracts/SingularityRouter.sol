@@ -44,15 +44,21 @@ contract SingularityRouter is ISingularityRouter {
         )))));
     }
 
-    function getAmountOut(uint256 amountIn, address tokenIn, address tokenOut) public view override returns (uint256 amountOut) {
+    function getAmountOut(uint256 amountIn, address tokenIn, address tokenOut) public view override returns (
+        uint256 amountOut, 
+        uint256 tradingFeeIn, 
+        uint256 slippageIn, 
+        uint256 slippageOut, 
+        uint256 tradingFeeOut
+    ) {
         require(amountIn != 0, "SingularityRouter: INSUFFICIENT_INPUT_AMOUNT");
         address poolIn = poolFor(factory, tokenIn);
 
-        (uint256 totalFee, , ,) = ISingularityPool(poolIn).getTradingFees(amountIn);
-        require(totalFee != type(uint256).max, "SingularityRouter: STALE_ORACLE");
-        amountIn -= totalFee;
+        (tradingFeeIn, , ,) = ISingularityPool(poolIn).getTradingFees(amountIn);
+        require(tradingFeeIn != type(uint256).max, "SingularityRouter: STALE_ORACLE");
+        amountIn -= tradingFeeIn;
 
-        uint256 slippageIn = ISingularityPool(poolIn).getSlippageIn(amountIn);
+        slippageIn = ISingularityPool(poolIn).getSlippageIn(amountIn);
         amountIn += slippageIn;
     
         uint256 swapInAmountOut = ISingularityPool(poolIn).getAmountToUSD(amountIn);
@@ -60,12 +66,12 @@ contract SingularityRouter is ISingularityRouter {
         address poolOut = poolFor(factory, tokenOut);
         amountOut = ISingularityPool(poolOut).getUSDToAmount(swapInAmountOut);
 
-        uint256 slippageOut = ISingularityPool(poolOut).getSlippageOut(amountOut);
+        slippageOut = ISingularityPool(poolOut).getSlippageOut(amountOut);
         amountOut -= slippageOut;
 
-        (totalFee, , ,) = ISingularityPool(poolOut).getTradingFees(amountOut);
-        require(totalFee != type(uint256).max, "SingularityRouter: STALE_ORACLE");
-        amountOut -= totalFee;
+        (tradingFeeOut, , ,) = ISingularityPool(poolOut).getTradingFees(amountOut);
+        require(tradingFeeOut != type(uint256).max, "SingularityRouter: STALE_ORACLE");
+        amountOut -= tradingFeeOut;
     }
 
     function swapExactTokensForTokens(
@@ -76,7 +82,7 @@ contract SingularityRouter is ISingularityRouter {
         address to, 
         uint256 deadline
     ) external override ensure(deadline) returns (uint256 amountOut) {
-        amountOut = getAmountOut(amountIn, tokenIn, tokenOut);
+        (amountOut, , , ,) = getAmountOut(amountIn, tokenIn, tokenOut);
         require(amountOut >= minAmountOut, "SingularityRouter: INSUFFICIENT_OUTPUT_AMOUNT");
         IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
         _swap(amountIn, tokenIn, tokenOut, to);
@@ -90,7 +96,7 @@ contract SingularityRouter is ISingularityRouter {
         uint256 deadline
     ) external payable override ensure(deadline) returns (uint256 amountOut) {
         require(tokenIn == WETH, "SingularityRouter: INVALID_IN_TOKEN");
-        amountOut = getAmountOut(msg.value, tokenIn, tokenOut);
+        (amountOut, , , ,) = getAmountOut(msg.value, tokenIn, tokenOut);
         require(amountOut >= minAmountOut, "SingularityRouter: INSUFFICIENT_OUTPUT_AMOUNT");
         IWETH(WETH).deposit{value: msg.value}();
         _swap(msg.value, tokenIn, tokenOut, to);
@@ -105,7 +111,7 @@ contract SingularityRouter is ISingularityRouter {
         uint256 deadline
     ) external override ensure(deadline) returns (uint256 amountOut) {
         require(tokenOut == WETH, "SingularityRouter: INVALID_OUT_TOKEN");
-        amountOut = getAmountOut(amountIn, tokenIn, tokenOut);
+        (amountOut, , , ,) = getAmountOut(amountIn, tokenIn, tokenOut);
         require(amountOut >= minAmountOut, "SingularityRouter: INSUFFICIENT_OUTPUT_AMOUNT");
         IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
         _swap(amountIn, tokenIn, tokenOut, address(this));

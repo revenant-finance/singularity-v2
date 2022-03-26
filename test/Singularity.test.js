@@ -500,11 +500,9 @@ describe("Singularity Swap", () => {
 		);
 		const ethBal = await eth.balanceOf(ownerAddress);
 		const usdcBal = await usdc.balanceOf(ownerAddress);
-		const expectedOut = await router.getAmountOut(
-			numToBN(amountToSwap, ETH.decimals),
-			eth.address,
-			usdc.address
-		);
+		const expectedOut = (
+			await router.getAmountOut(numToBN(amountToSwap, ETH.decimals), eth.address, usdc.address)
+		)[0];
 		expect(expectedOut).to.be.gt(0);
 		await expect(
 			router.swapExactTokensForTokens(eth.address, usdc.address, 0, 0, ownerAddress, MAX)
@@ -543,11 +541,9 @@ describe("Singularity Swap", () => {
 
 		const ftmBal = await getFtmBalance();
 		const usdcBal = await usdc.balanceOf(ownerAddress);
-		const expectedOut = await router.getAmountOut(
-			numToBN(amountToSwap, WFTM.decimals),
-			wftm.address,
-			usdc.address
-		);
+		const expectedOut = (
+			await router.getAmountOut(numToBN(amountToSwap, WFTM.decimals), wftm.address, usdc.address)
+		)[0];
 		expect(expectedOut).to.be.gt(0);
 		await router.swapExactETHForTokens(wftm.address, usdc.address, 0, ownerAddress, MAX, {
 			value: numToBN(amountToSwap, WFTM.decimals),
@@ -578,11 +574,9 @@ describe("Singularity Swap", () => {
 
 		const ftmBal = await getFtmBalance();
 		const usdcBal = await usdc.balanceOf(ownerAddress);
-		const expectedOut = await router.getAmountOut(
-			numToBN(amountToSwap, USDC.decimals),
-			usdc.address,
-			wftm.address
-		);
+		const expectedOut = (
+			await router.getAmountOut(numToBN(amountToSwap, USDC.decimals), usdc.address, wftm.address)
+		)[0];
 		expect(expectedOut).to.be.gt(0);
 		await router.swapExactTokensForETH(
 			usdc.address,

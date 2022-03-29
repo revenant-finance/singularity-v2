@@ -6,8 +6,8 @@
 | Name | Address |
 | :--- | :--- |
 | SingularityOracle | [0xC659b3879eD5B3079D5B7Fb89801143E6C1fD8Fa](https://ftmscan.com/address/0xC659b3879eD5B3079D5B7Fb89801143E6C1fD8Fa#code) |
-| SingularityFactory | [0x03bfA93B0582D38FC8E453cDaA5C718e4301842C](https://ftmscan.com/address/0x03bfa93b0582d38fc8e453cdaa5c718e4301842c#code) |
-| SingularityRouter | [0x3E6Ab1E56f5E219011C90882c4d144e487602c82](https://ftmscan.com/address/0x3E6Ab1E56f5E219011C90882c4d144e487602c82#code) |
+| SingularityFactory | [0xfF68aEA6F6e2aBbEa2E3bf9e3194D1200048AC83](https://ftmscan.com/address/0xfF68aEA6F6e2aBbEa2E3bf9e3194D1200048AC83#code) |
+| SingularityRouter | [0x04dbeCd11DEA269f680A4a05eed001ee7eeeEbb6](https://ftmscan.com/address/0x04dbeCd11DEA269f680A4a05eed001ee7eeeEbb6#code) |
 
 ### Testing Contracts and Pools
 | Name | Address |
@@ -15,9 +15,9 @@
 | testUSDC | [0x69bbAcD89dB2588e8213Be96D4f88888b3D74B0c](https://ftmscan.com/address/0x69bbAcD89dB2588e8213Be96D4f88888b3D74B0c#code) |
 | testBTC | [0xfe95A6188E2C6FF991600bC43f1B119BC11EE5f6](https://ftmscan.com/address/0xfe95a6188e2c6ff991600bc43f1b119bc11ee5f6#code) |
 | testETH | [0x512D083d9f03d424ae4FCe15255588C246Beb28B](https://ftmscan.com/address/0x512d083d9f03d424ae4fce15255588c246beb28b#code) |
-| testUSDC Pool | [0xfC0a6bdf3e38319c51e5C18D801C6a804e000698](https://ftmscan.com/address/0xfC0a6bdf3e38319c51e5C18D801C6a804e000698#code) |
-| testBTC Pool | [0x4cb8FCB37AB1C46095B8155EabD384539F0E58aC](https://ftmscan.com/address/0x4cb8FCB37AB1C46095B8155EabD384539F0E58aC#code) |
-| testETH Pool | [0xd5b6681fF05C3601d38007F04E45386eA59448ca](https://ftmscan.com/address/0xd5b6681fF05C3601d38007F04E45386eA59448ca#code) |
+| testUSDC Pool | [0x8B209510877EF84619c96805149D656Cd72f9fd6](https://ftmscan.com/address/0x8B209510877EF84619c96805149D656Cd72f9fd6#code) |
+| testBTC Pool | [0xEcB8Db407dd64fE30D9eD2a24D9CCc3C44E1B7F0](https://ftmscan.com/address/0xEcB8Db407dd64fE30D9eD2a24D9CCc3C44E1B7F0#code) |
+| testETH Pool | [0x1D6B43BD79D5339BE3ee1D2792943f625bf50BE6](https://ftmscan.com/address/0x1D6B43BD79D5339BE3ee1D2792943f625bf50BE6#code) |
 
 ### Chainlink Feeds
 | Name | Address |

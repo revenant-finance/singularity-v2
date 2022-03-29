@@ -287,7 +287,6 @@ describe("Singularity Swap", () => {
 		expect(await DAI.pool.DOMAIN_SEPARATOR()).to.equal(
 			getDomainSeparator(`Singularity ${DAI.symbol} Pool (${trancheName})`, DAI.poolAddress)
 		);
-		expect(await DAI.pool.getCollateralizationRatio()).to.equal(MAX);
 		expect(await DAI.pool.getPricePerShare()).to.equal(numToBN(1));
 		await oracle.pushPrices([DAI.address], [numToBN(0.01)]);
 		await expect(DAI.pool.getOracleData()).to.be.revertedWith(
@@ -335,7 +334,6 @@ describe("Singularity Swap", () => {
 		expect(await USDC.pool.balanceOf(ownerAddress)).to.equal(numToBN(amountToMint, USDC.decimals));
 		expect(await USDC.pool.liabilities()).to.equal(numToBN(amountToMint, USDC.decimals));
 		expect(await USDC.pool.assets()).to.equal(numToBN(amountToMint, USDC.decimals));
-		expect(await USDC.pool.getCollateralizationRatio()).to.equal(numToBN(1));
 
 		await addLiquidity(USDC, amountToMint);
 		expect(await usdc.balanceOf(USDC.poolAddress)).to.equal(
@@ -346,7 +344,6 @@ describe("Singularity Swap", () => {
 		);
 		expect(await USDC.pool.liabilities()).to.equal(numToBN(amountToMint * 2, USDC.decimals));
 		expect(await USDC.pool.assets()).to.equal(numToBN(amountToMint * 2, USDC.decimals));
-		expect(await USDC.pool.getCollateralizationRatio()).to.equal(numToBN(1));
 
 		// Test pool token functionality
 		await USDC.pool.transfer(otherAddress, numToBN(1, USDC.decimals));
@@ -409,7 +406,14 @@ describe("Singularity Swap", () => {
 
 		await router.removeLiquidity(
 			usdc.address,
-			numToBN(amountToMint, USDC.decimals),
+			numToBN(amountToMint / 2, USDC.decimals),
+			0,
+			ownerAddress,
+			MAX
+		);
+		await router.removeLiquidity(
+			usdc.address,
+			numToBN(amountToMint / 2, USDC.decimals),
 			0,
 			ownerAddress,
 			MAX

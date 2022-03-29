@@ -6,7 +6,7 @@
 | Name | Address |
 | :--- | :--- |
 | SingularityOracle | [0xC659b3879eD5B3079D5B7Fb89801143E6C1fD8Fa](https://ftmscan.com/address/0xC659b3879eD5B3079D5B7Fb89801143E6C1fD8Fa#code) |
-| SingularityFactory | [0xfF68aEA6F6e2aBbEa2E3bf9e3194D1200048AC83](https://ftmscan.com/address/0xfF68aEA6F6e2aBbEa2E3bf9e3194D1200048AC83#code) |
+| SingularityFactory | [0xf029d2a894B749436BD6105676185B09B27e255D](https://ftmscan.com/address/0xf029d2a894B749436BD6105676185B09B27e255D#code) |
 | SingularityRouter | [0x04dbeCd11DEA269f680A4a05eed001ee7eeeEbb6](https://ftmscan.com/address/0x04dbeCd11DEA269f680A4a05eed001ee7eeeEbb6#code) |
 
 ### Testing Contracts and Pools
@@ -15,9 +15,9 @@
 | testUSDC | [0x69bbAcD89dB2588e8213Be96D4f88888b3D74B0c](https://ftmscan.com/address/0x69bbAcD89dB2588e8213Be96D4f88888b3D74B0c#code) |
 | testBTC | [0xfe95A6188E2C6FF991600bC43f1B119BC11EE5f6](https://ftmscan.com/address/0xfe95a6188e2c6ff991600bc43f1b119bc11ee5f6#code) |
 | testETH | [0x512D083d9f03d424ae4FCe15255588C246Beb28B](https://ftmscan.com/address/0x512d083d9f03d424ae4fce15255588c246beb28b#code) |
-| testUSDC Pool | [0x8B209510877EF84619c96805149D656Cd72f9fd6](https://ftmscan.com/address/0x8B209510877EF84619c96805149D656Cd72f9fd6#code) |
-| testBTC Pool | [0xEcB8Db407dd64fE30D9eD2a24D9CCc3C44E1B7F0](https://ftmscan.com/address/0xEcB8Db407dd64fE30D9eD2a24D9CCc3C44E1B7F0#code) |
-| testETH Pool | [0x1D6B43BD79D5339BE3ee1D2792943f625bf50BE6](https://ftmscan.com/address/0x1D6B43BD79D5339BE3ee1D2792943f625bf50BE6#code) |
+| testUSDC Pool | [0x517D0AD9E9947e6abf119210E7e2DB498809aB56](https://ftmscan.com/address/0x517D0AD9E9947e6abf119210E7e2DB498809aB56#code) |
+| testBTC Pool | [0x6AEa39666F91a43BEb8a1fDe996B2ace85647F88](https://ftmscan.com/address/0x6AEa39666F91a43BEb8a1fDe996B2ace85647F88#code) |
+| testETH Pool | [0xD18ef67e52947Ee827FE54b7f6E8a2918c3e9EeF](https://ftmscan.com/address/0xD18ef67e52947Ee827FE54b7f6E8a2918c3e9EeF#code) |
 
 ### Chainlink Feeds
 | Name | Address |

@@ -10,7 +10,6 @@ import "./interfaces/IERC20.sol";
 import "./utils/SafeERC20.sol";
 import "./utils/FixedPointMathLib.sol";
 import "./utils/ReentrancyGuard.sol";
-import "hardhat/console.sol";
 
 /**
  * @title Singularity Pool
@@ -66,14 +65,6 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         );
         decimals = IERC20(token).decimals();
         _initialize();
-    }
-
-    function getCollateralizationRatio() external view override returns (uint256 collateralizationRatio) {
-        if (liabilities == 0) {
-            collateralizationRatio = type(uint256).max;
-        } else {
-            collateralizationRatio = assets.divWadDown(liabilities);
-        }
     }
 
     function getPricePerShare() public view override returns (uint256 pricePerShare) {
@@ -241,8 +232,9 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
 
     function withdraw(uint256 amount, address to) external override onlyRouter notPaused nonReentrant returns (uint256 withdrawAmount) {
         require(amount != 0, "SingularityPool: AMOUNT_IS_0");
+        uint256 pricePerShare = getPricePerShare();
         _burn(msg.sender, amount);
-        uint256 liquidityValue = amount.mulWadDown(getPricePerShare());
+        uint256 liquidityValue = amount.mulWadDown(pricePerShare);
         uint256 withdrawFee = getWithdrawFee(amount);
         withdrawAmount = liquidityValue - withdrawFee;
         adminFees += withdrawFee;

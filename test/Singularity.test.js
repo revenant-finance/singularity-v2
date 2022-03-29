@@ -617,15 +617,6 @@ describe("Singularity Swap", () => {
 		expect(await WFTM.pool.getTradingFeeRate()).to.equal(MAX);
 	});
 
-	it("getLpFeeRate", async () => {
-		for (let i = 0.1; i < 1.5; i += 0.1) {
-			expect(await USDC.pool.getLpFeeRate(numToBN(i))).to.be.closeTo(
-				calculateLpFeeRate(i),
-				numToBN(1, 16)
-			);
-		}
-	});
-
 	// Factory specific
 
 	it("collectFees", async () => {

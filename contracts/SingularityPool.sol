@@ -69,7 +69,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
 
     function getPricePerShare() public view override returns (uint256 pricePerShare) {
         if (totalSupply == 0) {
-            pricePerShare = 1e18;
+            pricePerShare = 1 ether;
         } else {
             pricePerShare = liabilities.divWadDown(totalSupply);
         }
@@ -106,16 +106,6 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         } else {
             amount *= 10**(decimals - 18);
         }
-    }
-
-    function getLpFeeRate(uint256 collateralizationRatio) public pure override returns (uint256 lpFeeRate) {
-        if (collateralizationRatio == 0) {
-            return 0;
-        }
-        uint256 truncatedCRatio = collateralizationRatio / 10**15; // truncate collateralization ratio precision to 3
-        uint256 numerator = 50 ether;
-        uint256 denominator = truncatedCRatio.rpow(8, 1);
-        lpFeeRate = numerator.divWadUp(denominator);
     }
 
     function getDepositFee(uint256 amount) public view override returns (uint256 fee) {

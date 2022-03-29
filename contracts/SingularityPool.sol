@@ -128,7 +128,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
 
     function getDepositFee(uint256 amount) public view override returns (uint256 fee) {
         uint256 currentCollateralizationRatio = _calcCollatalizationRatio(assets, liabilities);
-        if (currentCollateralizationRatio >= 1 ether) {
+        if (currentCollateralizationRatio <= 1 ether) {
             return 0;
         }
 

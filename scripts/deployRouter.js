@@ -14,6 +14,10 @@ async function main() {
 		address: router.address,
 		constructorArguments: [factoryAddress, wftmAddress],
 	});
+	
+	const Factory = await hre.ethers.getContractFactory("SingularityFactory");
+	const factory = Factory.attach(factoryAddress);
+	await factory.setRouter(router.address);
 }
 
 main()

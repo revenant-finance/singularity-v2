@@ -10,6 +10,7 @@ import "./interfaces/IERC20.sol";
 import "./utils/SafeERC20.sol";
 import "./utils/FixedPointMathLib.sol";
 import "./utils/ReentrancyGuard.sol";
+import "hardhat/console.sol";
 
 /**
  * @title Singularity Pool
@@ -151,10 +152,6 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     }
 
     function getSlippageIn(uint256 amount) public view override returns (uint256 slippageIn) {
-        if (amount == 0) {
-            return 0;
-        }
-
         uint256 currentCollateralizationRatio = _calcCollatalizationRatio(assets + lockedFees, liabilities);
         uint256 gCurrent = getG(currentCollateralizationRatio);
         uint256 afterCollateralizationRatio = _calcCollatalizationRatio(assets + lockedFees + amount, liabilities);
@@ -169,9 +166,6 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     }
 
     function getSlippageOut(uint256 amount) public view override returns (uint256 slippageOut) {
-        if (amount == 0) {
-            return 0;
-        }
         if (amount >= assets + lockedFees) {
             return amount;
         }
@@ -189,15 +183,15 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         slippageOut = amount.mulWadUp(slippageOut);
     }
 
-    function getG(uint256 collateralizationRatio) public pure override returns (uint256 slippageRate) {
-        if (collateralizationRatio >= 1 ether) {
-            slippageRate = 0.00002 ether;
-        } else {
-            uint256 truncatedCRatio = collateralizationRatio / 10**15; // truncate collateralization ratio precision to 3
-            uint256 numerator = 0.02 ether;
-            uint256 denominator = truncatedCRatio.rpow(7, 1);
-            slippageRate = numerator.divWadUp(denominator);
-        }
+    ///
+    ///                     0.00002
+    ///     g = -------------------------------
+    ///          (collateralization ratio) ^ 7
+    ///
+    function getG(uint256 collateralizationRatio) public pure override returns (uint256 g) {
+        uint256 numerator = 0.00002 ether;
+        uint256 denominator = collateralizationRatio.rpow(7, 1 ether);
+        g = numerator.divWadUp(denominator);
     }
 
     function getTradingFeeRate() public view override returns (uint256 tradingFeeRate) {
@@ -307,7 +301,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
 
     function _calcCollatalizationRatio(uint256 _assets, uint256 _liabilities) internal pure returns (uint256 afterCollateralizationRatio) {
         if (_liabilities == 0) {
-            afterCollateralizationRatio = type(uint256).max;
+            afterCollateralizationRatio = 1 ether;
         } else {
             afterCollateralizationRatio = _assets.divWadDown(_liabilities);
         }

@@ -389,7 +389,7 @@ describe("Singularity Swap", () => {
 		await expect(
 			router.removeLiquidity(
 				usdc.address,
-				numToBN(amountToMint, USDC.decimals),
+				numToBN(amountToMint / 2, USDC.decimals),
 				numToBN(amountToMint + 1, USDC.decimals),
 				ownerAddress,
 				MAX

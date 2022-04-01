@@ -67,6 +67,9 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         _initialize();
     }
 
+    /// @notice Calculates the price-per-share (PPS)
+    /// @dev PPS = 1 when pool is empty
+    /// @return pricePerShare The PPS of 1 LP token
     function getPricePerShare() public view override returns (uint256 pricePerShare) {
         if (totalSupply == 0) {
             pricePerShare = 1 ether;
@@ -238,6 +241,12 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         require(amountIn != 0, "SingularityPool: AMOUNT_IS_0");
         IERC20(token).safeTransferFrom(msg.sender, address(this), amountIn);
 
+        // Apply slippage (+)
+        uint256 slippage = getSlippageIn(amountIn);
+        amountIn += slippage;
+        assets -= slippage;
+        liabilities -= slippage;
+
         // Apply trading fees
         (uint256 totalFee, uint256 lockedFee, uint256 adminFee, uint256 lpFee) = getTradingFees(amountIn);
         require(totalFee != type(uint256).max, "SingularityPool: STALE_ORACLE");
@@ -245,12 +254,6 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         adminFees += adminFee;
         liabilities += lpFee;
         amountIn -= totalFee;
-
-        // Apply slippage (+)
-        uint256 slippage = getSlippageIn(amountIn);
-        amountIn += slippage;
-        assets -= slippage;
-        liabilities -= slippage;
 
         assets += amountIn;
         amountOut = getAmountToUSD(amountIn);

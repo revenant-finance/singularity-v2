@@ -54,12 +54,12 @@ contract SingularityRouter is ISingularityRouter {
         require(amountIn != 0, "SingularityRouter: INSUFFICIENT_INPUT_AMOUNT");
         address poolIn = poolFor(factory, tokenIn);
 
+        slippageIn = ISingularityPool(poolIn).getSlippageIn(amountIn);
+        amountIn += slippageIn;
+
         (tradingFeeIn, , ,) = ISingularityPool(poolIn).getTradingFees(amountIn);
         require(tradingFeeIn != type(uint256).max, "SingularityRouter: STALE_ORACLE");
         amountIn -= tradingFeeIn;
-
-        slippageIn = ISingularityPool(poolIn).getSlippageIn(amountIn);
-        amountIn += slippageIn;
     
         uint256 swapInAmountOut = ISingularityPool(poolIn).getAmountToUSD(amountIn);
 

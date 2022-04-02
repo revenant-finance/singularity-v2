@@ -57,7 +57,7 @@ contract SingularityRouter is ISingularityRouter {
         slippageIn = ISingularityPool(poolIn).getSlippageIn(amountIn);
         amountIn += slippageIn;
 
-        (tradingFeeIn, , ,) = ISingularityPool(poolIn).getTradingFees(amountIn);
+        (tradingFeeIn, ,) = ISingularityPool(poolIn).getTradingFees(amountIn);
         require(tradingFeeIn != type(uint256).max, "SingularityRouter: STALE_ORACLE");
         amountIn -= tradingFeeIn;
     
@@ -69,7 +69,7 @@ contract SingularityRouter is ISingularityRouter {
         slippageOut = ISingularityPool(poolOut).getSlippageOut(amountOut);
         amountOut -= slippageOut;
 
-        (tradingFeeOut, , ,) = ISingularityPool(poolOut).getTradingFees(amountOut);
+        (tradingFeeOut, ,) = ISingularityPool(poolOut).getTradingFees(amountOut);
         require(tradingFeeOut != type(uint256).max, "SingularityRouter: STALE_ORACLE");
         amountOut -= tradingFeeOut;
     }

@@ -276,8 +276,7 @@ describe("Singularity Swap", () => {
 		expect(await DAI.pool.assets()).to.equal(0);
 		expect(await DAI.pool.liabilities()).to.equal(0);
 		expect(await DAI.pool.baseFee()).to.equal(numToBN(DAI.baseFee));
-		expect(await DAI.pool.adminFees()).to.equal(0);
-		expect(await DAI.pool.lockedFees()).to.equal(0);
+		expect(await DAI.pool.protocolFees()).to.equal(0);
 		expect(await DAI.pool.name()).to.equal(`Singularity ${DAI.symbol} Pool (${trancheName})`);
 		expect(await DAI.pool.symbol()).to.equal(`SPT-${DAI.symbol} (${trancheName})`);
 		expect(await DAI.pool.decimals()).to.equal(DAI.decimals);
@@ -418,10 +417,17 @@ describe("Singularity Swap", () => {
 			ownerAddress,
 			MAX
 		);
-		expect(await usdc.balanceOf(ownerAddress)).to.equal(numToBN(USDC.balance, USDC.decimals));
-		expect(await usdc.balanceOf(USDC.poolAddress)).to.equal(0);
+		const protocolFees = await USDC.pool.protocolFees();
+		expect(await usdc.balanceOf(ownerAddress)).to.be.equal(
+			numToBN(USDC.balance, USDC.decimals) - protocolFees
+		);
+		expect(await usdc.balanceOf(USDC.poolAddress)).to.equal(protocolFees);
 		expect(await USDC.pool.balanceOf(ownerAddress)).to.equal(0);
+		expect(await USDC.pool.assets()).to.equal(0);
+		expect(await USDC.pool.getAssets()).to.equal(protocolFees);
 		expect(await USDC.pool.liabilities()).to.equal(0);
+		expect(await USDC.pool.getLiabilities()).to.equal(protocolFees);
+		expect(await USDC.pool.protocolFees()).to.equal(protocolFees);
 	});
 
 	it("removeLiquidityETH", async () => {
@@ -601,14 +607,13 @@ describe("Singularity Swap", () => {
 	it("getTradingFees", async () => {
 		expect(await USDC.pool.getTradingFeeRate()).to.equal(numToBN(USDC.baseFee));
 		await updatePrices();
-		const { totalFee, lockedFee, adminFee, lpFee } = await USDC.pool.getTradingFees(
+		const { totalFee, protocolFee, lpFee } = await USDC.pool.getTradingFees(
 			numToBN(amountToSwap, USDC.decimals)
 		);
 		const expectedTotal = numToBN(amountToSwap * USDC.baseFee, 6);
 		expect(totalFee).to.equal(expectedTotal);
-		expect(lockedFee).to.equal(expectedTotal.mul(45).div(100));
-		expect(lpFee).to.equal(expectedTotal.mul(45).div(100), 6);
-		expect(adminFee).to.equal(expectedTotal.sub(lockedFee).sub(lpFee), 6);
+		expect(protocolFee).to.equal(expectedTotal.mul(55).div(100));
+		expect(lpFee).to.equal(expectedTotal.sub(protocolFee), 6);
 
 		expect(await WFTM.pool.getTradingFeeRate()).to.be.gt(numToBN(WFTM.baseFee));
 		advanceTime(60); // tests >= 60 seconds condition
@@ -634,8 +639,8 @@ describe("Singularity Swap", () => {
 			MAX
 		);
 		await factory.collectFees();
-		expect(await ETH.pool.adminFees()).to.equal(0);
-		expect(await USDC.pool.adminFees()).to.equal(0);
+		expect(await ETH.pool.protocolFees()).to.equal(0);
+		expect(await USDC.pool.protocolFees()).to.equal(0);
 		expect(await eth.balanceOf(otherAddress)).to.be.gt(0);
 		expect(await usdc.balanceOf(otherAddress)).to.be.gt(0);
 	});

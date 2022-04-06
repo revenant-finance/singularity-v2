@@ -3,6 +3,14 @@
 pragma solidity ^0.8.13;
 
 interface ISingularityFactory {
+    struct PoolParams {
+        address token;
+        bool isStablecoin;
+        uint256 baseFee;
+    }
+    
+    event PoolCreated(address indexed token, bool isStablecoin, uint256 baseFee, address pool, uint256 index);
+   
     function tranche() external view returns (string memory);
     function admin() external view returns (address);
     function oracle() external view returns (address);

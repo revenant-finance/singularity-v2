@@ -10,11 +10,6 @@ import "./SingularityPool.sol";
  * @author Revenant Labs
  */
  contract SingularityFactory is ISingularityFactory {
-    struct PoolParams {
-        address token;
-        bool isStablecoin;
-        uint256 baseFee;
-    }
     string public override tranche;
     address public override admin;
     address public override oracle;
@@ -25,8 +20,6 @@ import "./SingularityPool.sol";
     
     mapping(address => address) public override getPool;
     address[] public override allPools;
-
-    event PoolCreated(address indexed token, bool isStablecoin, uint256 baseFee, address pool, uint256);
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "SingularityFactory: NOT_ADMIN");

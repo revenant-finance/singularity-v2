@@ -91,14 +91,14 @@ import "./SingularityPool.sol";
     }
 
     function collectFees() external override onlyAdmin {
-        for (uint256 i; i < allPools.length; i++) {
+        for (uint256 i; i < allPools.length; ++i) {
             ISingularityPool(allPools[i]).collectFees();
         }
     }
 
     function setDepositCaps(address[] calldata tokens, uint256[] calldata caps) external override onlyAdmin {
         require(tokens.length == caps.length, "SingularityFactory: NOT_SAME_LENGTH");
-        for (uint256 i; i < tokens.length; i++) {
+        for (uint256 i; i < tokens.length; ++i) {
             address pool = getPool[tokens[i]];
             require(pool != address(0), "SingularityFactory: POOL_DOESNT_EXIST");
             ISingularityPool(pool).setDepositCap(caps[i]);
@@ -107,7 +107,7 @@ import "./SingularityPool.sol";
 
     function setBaseFees(address[] calldata tokens, uint256[] calldata baseFees) external override onlyAdmin {
         require(tokens.length == baseFees.length, "SingularityFactory: NOT_SAME_LENGTH");
-        for (uint256 i; i < tokens.length; i++) {
+        for (uint256 i; i < tokens.length; ++i) {
             require(baseFees[i] != 0, "SingularityFactory: BASE_FEE_IS_0");
             address pool = getPool[tokens[i]];
             require(pool != address(0), "SingularityFactory: POOL_DOESNT_EXIST");
@@ -117,7 +117,7 @@ import "./SingularityPool.sol";
 
     function setPaused(address[] calldata tokens, bool[] calldata states) external override onlyAdmin {
         require(tokens.length == states.length, "SingularityFactory: NOT_SAME_LENGTH");
-        for (uint256 i; i < tokens.length; i++) {
+        for (uint256 i; i < tokens.length; ++i) {
             address pool = getPool[tokens[i]];
             require(pool != address(0), "SingularityFactory: POOL_DOESNT_EXIST");
             ISingularityPool(pool).setPaused(states[i]);
@@ -125,7 +125,7 @@ import "./SingularityPool.sol";
     }
 
     function setPausedForAll(bool state) external override onlyAdmin {
-        for (uint256 i; i < allPools.length; i++) {
+        for (uint256 i; i < allPools.length; ++i) {
             ISingularityPool(allPools[i]).setPaused(state);
         }
     }

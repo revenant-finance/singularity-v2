@@ -176,10 +176,6 @@ describe("Singularity Swap", () => {
 		);
 	}
 
-	function calculateLpFeeRate(cRatio) {
-		return numToBN((0.00005 / cRatio ** 8).toFixed(18));
-	}
-
 	before(async () => {
 		const accounts = await ethers.getSigners();
 		[ownerAccount, otherAccount] = accounts;

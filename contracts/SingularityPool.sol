@@ -241,8 +241,8 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         _burn(msg.sender, amount);
         uint256 liquidityValue = amount.mulWadDown(pricePerShare);
         uint256 withdrawFee = getWithdrawFee(liquidityValue);
-        liabilities -= liquidityValue;
         assets -= liquidityValue;
+        liabilities -= liquidityValue;
         protocolFees += withdrawFee;
         withdrawAmount = liquidityValue - withdrawFee;
         IERC20(token).safeTransfer(to, withdrawAmount);

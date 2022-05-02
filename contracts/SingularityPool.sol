@@ -132,18 +132,38 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         }
 
         if (getCollateralizationRatio() <= 1 ether) {
-            fee = _getWithdrawFee(amount);
+            fee = 0;
         } else {
             fee = _getDepositFee(amount);
         }
     }
 
+    function _getDepositFee(uint256 amount) internal view returns (uint256 fee) {
+        uint256 currentCollateralizationRatio = getCollateralizationRatio();
+        uint256 gCurrent = getG(currentCollateralizationRatio);
+        uint256 _assets = getAssets();
+        uint256 _liabilities = getLiabilities();
+        uint256 afterCollateralizationRatio = _calcCollatalizationRatio(_assets + amount, _liabilities + amount);
+        uint256 gAfter = getG(afterCollateralizationRatio);
+        fee = (_liabilities + amount).mulWadUp(gAfter) - _liabilities.mulWadDown(gCurrent);
+    }
+
     function getWithdrawFee(uint256 amount) public view override returns (uint256 fee) {
         if (getCollateralizationRatio() >= 1 ether) {
-            fee = _getDepositFee(amount);
+            fee = 0;
         } else {
             fee = _getWithdrawFee(amount);
         }
+    }
+
+    function _getWithdrawFee(uint256 amount) internal view returns (uint256 fee) {
+        uint256 currentCollateralizationRatio = getCollateralizationRatio();
+        uint256 gCurrent = getG(currentCollateralizationRatio);
+        uint256 _assets = getAssets();
+        uint256 _liabilities = getLiabilities();
+        uint256 afterCollateralizationRatio = _calcCollatalizationRatio(_assets - amount, _liabilities - amount);
+        uint256 gAfter = getG(afterCollateralizationRatio);
+        fee = gAfter.mulWadUp(_liabilities - amount) + getG(1 ether).mulWadUp(amount) - gCurrent.mulWadDown(_liabilities);
     }
 
     function getSlippageIn(uint256 amount) public view override returns (uint256 slippageIn) {
@@ -301,27 +321,6 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
             afterCollateralizationRatio = (_assets).divWadDown(_liabilities);
         }
     }
-
-    function _getDepositFee(uint256 amount) internal view returns (uint256 fee) {
-        uint256 currentCollateralizationRatio = getCollateralizationRatio();
-        uint256 gCurrent = getG(currentCollateralizationRatio);
-        uint256 _assets = getAssets();
-        uint256 _liabilities = getLiabilities();
-        uint256 afterCollateralizationRatio = _calcCollatalizationRatio(_assets + amount, _liabilities + amount);
-        uint256 gAfter = getG(afterCollateralizationRatio);
-        fee = (_liabilities + amount).mulWadUp(gAfter) - _liabilities.mulWadDown(gCurrent);
-    }
-
-    function _getWithdrawFee(uint256 amount) internal view returns (uint256 fee) {
-        uint256 currentCollateralizationRatio = getCollateralizationRatio();
-        uint256 gCurrent = getG(currentCollateralizationRatio);
-        uint256 _assets = getAssets();
-        uint256 _liabilities = getLiabilities();
-        uint256 afterCollateralizationRatio = _calcCollatalizationRatio(_assets - amount, _liabilities - amount);
-        uint256 gAfter = getG(afterCollateralizationRatio);
-        fee = gAfter.mulWadUp(_liabilities - amount) + getG(1 ether).mulWadUp(amount) - gCurrent.mulWadDown(_liabilities);
-    }
-
 
     /* ========== FACTORY FUNCTIONS ========== */
 

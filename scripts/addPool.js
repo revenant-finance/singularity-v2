@@ -2,30 +2,30 @@ const hre = require("hardhat");
 
 async function main() {
 	const Factory = await hre.ethers.getContractFactory("SingularityFactory");
-	const factoryAddress = "0x4A762D217a88955ed29e330F90b7D155d7C7cd56";
+	const factoryAddress = "0x973d23d8f60a05ed4746c443d89e97755501616f";
 	const factory = Factory.attach(factoryAddress);
 
 	const tokens = [
 		{
-			name: "testUSDC",
-			address: "0x69bbAcD89dB2588e8213Be96D4f88888b3D74B0c",
+			name: "USDC",
+			address: "0x04068da6c83afcfa0e13ba15a6696662335d5b75",
 			fee: 0.0002,
 			isStable: true,
-			cap: numToBN(5000000, 6),
+			cap: numToBN(100000, 6),
 		},
 		{
-			name: "testBTC",
-			address: "0xfe95A6188E2C6FF991600bC43f1B119BC11EE5f6",
-			fee: 0.00075,
-			isStable: false,
-			cap: numToBN(100, 8),
+			name: "fUSDT",
+			address: "0x049d68029688eabf473097a2fc38ef61633a3c7a",
+			fee: 0.0002,
+			isStable: true,
+			cap: numToBN(100000, 18),
 		},
 		{
-			name: "testETH",
-			address: "0x512D083d9f03d424ae4FCe15255588C246Beb28B",
-			fee: 0.00075,
-			isStable: false,
-			cap: numToBN(1000),
+			name: "DAI",
+			address: "0x8d11ec38a3eb5e956b052f67da8bdc9bef8abf3e",
+			fee: 0.0002,
+			isStable: true,
+			cap: numToBN(100000, 18),
 		},
 	];
 	for (let i = 0; i < tokens.length; i++) {

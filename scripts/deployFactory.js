@@ -3,9 +3,9 @@ const hre = require("hardhat");
 async function main() {
 	const [deployer] = await ethers.getSigners();
 	const Factory = await hre.ethers.getContractFactory("SingularityFactory");
-	const trancheName = "Test Tranche v5";
+	const trancheName = "Stable Pool";
 	const adminAddress = deployer.address;
-	const oracleAddress = "0xC659b3879eD5B3079D5B7Fb89801143E6C1fD8Fa";
+	const oracleAddress = "0xf8b88f0d5bd0669a7a59e1812ebf1bdf93948b7a";
 	const feeToAddress = deployer.address;
 	const factory = await Factory.deploy(trancheName, adminAddress, oracleAddress, feeToAddress);
 

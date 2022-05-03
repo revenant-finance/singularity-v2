@@ -275,9 +275,8 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
 
         // Apply slippage (+)
         uint256 slippage = getSlippageIn(amountIn);
+        assets += amountIn;
         amountIn += slippage;
-        assets -= slippage;
-        liabilities -= slippage;
 
         // Apply trading fees
         (uint256 totalFee, uint256 protocolFee, uint256 lpFee) = getTradingFees(amountIn);
@@ -285,9 +284,8 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         protocolFees += protocolFee;
         liabilities += lpFee;
         amountIn -= totalFee;
-
-        assets += amountIn;
         amountOut = getAmountToUSD(amountIn);
+
         emit SwapIn(msg.sender, amountIn, amountOut);
     }
 
@@ -298,19 +296,16 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         // Apply slippage (-)
         uint256 slippage = getSlippageOut(amountOut);
         amountOut -= slippage;
-        assets += slippage;
-        liabilities += slippage;
 
         // Apply trading fees
         (uint256 totalFee, uint256 protocolFee, uint256 lpFee) = getTradingFees(amountOut);
         require(totalFee != type(uint256).max, "SingularityPool: STALE_ORACLE");
         protocolFees += protocolFee;
         liabilities += lpFee;
-
-        assets -= amountOut;
         amountOut -= totalFee;
-
+        assets -= amountOut;
         IERC20(token).safeTransfer(to, amountOut);
+
         emit SwapOut(msg.sender, amountIn, amountOut, to);
     }
 

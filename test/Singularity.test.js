@@ -414,15 +414,16 @@ describe("Singularity Swap", () => {
 			MAX
 		);
 		const protocolFees = await USDC.pool.protocolFees();
+		const [_assets, _liabilities] = await USDC.pool.getAssetsAndLiabilities();
 		expect(await usdc.balanceOf(ownerAddress)).to.be.equal(
 			numToBN(USDC.balance, USDC.decimals) - protocolFees
 		);
 		expect(await usdc.balanceOf(USDC.poolAddress)).to.equal(protocolFees);
 		expect(await USDC.pool.balanceOf(ownerAddress)).to.equal(0);
 		expect(await USDC.pool.assets()).to.equal(0);
-		expect(await USDC.pool.getAssets()).to.equal(protocolFees);
+		expect(_assets).to.equal(protocolFees);
 		expect(await USDC.pool.liabilities()).to.equal(0);
-		expect(await USDC.pool.getLiabilities()).to.equal(protocolFees);
+		expect(_liabilities).to.equal(protocolFees);
 		expect(await USDC.pool.protocolFees()).to.equal(protocolFees);
 	});
 

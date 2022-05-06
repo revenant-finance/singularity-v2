@@ -15,6 +15,7 @@ import "./SingularityPool.sol";
     address public override oracle;
     address public override feeTo;
     address public override router;
+    uint256 public override oracleSens = 60; // threshold (in seconds) since last oracle update to apply 2x trading fee
 
     PoolParams public override poolParams;
     
@@ -88,6 +89,11 @@ import "./SingularityPool.sol";
     function setRouter(address _router) external override onlyAdmin {
         require(_router != address(0), "SingularityFactory: ZERO_ADDRESS");
         router = _router;
+    }
+
+    function setOracleSens(uint256 _oracleSens) external override onlyAdmin {
+        require(_oracleSens != 0, "SingularityFactory: ORACLE_SENS_IS_0");
+        oracleSens = _oracleSens;
     }
 
     function collectFees() external override onlyAdmin {

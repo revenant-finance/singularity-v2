@@ -90,8 +90,8 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         }
     }
 
-    function getOracleData() public view override returns (uint256 tokenPrice, uint256 updatedAt) {
-        (tokenPrice, updatedAt) = ISingularityOracle(ISingularityFactory(factory).oracle()).getLatestRound(token);
+    function getOracleData() public view override returns (uint256 tokenPrice, uint256 updatedAt, uint256 timeDiff) {
+        (tokenPrice, updatedAt, timeDiff) = ISingularityOracle(ISingularityFactory(factory).oracle()).getLatestRound(token);
         require(tokenPrice != 0, "SingularityPool: INVALID_ORACLE_PRICE");
     }
 
@@ -100,7 +100,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     /// @param amount The amount of tokens to calculate the value of
     /// @return value The USD value equivalent to the number of tokens
     function getAmountToUSD(uint256 amount) public override view returns (uint256 value) {
-        (uint256 tokenPrice, ) = getOracleData();
+        (uint256 tokenPrice, ,) = getOracleData();
         value = amount.mulWadDown(tokenPrice);
         if (decimals <= 18) {
             value *= 10**(18 - decimals);
@@ -114,7 +114,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     /// @param value The USD value of tokens to calculate the amount of
     /// @return amount The number of tokens equivalent to the USD value
     function getUSDToAmount(uint256 value) public override view returns (uint256 amount) {
-        (uint256 tokenPrice, ) = getOracleData();
+        (uint256 tokenPrice, ,) = getOracleData();
         amount = value.divWadDown(tokenPrice);
         if (decimals <= 18) {
             amount /= 10**(18 - decimals);
@@ -193,14 +193,14 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         if (isStablecoin) {
             tradingFeeRate = baseFee;
         } else {
-            (, uint256 updatedAt) = getOracleData();
-            uint256 timeDiff = block.timestamp - updatedAt;
-            if (timeDiff > 70) {
+            (, , uint256 timeDiff) = getOracleData();
+            uint256 oracleSens = ISingularityFactory(factory).oracleSens();
+            if (timeDiff > oracleSens * 11 / 10) {
                 tradingFeeRate = type(uint256).max; // Revert later to allow viewability
-            } else if (timeDiff >= 60) {
+            } else if (timeDiff >= oracleSens) {
                 tradingFeeRate = baseFee * 2;
             } else {
-                tradingFeeRate = baseFee + baseFee * timeDiff / 60;
+                tradingFeeRate = baseFee + baseFee * timeDiff / oracleSens;
             }
         }
     }
@@ -248,6 +248,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         withdrawAmount = liquidityValue - withdrawFee;
 
         IERC20(token).safeTransfer(to, withdrawAmount);
+
         emit Withdraw(msg.sender, amount, withdrawAmount, to);
     }
 
@@ -286,6 +287,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         liabilities += lpFee;
         amountOut -= totalFee;
         assets -= amountOut;
+
         IERC20(token).safeTransfer(to, amountOut);
 
         emit SwapOut(msg.sender, amountIn, amountOut, to);

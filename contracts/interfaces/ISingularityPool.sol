@@ -34,7 +34,7 @@ interface ISingularityPool is ISingularityPoolToken {
     function getPricePerShare() external view returns (uint256);
     function getAssetsAndLiabilities() external view returns (uint256, uint256);
     function getCollateralizationRatio() external view returns (uint256);
-    function getOracleData() external view returns (uint256, uint256);
+    function getOracleData() external view returns (uint256, uint256, uint256);
     function getAmountToUSD(uint256 amount) external view returns (uint256);
     function getUSDToAmount(uint256 value) external view returns (uint256);
     

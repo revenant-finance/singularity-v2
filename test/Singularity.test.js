@@ -295,9 +295,6 @@ describe("Singularity Swap", () => {
 	});
 
 	it("addLiquidity", async () => {
-		await expect(
-			USDC.pool.deposit(numToBN(amountToMint, USDC.decimals), ownerAddress)
-		).to.be.revertedWith("SingularityPool: NOT_ROUTER");
 		await factory.setPausedForAll(true);
 		await expect(
 			router.addLiquidity(usdc.address, numToBN(amountToMint, 6), 0, ownerAddress, MAX)
@@ -613,7 +610,7 @@ describe("Singularity Swap", () => {
 		expect(lpFee).to.equal(expectedTotal.sub(protocolFee), 6);
 
 		expect(await WFTM.pool.getTradingFeeRate()).to.be.gt(numToBN(WFTM.baseFee));
-		advanceTime(60); // tests >= 60 seconds condition
+		advanceTime(55); // tests >= 60 seconds condition
 		expect(await WFTM.pool.getTradingFeeRate()).to.equal(numToBN(WFTM.baseFee * 2));
 		advanceTime(100); // tests >= 70 seconds condition
 		expect(await WFTM.pool.getTradingFeeRate()).to.equal(MAX);

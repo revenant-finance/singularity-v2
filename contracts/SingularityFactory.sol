@@ -15,6 +15,7 @@ import "./SingularityPool.sol";
     address public override oracle;
     address public override feeTo;
     address public override router;
+    uint256 public override protocolFeeShare = 55; // trading fee % that goes to protocol revenue ([0, 100])
     uint256 public override oracleSens = 60; // threshold (in seconds) since last oracle update to apply 2x trading fee
 
     PoolParams public override poolParams;
@@ -89,6 +90,11 @@ import "./SingularityPool.sol";
     function setRouter(address _router) external override onlyAdmin {
         require(_router != address(0), "SingularityFactory: ZERO_ADDRESS");
         router = _router;
+    }
+
+    function setProtocolFeeShare(uint256 _protocolFeeShare) external override onlyAdmin {
+        require(_protocolFeeShare <= 100, "SingularityFactory: PROTOCOL_FEE_SHARE_GT_100");
+        protocolFeeShare = _protocolFeeShare;
     }
 
     function setOracleSens(uint256 _oracleSens) external override onlyAdmin {

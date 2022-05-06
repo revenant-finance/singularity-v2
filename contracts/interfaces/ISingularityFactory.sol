@@ -16,6 +16,7 @@ interface ISingularityFactory {
     function oracle() external view returns (address);
     function feeTo() external view returns (address);
     function router() external view returns (address);
+    function protocolFeeShare() external view returns (uint256);
     function oracleSens() external view returns (uint256);
 
     function poolParams() external view returns(address token, bool isStablecoin, uint256 baseFee);
@@ -31,6 +32,7 @@ interface ISingularityFactory {
     function setOracle(address _oracle) external;
     function setFeeTo(address _feeTo) external;
     function setRouter(address _router) external;
+    function setProtocolFeeShare(uint256 _protocolFeeShare) external;
     function setOracleSens(uint256 _oracleSens) external;
     
     function collectFees() external;

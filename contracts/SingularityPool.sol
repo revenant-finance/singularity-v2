@@ -195,7 +195,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         } else {
             (, , uint256 timeDiff) = getOracleData();
             uint256 oracleSens = ISingularityFactory(factory).oracleSens();
-            if (timeDiff > oracleSens * 11 / 10) {
+            if (timeDiff * 10 > oracleSens * 11) {
                 tradingFeeRate = type(uint256).max; // Revert later to allow viewability
             } else if (timeDiff >= oracleSens) {
                 tradingFeeRate = baseFee * 2;
@@ -211,7 +211,8 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
             return (type(uint256).max, type(uint256).max, type(uint256).max);
         }
         totalFee = amount.mulWadUp(tradingFeeRate);
-        protocolFee = totalFee * 55 / 100;
+        uint256 protocolFeeShare = ISingularityFactory(factory).protocolFeeShare();
+        protocolFee = totalFee * protocolFeeShare / 100;
         lpFee = totalFee - protocolFee;
     }
 

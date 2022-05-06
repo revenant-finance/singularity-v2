@@ -30,11 +30,11 @@ contract SingularityOracle is ISingularityOracle {
 	}
 
 	/// @dev Validates price is within bounds of reported Chainlink price
-	function getLatestRound(address token) public view override returns (uint256 price, uint256 updatedAt, uint256 timeDiff) {
+	function getLatestRound(address token) public view override returns (uint256 price, uint256 updatedAt) {
 		(uint256 chainlinkPrice, uint256 _updatedAt) = _getChainlinkData(token);
 		require(chainlinkPrice != 0, "SingularityOracle: CHAINLINK_PRICE_IS_0");
 		if (onlyUseChainlink) {
-			return (chainlinkPrice, _updatedAt, block.timestamp - _updatedAt);
+			return (chainlinkPrice, _updatedAt);
 		}
 
 		PriceData[] memory prices = allPrices[token];
@@ -43,18 +43,15 @@ contract SingularityOracle is ISingularityOracle {
 		uint256 percentDiff = priceDiff * 1 ether / (price * 100);
 		require(percentDiff <= maxPriceTolerance, "SingularityOracle: PRICE_DIFF_EXCEEDS_TOLERANCE");
 		updatedAt = prices[prices.length - 1].updatedAt;
-		timeDiff = block.timestamp - updatedAt;
 	}
 
-	function getLatestRounds(address[] calldata tokens) external view override returns (uint256[] memory prices, uint256[] memory updatedAts, uint256[] memory timeDiffs) {
+	function getLatestRounds(address[] calldata tokens) external view override returns (uint256[] memory prices, uint256[] memory updatedAts) {
 		prices = new uint256[](tokens.length);
 		updatedAts = new uint256[](tokens.length);
-		timeDiffs = new uint256[](tokens.length);
 		for (uint256 i; i < tokens.length; ++i) {
-			(uint256 price, uint256 updatedAt, uint256 timeDiff) = getLatestRound(tokens[i]);
+			(uint256 price, uint256 updatedAt) = getLatestRound(tokens[i]);
 			prices[i] = price;
 			updatedAts[i] = updatedAt;
-			timeDiffs[i] = timeDiff;
 		}
 	}
 

@@ -77,10 +77,17 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         }
     }
 
+    /// @notice Get pool's assets and liabilities
+    /// @dev Includes protocol fees
+    /// @return _assets The assets of the pool
+    /// @return _liabilities The liabilities of the pool
     function getAssetsAndLiabilities() public view override returns (uint256 _assets, uint256 _liabilities) {
         return (assets + protocolFees, liabilities + protocolFees);
     }
 
+    /// @notice Get pool's collateralization ratio
+    /// @dev Collateralization ratio is 1 if pool not seeded
+    /// @return collateralizationRatio The collateralization ratio of the pool
     function getCollateralizationRatio() public view override returns (uint256 collateralizationRatio) {
         if (liabilities == 0) {
             collateralizationRatio = 1 ether;
@@ -90,8 +97,8 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         }
     }
 
-    function getOracleData() public view override returns (uint256 tokenPrice, uint256 updatedAt, uint256 timeDiff) {
-        (tokenPrice, updatedAt, timeDiff) = ISingularityOracle(ISingularityFactory(factory).oracle()).getLatestRound(token);
+    function getOracleData() public view override returns (uint256 tokenPrice, uint256 updatedAt) {
+        (tokenPrice, updatedAt) = ISingularityOracle(ISingularityFactory(factory).oracle()).getLatestRound(token);
         require(tokenPrice != 0, "SingularityPool: INVALID_ORACLE_PRICE");
     }
 
@@ -100,7 +107,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     /// @param amount The amount of tokens to calculate the value of
     /// @return value The USD value equivalent to the number of tokens
     function getAmountToUSD(uint256 amount) public override view returns (uint256 value) {
-        (uint256 tokenPrice, ,) = getOracleData();
+        (uint256 tokenPrice, ) = getOracleData();
         value = amount.mulWadDown(tokenPrice);
         if (decimals <= 18) {
             value *= 10**(18 - decimals);
@@ -114,7 +121,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     /// @param value The USD value of tokens to calculate the amount of
     /// @return amount The number of tokens equivalent to the USD value
     function getUSDToAmount(uint256 value) public override view returns (uint256 amount) {
-        (uint256 tokenPrice, ,) = getOracleData();
+        (uint256 tokenPrice, ) = getOracleData();
         amount = value.divWadDown(tokenPrice);
         if (decimals <= 18) {
             amount /= 10**(18 - decimals);
@@ -193,14 +200,15 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         if (isStablecoin) {
             tradingFeeRate = baseFee;
         } else {
-            (, , uint256 timeDiff) = getOracleData();
+            (, uint256 updatedAt) = getOracleData();
             uint256 oracleSens = ISingularityFactory(factory).oracleSens();
-            if (timeDiff * 10 > oracleSens * 11) {
+            uint256 timeSinceUpdate = block.timestamp - updatedAt;
+            if (timeSinceUpdate * 10 > oracleSens * 11) {
                 tradingFeeRate = type(uint256).max; // Revert later to allow viewability
-            } else if (timeDiff >= oracleSens) {
+            } else if (timeSinceUpdate >= oracleSens) {
                 tradingFeeRate = baseFee * 2;
             } else {
-                tradingFeeRate = baseFee + baseFee * timeDiff / oracleSens;
+                tradingFeeRate = baseFee + baseFee * timeSinceUpdate / oracleSens;
             }
         }
     }
@@ -294,14 +302,6 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         emit SwapOut(msg.sender, amountIn, amountOut, to);
     }
 
-    function _calcCollatalizationRatio(uint256 _assets, uint256 _liabilities) internal pure returns (uint256 afterCollateralizationRatio) {
-        if (_liabilities == 0) {
-            afterCollateralizationRatio = 1 ether;
-        } else {
-            afterCollateralizationRatio = (_assets).divWadDown(_liabilities);
-        }
-    }
-
     ///
     ///                     0.00002
     ///     g = -------------------------------
@@ -311,6 +311,14 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         uint256 numerator = 0.00002 ether;
         uint256 denominator = collateralizationRatio.rpow(7, 1 ether);
         g = numerator.divWadUp(denominator);
+    }
+
+    function _calcCollatalizationRatio(uint256 _assets, uint256 _liabilities) internal pure returns (uint256 afterCollateralizationRatio) {
+        if (_liabilities == 0) {
+            afterCollateralizationRatio = 1 ether;
+        } else {
+            afterCollateralizationRatio = (_assets).divWadDown(_liabilities);
+        }
     }
 
     /* ========== FACTORY FUNCTIONS ========== */

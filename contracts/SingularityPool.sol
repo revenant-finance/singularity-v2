@@ -128,45 +128,39 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
             return 0;
         }
 
-        if (getCollateralizationRatio() <= 1 ether) {
-            fee = 0;
-        } else {
-            fee = _getDepositFee(amount);
-        }
-    }
-
-    function _getDepositFee(uint256 amount) internal view returns (uint256 fee) {
         uint256 currentCollateralizationRatio = getCollateralizationRatio();
-        uint256 gCurrent = getG(currentCollateralizationRatio);
+        uint256 gCurrent = _getG(currentCollateralizationRatio);
         (uint256 _assets, uint256 _liabilities) = getAssetsAndLiabilities();
         uint256 afterCollateralizationRatio = _calcCollatalizationRatio(_assets + amount, _liabilities + amount);
-        uint256 gAfter = getG(afterCollateralizationRatio);
-        fee = (_liabilities + amount).mulWadUp(gAfter) - _liabilities.mulWadDown(gCurrent);
+        uint256 gAfter = _getG(afterCollateralizationRatio);
+
+        if (currentCollateralizationRatio <= 1 ether) {
+            fee = gCurrent.mulWadUp(_liabilities) + _getG(1 ether).mulWadUp(amount) - gAfter.mulWadDown(_liabilities + amount);
+        } else {
+            fee = gAfter.mulWadUp(_liabilities + amount) - gCurrent.mulWadDown(_liabilities);
+        }
     }
 
     function getWithdrawFee(uint256 amount) public view override returns (uint256 fee) {
-        if (getCollateralizationRatio() >= 1 ether) {
-            fee = 0;
-        } else {
-            fee = _getWithdrawFee(amount);
-        }
-    }
-
-    function _getWithdrawFee(uint256 amount) internal view returns (uint256 fee) {
         uint256 currentCollateralizationRatio = getCollateralizationRatio();
-        uint256 gCurrent = getG(currentCollateralizationRatio);
+        uint256 gCurrent = _getG(currentCollateralizationRatio);
         (uint256 _assets, uint256 _liabilities) = getAssetsAndLiabilities();
         uint256 afterCollateralizationRatio = _calcCollatalizationRatio(_assets - amount, _liabilities - amount);
-        uint256 gAfter = getG(afterCollateralizationRatio);
-        fee = gAfter.mulWadUp(_liabilities - amount) + getG(1 ether).mulWadUp(amount) - gCurrent.mulWadDown(_liabilities);
+        uint256 gAfter = _getG(afterCollateralizationRatio);
+
+        if (currentCollateralizationRatio >= 1 ether) {
+            fee = gCurrent.mulWadDown(_liabilities) - gAfter.mulWadUp(_liabilities - amount);
+        } else {
+            fee = gAfter.mulWadUp(_liabilities - amount) + _getG(1 ether).mulWadUp(amount) - gCurrent.mulWadDown(_liabilities);
+        }
     }
 
     function getSlippageIn(uint256 amount) public view override returns (uint256 slippageIn) {
         uint256 currentCollateralizationRatio = getCollateralizationRatio();
-        uint256 gCurrent = getG(currentCollateralizationRatio);
+        uint256 gCurrent = _getG(currentCollateralizationRatio);
         (uint256 _assets, uint256 _liabilities) = getAssetsAndLiabilities();
         uint256 afterCollateralizationRatio = _calcCollatalizationRatio(_assets + amount, _liabilities);
-        uint256 gAfter = getG(afterCollateralizationRatio);
+        uint256 gAfter = _getG(afterCollateralizationRatio);
         uint256 gDiff = gCurrent - gAfter;
         if (gDiff == 0) {
             return 0;
@@ -184,8 +178,8 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         uint256 currentCollateralizationRatio = getCollateralizationRatio();
         (uint256 _assets, uint256 _liabilities) = getAssetsAndLiabilities();
         uint256 afterCollateralizationRatio = _calcCollatalizationRatio(_assets - amount, _liabilities);
-        uint256 gCurrent = getG(currentCollateralizationRatio);
-        uint256 gAfter = getG(afterCollateralizationRatio);
+        uint256 gCurrent = _getG(currentCollateralizationRatio);
+        uint256 gAfter = _getG(afterCollateralizationRatio);
         uint256 gDiff = gAfter - gCurrent;
         if (gDiff == 0) {
             return 0;
@@ -193,17 +187,6 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
             slippageOut = gDiff.divWadUp(currentCollateralizationRatio - afterCollateralizationRatio);
         }
         slippageOut = amount.mulWadUp(slippageOut);
-    }
-
-    ///
-    ///                     0.00002
-    ///     g = -------------------------------
-    ///          (collateralization ratio) ^ 7
-    ///
-    function getG(uint256 collateralizationRatio) public pure override returns (uint256 g) {
-        uint256 numerator = 0.00002 ether;
-        uint256 denominator = collateralizationRatio.rpow(7, 1 ether);
-        g = numerator.divWadUp(denominator);
     }
 
     function getTradingFeeRate() public view override returns (uint256 tradingFeeRate) {
@@ -232,7 +215,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         lpFee = totalFee - protocolFee;
     }
 
-    function deposit(uint256 amount, address to) external override onlyRouter notPaused nonReentrant returns (uint256 mintAmount) {
+    function deposit(uint256 amount, address to) external override notPaused nonReentrant returns (uint256 mintAmount) {
         require(amount != 0, "SingularityPool: AMOUNT_IS_0");
         require(amount + liabilities <= depositCap, "SingularityPool: DEPOSIT_EXCEEDS_CAP");
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
@@ -243,25 +226,27 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
             mintAmount = amount.divWadDown(getPricePerShare());
         }
         depositFee = getDepositFee(mintAmount);
-        
         protocolFees += depositFee;
         mintAmount -= depositFee;
         assets += mintAmount;
         liabilities += mintAmount;
+
         _mint(to, mintAmount);
         emit Deposit(msg.sender, amount, mintAmount, to);
     }
 
-    function withdraw(uint256 amount, address to) external override onlyRouter notPaused nonReentrant returns (uint256 withdrawAmount) {
+    function withdraw(uint256 amount, address to) external override notPaused nonReentrant returns (uint256 withdrawAmount) {
         require(amount != 0, "SingularityPool: AMOUNT_IS_0");
         uint256 pricePerShare = getPricePerShare();
         _burn(msg.sender, amount);
+
         uint256 liquidityValue = amount.mulWadDown(pricePerShare);
         uint256 withdrawFee = getWithdrawFee(liquidityValue);
         assets -= liquidityValue;
         liabilities -= liquidityValue;
         protocolFees += withdrawFee;
         withdrawAmount = liquidityValue - withdrawFee;
+
         IERC20(token).safeTransfer(to, withdrawAmount);
         emit Withdraw(msg.sender, amount, withdrawAmount, to);
     }
@@ -312,6 +297,17 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         } else {
             afterCollateralizationRatio = (_assets).divWadDown(_liabilities);
         }
+    }
+
+    ///
+    ///                     0.00002
+    ///     g = -------------------------------
+    ///          (collateralization ratio) ^ 7
+    ///
+    function _getG(uint256 collateralizationRatio) internal pure returns (uint256 g) {
+        uint256 numerator = 0.00002 ether;
+        uint256 denominator = collateralizationRatio.rpow(7, 1 ether);
+        g = numerator.divWadUp(denominator);
     }
 
     /* ========== FACTORY FUNCTIONS ========== */

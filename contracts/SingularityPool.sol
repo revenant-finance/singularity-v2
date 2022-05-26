@@ -245,12 +245,12 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         emit Deposit(msg.sender, amount, mintAmount, to);
     }
 
-    function withdraw(uint256 amount, address to) external override notPaused nonReentrant returns (uint256 withdrawAmount) {
-        require(amount != 0, "SingularityPool: AMOUNT_IS_0");
+    function withdraw(uint256 lpAmount, address to) external override notPaused nonReentrant returns (uint256 withdrawAmount) {
+        require(lpAmount != 0, "SingularityPool: AMOUNT_IS_0");
         uint256 pricePerShare = getPricePerShare();
-        _burn(msg.sender, amount);
+        _burn(msg.sender, lpAmount);
 
-        uint256 liquidityValue = amount.mulWadDown(pricePerShare);
+        uint256 liquidityValue = lpAmount.mulWadDown(pricePerShare);
         uint256 withdrawFee = getWithdrawFee(liquidityValue);
         liabilities -= liquidityValue;
         protocolFees += withdrawFee;
@@ -259,7 +259,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
 
         IERC20(token).safeTransfer(to, withdrawAmount);
 
-        emit Withdraw(msg.sender, amount, withdrawAmount, to);
+        emit Withdraw(msg.sender, lpAmount, withdrawAmount, to);
     }
 
     function swapIn(uint256 amountIn) external override onlyRouter notPaused nonReentrant returns (uint256 amountOut) {

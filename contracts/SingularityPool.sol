@@ -77,6 +77,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         } else {
             pricePerShare = liabilities.divWadDown(totalSupply);
         }
+        require(pricePerShare >= 1 ether, "SingularityPool: INVALID_PPS");
     }
 
     /// @notice Get pool's assets and liabilities

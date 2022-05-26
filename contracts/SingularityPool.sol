@@ -188,7 +188,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         uint256 gCurrent = _getG(currentCollateralizationRatio);
         uint256 gAfter = _getG(afterCollateralizationRatio);
         uint256 gDiff = gAfter - gCurrent;
-        if (gDiff == 0 || currentCollateralizationRatio >= afterCollateralizationRatio) {
+        if (gDiff == 0 || afterCollateralizationRatio >= currentCollateralizationRatio) {
             return 0;
         } else {
             slippageOut = gDiff.divWadUp(currentCollateralizationRatio - afterCollateralizationRatio);

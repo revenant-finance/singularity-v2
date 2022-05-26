@@ -169,7 +169,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         uint256 afterCollateralizationRatio = _calcCollatalizationRatio(_assets + amount, _liabilities);
         uint256 gAfter = _getG(afterCollateralizationRatio);
         uint256 gDiff = gCurrent - gAfter;
-        if (gDiff == 0) {
+        if (gDiff == 0 || currentCollateralizationRatio >= afterCollateralizationRatio) {
             return 0;
         } else {
             slippageIn = gDiff.divWadDown(afterCollateralizationRatio - currentCollateralizationRatio);
@@ -178,7 +178,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     }
 
     function getSlippageOut(uint256 amount) public view override returns (uint256 slippageOut) {
-        if (amount >= assets + protocolFees) {
+        if (amount >= assets) {
             return amount;
         }
 
@@ -188,7 +188,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         uint256 gCurrent = _getG(currentCollateralizationRatio);
         uint256 gAfter = _getG(afterCollateralizationRatio);
         uint256 gDiff = gAfter - gCurrent;
-        if (gDiff == 0) {
+        if (gDiff == 0 || currentCollateralizationRatio >= afterCollateralizationRatio) {
             return 0;
         } else {
             slippageOut = gDiff.divWadUp(currentCollateralizationRatio - afterCollateralizationRatio);

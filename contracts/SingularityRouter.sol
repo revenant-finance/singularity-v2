@@ -120,6 +120,7 @@ contract SingularityRouter is ISingularityRouter {
     }
 
     function _swap(uint256 amountIn, address tokenIn, address tokenOut, address to) internal virtual {
+        require(tokenIn != tokenOut, "SingularityRouter: SAME_TOKEN");
         address poolIn = poolFor(factory, tokenIn);
         IERC20(tokenIn).safeIncreaseAllowance(poolIn, amountIn);
         uint256 amountOut = ISingularityPool(poolIn).swapIn(amountIn);

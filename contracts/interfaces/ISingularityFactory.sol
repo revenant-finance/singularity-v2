@@ -10,7 +10,7 @@ interface ISingularityFactory {
     }
     
     event PoolCreated(address indexed token, bool isStablecoin, uint256 baseFee, address pool, uint256 index);
-   
+    
     function tranche() external view returns (string memory);
     function admin() external view returns (address);
     function oracle() external view returns (address);

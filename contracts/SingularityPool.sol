@@ -11,6 +11,8 @@ import "./utils/SafeERC20.sol";
 import "./utils/FixedPointMathLib.sol";
 import "./utils/ReentrancyGuard.sol";
 
+import "hardhat/console.sol";
+
 /**
  * @title Singularity Pool
  * @author Revenant Labs
@@ -78,11 +80,11 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     }
 
     /// @notice Get pool's assets and liabilities
-    /// @dev Includes protocol fees
+    /// @dev Includes protocol fees only in liabilities since they are already included in assets
     /// @return _assets The assets of the pool
     /// @return _liabilities The liabilities of the pool
     function getAssetsAndLiabilities() public view override returns (uint256 _assets, uint256 _liabilities) {
-        return (assets + protocolFees, liabilities + protocolFees);
+        return (assets, liabilities + protocolFees);
     }
 
     /// @notice Get pool's collateralization ratio
@@ -93,7 +95,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
             collateralizationRatio = 1 ether;
         } else {
             (uint256 _assets, uint256 _liabilities) = getAssetsAndLiabilities();
-            collateralizationRatio = (_assets).divWadDown(_liabilities);
+            collateralizationRatio = _assets.divWadDown(_liabilities);
         }
     }
 
@@ -228,17 +230,16 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         require(amount != 0, "SingularityPool: AMOUNT_IS_0");
         require(amount + liabilities <= depositCap, "SingularityPool: DEPOSIT_EXCEEDS_CAP");
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
-        uint depositFee;
         if (liabilities == 0) {
             mintAmount = amount;
         } else {
             mintAmount = amount.divWadDown(getPricePerShare());
         }
-        depositFee = getDepositFee(mintAmount);
+        uint depositFee = getDepositFee(mintAmount);
         protocolFees += depositFee;
         mintAmount -= depositFee;
-        assets += mintAmount;
         liabilities += mintAmount;
+        assets += amount;
 
         _mint(to, mintAmount);
         emit Deposit(msg.sender, amount, mintAmount, to);
@@ -251,10 +252,10 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
 
         uint256 liquidityValue = amount.mulWadDown(pricePerShare);
         uint256 withdrawFee = getWithdrawFee(liquidityValue);
-        assets -= liquidityValue;
         liabilities -= liquidityValue;
         protocolFees += withdrawFee;
         withdrawAmount = liquidityValue - withdrawFee;
+        assets -= withdrawAmount;
 
         IERC20(token).safeTransfer(to, withdrawAmount);
 
@@ -317,7 +318,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         if (_liabilities == 0) {
             afterCollateralizationRatio = 1 ether;
         } else {
-            afterCollateralizationRatio = (_assets).divWadDown(_liabilities);
+            afterCollateralizationRatio = _assets.divWadDown(_liabilities);
         }
     }
 

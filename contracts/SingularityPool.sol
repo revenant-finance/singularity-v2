@@ -11,8 +11,6 @@ import "./utils/SafeERC20.sol";
 import "./utils/FixedPointMathLib.sol";
 import "./utils/ReentrancyGuard.sol";
 
-import "hardhat/console.sol";
-
 /**
  * @title Singularity Pool
  * @author Revenant Labs
@@ -77,7 +75,6 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         } else {
             pricePerShare = liabilities.divWadDown(totalSupply);
         }
-        require(pricePerShare >= 1 ether, "SingularityPool: INVALID_PPS");
     }
 
     /// @notice Get pool's assets and liabilities
@@ -151,7 +148,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         }
     }
 
-    function getWithdrawFee(uint256 amount) public view override returns (uint256 fee) {
+    function getWithdrawalFee(uint256 amount) public view override returns (uint256 fee) {
         uint256 currentCollateralizationRatio = getCollateralizationRatio();
         uint256 gCurrent = _getG(currentCollateralizationRatio);
         (uint256 _assets, uint256 _liabilities) = getAssetsAndLiabilities();
@@ -167,17 +164,19 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
 
     function getSlippageIn(uint256 amount) public view override returns (uint256 slippageIn) {
         uint256 currentCollateralizationRatio = getCollateralizationRatio();
-        uint256 gCurrent = _getG(currentCollateralizationRatio);
         (uint256 _assets, uint256 _liabilities) = getAssetsAndLiabilities();
         uint256 afterCollateralizationRatio = _calcCollatalizationRatio(_assets + amount, _liabilities);
+        if (currentCollateralizationRatio == afterCollateralizationRatio) {
+            return 0; 
+        }
+
+        // Calculate G prime
+        uint256 gCurrent = _getG(currentCollateralizationRatio);
         uint256 gAfter = _getG(afterCollateralizationRatio);
         uint256 gDiff = gCurrent - gAfter;
-        if (gDiff == 0 || currentCollateralizationRatio >= afterCollateralizationRatio) {
-            return 0;
-        } else {
-            slippageIn = gDiff.divWadDown(afterCollateralizationRatio - currentCollateralizationRatio);
-        }
-        slippageIn = amount.mulWadDown(slippageIn);
+        
+        // Calculate slippage
+        slippageIn = amount.mulWadDown(gDiff.divWadDown(afterCollateralizationRatio - currentCollateralizationRatio));
     }
 
     function getSlippageOut(uint256 amount) public view override returns (uint256 slippageOut) {
@@ -188,15 +187,17 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         uint256 currentCollateralizationRatio = getCollateralizationRatio();
         (uint256 _assets, uint256 _liabilities) = getAssetsAndLiabilities();
         uint256 afterCollateralizationRatio = _calcCollatalizationRatio(_assets - amount, _liabilities);
+        if (currentCollateralizationRatio == afterCollateralizationRatio) {
+            return 0; 
+        }
+
+        // Calculate G prime
         uint256 gCurrent = _getG(currentCollateralizationRatio);
         uint256 gAfter = _getG(afterCollateralizationRatio);
         uint256 gDiff = gAfter - gCurrent;
-        if (gDiff == 0 || afterCollateralizationRatio >= currentCollateralizationRatio) {
-            return 0;
-        } else {
-            slippageOut = gDiff.divWadUp(currentCollateralizationRatio - afterCollateralizationRatio);
-        }
-        slippageOut = amount.mulWadUp(slippageOut);
+
+        // Calculate slippage
+        slippageOut = amount.mulWadUp(gDiff.divWadUp(currentCollateralizationRatio - afterCollateralizationRatio));
     }
 
     function getTradingFeeRate() public view override returns (uint256 tradingFeeRate) {
@@ -230,34 +231,59 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     function deposit(uint256 amount, address to) external override notPaused nonReentrant returns (uint256 mintAmount) {
         require(amount != 0, "SingularityPool: AMOUNT_IS_0");
         require(amount + liabilities <= depositCap, "SingularityPool: DEPOSIT_EXCEEDS_CAP");
+
+        // Transfer token from sender
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+
         if (liabilities == 0) {
             mintAmount = amount;
+            assets += amount;
+            liabilities += amount;
         } else {
-            mintAmount = amount.divWadDown(getPricePerShare());
-        }
-        uint depositFee = getDepositFee(mintAmount);
-        protocolFees += depositFee;
-        mintAmount -= depositFee;
-        liabilities += mintAmount;
-        assets += amount;
+            // Store current price-per-share
+            uint256 pricePerShare = getPricePerShare();
+            
+            // Apply deposit fee
+            uint depositFee = getDepositFee(amount);
+            protocolFees += depositFee;
+            uint amountPostFee = amount - depositFee;
 
+            // Adjust assets and liabilities
+            assets += amount;
+            liabilities += amountPostFee;
+
+            // Calculate amount of LP tokens to mint
+            mintAmount = amountPostFee.divWadDown(pricePerShare);
+        }
+        
+        // Mint LP tokens to receiver
         _mint(to, mintAmount);
+        
         emit Deposit(msg.sender, amount, mintAmount, to);
     }
 
     function withdraw(uint256 lpAmount, address to) external override notPaused nonReentrant returns (uint256 withdrawAmount) {
         require(lpAmount != 0, "SingularityPool: AMOUNT_IS_0");
+
+        // Store current price-per-share
         uint256 pricePerShare = getPricePerShare();
+
+        // Burn LP tokens
         _burn(msg.sender, lpAmount);
 
-        uint256 liquidityValue = lpAmount.mulWadDown(pricePerShare);
-        uint256 withdrawFee = getWithdrawFee(liquidityValue);
-        liabilities -= liquidityValue;
-        protocolFees += withdrawFee;
-        withdrawAmount = liquidityValue - withdrawFee;
-        assets -= withdrawAmount;
+        // Calculate amount of underlying tokens to redeem
+        uint256 amount = lpAmount.mulWadDown(pricePerShare);
 
+        // Apply withdrawal fee
+        uint256 withdrawalFee = getWithdrawalFee(amount);
+        protocolFees += withdrawalFee;
+        withdrawAmount = amount - withdrawalFee;
+
+        // Adjust assets and liabilities
+        assets -= withdrawAmount;
+        liabilities -= amount;
+
+        // Transfer tokens to receiver
         IERC20(token).safeTransfer(to, withdrawAmount);
 
         emit Withdraw(msg.sender, lpAmount, withdrawAmount, to);
@@ -278,6 +304,8 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         protocolFees += protocolFee;
         liabilities += lpFee;
         amountIn -= totalFee;
+
+        // Calculate amount out
         amountOut = getAmountToUSD(amountIn);
 
         emit SwapIn(msg.sender, amountIn, amountOut);
@@ -297,9 +325,10 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         protocolFees += protocolFee;
         liabilities += lpFee;
         amountOut -= totalFee;
-        assets -= amountOut;
 
+        // Transfer tokens out
         IERC20(token).safeTransfer(to, amountOut);
+        assets -= amountOut;
 
         emit SwapOut(msg.sender, amountIn, amountOut, to);
     }

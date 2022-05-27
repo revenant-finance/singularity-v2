@@ -39,7 +39,7 @@ interface ISingularityPool is ISingularityPoolToken {
     function getUSDToAmount(uint256 value) external view returns (uint256);
     
     function getDepositFee(uint256 amount) external view returns (uint256);
-    function getWithdrawFee(uint256 amount) external view returns (uint256);
+    function getWithdrawalFee(uint256 amount) external view returns (uint256);
     function getSlippageIn(uint256 amount) external view returns (uint256);
     function getSlippageOut(uint256 amount) external view returns (uint256);
     function getTradingFeeRate() external view returns (uint256 tradingFeeRate);

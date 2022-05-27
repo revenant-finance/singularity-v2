@@ -283,6 +283,9 @@ describe("Singularity Swap", () => {
 			getDomainSeparator(`Singularity ${DAI.symbol} Pool (${trancheName})`, DAI.poolAddress)
 		);
 		expect(await DAI.pool.getPricePerShare()).to.equal(numToBN(1));
+		expect((await DAI.pool.getAssetsAndLiabilities())[0]).to.equal(0);
+		expect((await DAI.pool.getAssetsAndLiabilities())[1]).to.equal(0);
+		expect(await DAI.pool.getCollateralizationRatio()).to.equal(numToBN(1));
 		await oracle.pushPrices([DAI.address], [numToBN(0.01)]);
 		await expect(DAI.pool.getOracleData()).to.be.revertedWith(
 			"SingularityOracle: PRICE_DIFF_EXCEEDS_TOLERANCE"
@@ -318,6 +321,7 @@ describe("Singularity Swap", () => {
 		).to.be.revertedWith("SingularityPool: DEPOSIT_EXCEEDS_CAP");
 		await factory.setDepositCaps([USDC.address], [MAX]);
 
+		expect(await USDC.pool.getDepositFee(amountToMint)).to.equal(0);
 		await addLiquidity(USDC, amountToMint);
 		expect(await usdc.balanceOf(ownerAddress)).to.equal(
 			numToBN(USDC.balance - amountToMint, USDC.decimals)
@@ -490,6 +494,14 @@ describe("Singularity Swap", () => {
 			r,
 			s
 		);
+	});
+
+	it("getSlippageIn & getSlippageOut", async () => {
+		await addLiquidity(ETH, 10);
+		await addLiquidity(USDC, 20000);
+		expect(await USDC.pool.getSlippageIn(0)).to.equal(0);
+		expect(await USDC.pool.getSlippageOut(numToBN(25000, 6))).to.equal(numToBN(25000, 6));
+		expect(await USDC.pool.getSlippageOut(0)).to.equal(0);
 	});
 
 	it("swapExactTokensForTokens", async () => {
@@ -692,5 +704,75 @@ describe("Singularity Swap", () => {
 		const [prices] = await oracle.getLatestRounds([USDC.address, ETH.address]);
 		expect(prices[0]).to.equal(numToBN(USDC.price));
 		expect(prices[1]).to.equal(numToBN(ETH.price));
+	});
+
+	it("run simulations", async () => {
+		await addLiquidity(ETH, 10);
+		await addLiquidity(USDC, 20000);
+		let [usdcPPS, ethPPS, usdcFees, ethFees] = await Promise.all([
+			USDC.pool.getPricePerShare(),
+			ETH.pool.getPricePerShare(),
+			USDC.pool.protocolFees(),
+			ETH.pool.protocolFees(),
+		]);
+		console.log(usdcPPS, ethPPS, usdcFees, ethFees);
+		await router.swapExactTokensForTokens(
+			usdc.address,
+			eth.address,
+			numToBN(2000, USDC.decimals),
+			0,
+			ownerAddress,
+			MAX
+		);
+		[usdcPPS, ethPPS, usdcFees, ethFees] = await Promise.all([
+			USDC.pool.getPricePerShare(),
+			ETH.pool.getPricePerShare(),
+			USDC.pool.protocolFees(),
+			ETH.pool.protocolFees(),
+		]);
+		console.log(usdcPPS, ethPPS, usdcFees, ethFees);
+		expect(await USDC.pool.assets()).to.equal(await usdc.balanceOf(USDC.poolAddress));
+		expect(await ETH.pool.assets()).to.equal(await eth.balanceOf(ETH.poolAddress));
+		await router.removeLiquidity(usdc.address, numToBN(1000, USDC.decimals), 0, ownerAddress, MAX);
+		await router.removeLiquidity(eth.address, numToBN(1, ETH.decimals), 0, ownerAddress, MAX);
+		[usdcPPS, ethPPS, usdcFees, ethFees] = await Promise.all([
+			USDC.pool.getPricePerShare(),
+			ETH.pool.getPricePerShare(),
+			USDC.pool.protocolFees(),
+			ETH.pool.protocolFees(),
+		]);
+		console.log(usdcPPS, ethPPS, usdcFees, ethFees);
+		expect(await USDC.pool.assets()).to.equal(await usdc.balanceOf(USDC.poolAddress));
+		expect(await ETH.pool.assets()).to.equal(await eth.balanceOf(ETH.poolAddress));
+
+		await router.swapExactTokensForTokens(
+			eth.address,
+			usdc.address,
+			numToBN(1, ETH.decimals),
+			0,
+			ownerAddress,
+			MAX
+		);
+		[usdcPPS, ethPPS, usdcFees, ethFees] = await Promise.all([
+			USDC.pool.getPricePerShare(),
+			ETH.pool.getPricePerShare(),
+			USDC.pool.protocolFees(),
+			ETH.pool.protocolFees(),
+		]);
+		console.log(usdcPPS, ethPPS, usdcFees, ethFees);
+		expect(await USDC.pool.assets()).to.equal(await usdc.balanceOf(USDC.poolAddress));
+		expect(await ETH.pool.assets()).to.equal(await eth.balanceOf(ETH.poolAddress));
+
+		await addLiquidity(USDC, 20000);
+		await addLiquidity(ETH, 10);
+		[usdcPPS, ethPPS, usdcFees, ethFees] = await Promise.all([
+			USDC.pool.getPricePerShare(),
+			ETH.pool.getPricePerShare(),
+			USDC.pool.protocolFees(),
+			ETH.pool.protocolFees(),
+		]);
+		console.log(usdcPPS, ethPPS, usdcFees, ethFees);
+		expect(await USDC.pool.assets()).to.equal(await usdc.balanceOf(USDC.poolAddress));
+		expect(await ETH.pool.assets()).to.equal(await eth.balanceOf(ETH.poolAddress));
 	});
 });

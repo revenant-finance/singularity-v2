@@ -66,6 +66,111 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         _initialize();
     }
 
+    function deposit(uint256 amount, address to) external override notPaused nonReentrant returns (uint256 mintAmount) {
+        require(amount != 0, "SingularityPool: AMOUNT_IS_0");
+        require(amount + liabilities <= depositCap, "SingularityPool: DEPOSIT_EXCEEDS_CAP");
+
+        // Transfer token from sender
+        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+
+        if (liabilities == 0) {
+            mintAmount = amount;
+            assets += amount;
+            liabilities += amount;
+        } else {
+            // Store current price-per-share
+            uint256 pricePerShare = getPricePerShare();
+            
+            // Apply deposit fee
+            uint depositFee = getDepositFee(amount);
+            protocolFees += depositFee;
+            uint amountPostFee = amount - depositFee;
+
+            // Adjust assets and liabilities
+            assets += amount;
+            liabilities += amountPostFee;
+
+            // Calculate amount of LP tokens to mint
+            mintAmount = amountPostFee.divWadDown(pricePerShare);
+        }
+        
+        // Mint LP tokens to receiver
+        _mint(to, mintAmount);
+        
+        emit Deposit(msg.sender, amount, mintAmount, to);
+    }
+
+    function withdraw(uint256 lpAmount, address to) external override notPaused nonReentrant returns (uint256 withdrawAmount) {
+        require(lpAmount != 0, "SingularityPool: AMOUNT_IS_0");
+
+        // Store current price-per-share
+        uint256 pricePerShare = getPricePerShare();
+
+        // Burn LP tokens
+        _burn(msg.sender, lpAmount);
+
+        // Calculate amount of underlying tokens to redeem
+        uint256 amount = lpAmount.mulWadDown(pricePerShare);
+
+        // Apply withdrawal fee
+        uint256 withdrawalFee = getWithdrawalFee(amount);
+        protocolFees += withdrawalFee;
+        withdrawAmount = amount - withdrawalFee;
+
+        // Adjust assets and liabilities
+        assets -= withdrawAmount;
+        liabilities -= amount;
+
+        // Transfer tokens to receiver
+        IERC20(token).safeTransfer(to, withdrawAmount);
+
+        emit Withdraw(msg.sender, lpAmount, withdrawAmount, to);
+    }
+
+    function swapIn(uint256 amountIn) external override onlyRouter notPaused nonReentrant returns (uint256 amountOut) {
+        require(amountIn != 0, "SingularityPool: AMOUNT_IS_0");
+        IERC20(token).safeTransferFrom(msg.sender, address(this), amountIn);
+
+        // Apply slippage (+)
+        uint256 slippage = getSlippageIn(amountIn);
+        assets += amountIn;
+        amountIn += slippage;
+
+        // Apply trading fees
+        (uint256 totalFee, uint256 protocolFee, uint256 lpFee) = getTradingFees(amountIn);
+        require(totalFee != type(uint256).max, "SingularityPool: STALE_ORACLE");
+        protocolFees += protocolFee;
+        liabilities += lpFee;
+        amountIn -= totalFee;
+
+        // Calculate amount out
+        amountOut = getAmountToUSD(amountIn);
+
+        emit SwapIn(msg.sender, amountIn, amountOut);
+    }
+
+    function swapOut(uint256 amountIn, address to) external override onlyRouter notPaused nonReentrant returns (uint256 amountOut) {
+        require(amountIn != 0, "SingularityPool: AMOUNT_IS_0");
+        amountOut = getUSDToAmount(amountIn);
+
+        // Apply slippage (-)
+        uint256 slippage = getSlippageOut(amountOut);
+        amountOut -= slippage;
+
+        // Apply trading fees
+        (uint256 totalFee, uint256 protocolFee, uint256 lpFee) = getTradingFees(amountOut);
+        require(totalFee != type(uint256).max, "SingularityPool: STALE_ORACLE");
+        protocolFees += protocolFee;
+        liabilities += lpFee;
+        amountOut -= totalFee;
+
+        // Transfer tokens out
+        IERC20(token).safeTransfer(to, amountOut);
+        assets -= amountOut;
+
+        emit SwapOut(msg.sender, amountIn, amountOut, to);
+    }
+
     /// @notice Calculates the price-per-share (PPS)
     /// @dev PPS = 1 when pool is empty
     /// @dev PPS is strictly increasing >= 1
@@ -237,111 +342,6 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         uint256 protocolFeeShare = ISingularityFactory(factory).protocolFeeShare();
         protocolFee = totalFee * protocolFeeShare / 100;
         lpFee = totalFee - protocolFee;
-    }
-
-    function deposit(uint256 amount, address to) external override notPaused nonReentrant returns (uint256 mintAmount) {
-        require(amount != 0, "SingularityPool: AMOUNT_IS_0");
-        require(amount + liabilities <= depositCap, "SingularityPool: DEPOSIT_EXCEEDS_CAP");
-
-        // Transfer token from sender
-        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
-
-        if (liabilities == 0) {
-            mintAmount = amount;
-            assets += amount;
-            liabilities += amount;
-        } else {
-            // Store current price-per-share
-            uint256 pricePerShare = getPricePerShare();
-            
-            // Apply deposit fee
-            uint depositFee = getDepositFee(amount);
-            protocolFees += depositFee;
-            uint amountPostFee = amount - depositFee;
-
-            // Adjust assets and liabilities
-            assets += amount;
-            liabilities += amountPostFee;
-
-            // Calculate amount of LP tokens to mint
-            mintAmount = amountPostFee.divWadDown(pricePerShare);
-        }
-        
-        // Mint LP tokens to receiver
-        _mint(to, mintAmount);
-        
-        emit Deposit(msg.sender, amount, mintAmount, to);
-    }
-
-    function withdraw(uint256 lpAmount, address to) external override notPaused nonReentrant returns (uint256 withdrawAmount) {
-        require(lpAmount != 0, "SingularityPool: AMOUNT_IS_0");
-
-        // Store current price-per-share
-        uint256 pricePerShare = getPricePerShare();
-
-        // Burn LP tokens
-        _burn(msg.sender, lpAmount);
-
-        // Calculate amount of underlying tokens to redeem
-        uint256 amount = lpAmount.mulWadDown(pricePerShare);
-
-        // Apply withdrawal fee
-        uint256 withdrawalFee = getWithdrawalFee(amount);
-        protocolFees += withdrawalFee;
-        withdrawAmount = amount - withdrawalFee;
-
-        // Adjust assets and liabilities
-        assets -= withdrawAmount;
-        liabilities -= amount;
-
-        // Transfer tokens to receiver
-        IERC20(token).safeTransfer(to, withdrawAmount);
-
-        emit Withdraw(msg.sender, lpAmount, withdrawAmount, to);
-    }
-
-    function swapIn(uint256 amountIn) external override onlyRouter notPaused nonReentrant returns (uint256 amountOut) {
-        require(amountIn != 0, "SingularityPool: AMOUNT_IS_0");
-        IERC20(token).safeTransferFrom(msg.sender, address(this), amountIn);
-
-        // Apply slippage (+)
-        uint256 slippage = getSlippageIn(amountIn);
-        assets += amountIn;
-        amountIn += slippage;
-
-        // Apply trading fees
-        (uint256 totalFee, uint256 protocolFee, uint256 lpFee) = getTradingFees(amountIn);
-        require(totalFee != type(uint256).max, "SingularityPool: STALE_ORACLE");
-        protocolFees += protocolFee;
-        liabilities += lpFee;
-        amountIn -= totalFee;
-
-        // Calculate amount out
-        amountOut = getAmountToUSD(amountIn);
-
-        emit SwapIn(msg.sender, amountIn, amountOut);
-    }
-
-    function swapOut(uint256 amountIn, address to) external override onlyRouter notPaused nonReentrant returns (uint256 amountOut) {
-        require(amountIn != 0, "SingularityPool: AMOUNT_IS_0");
-        amountOut = getUSDToAmount(amountIn);
-
-        // Apply slippage (-)
-        uint256 slippage = getSlippageOut(amountOut);
-        amountOut -= slippage;
-
-        // Apply trading fees
-        (uint256 totalFee, uint256 protocolFee, uint256 lpFee) = getTradingFees(amountOut);
-        require(totalFee != type(uint256).max, "SingularityPool: STALE_ORACLE");
-        protocolFees += protocolFee;
-        liabilities += lpFee;
-        amountOut -= totalFee;
-
-        // Transfer tokens out
-        IERC20(token).safeTransfer(to, amountOut);
-        assets -= amountOut;
-
-        emit SwapOut(msg.sender, amountIn, amountOut, to);
     }
 
     /* ========== INTERNAL/PURE FUNCTIONS ========== */

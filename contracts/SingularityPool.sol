@@ -33,7 +33,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     uint256 public override protocolFees;
 
     modifier notPaused() {
-        require(paused == false, "SingularityPool: PAUSED");
+        require(!paused, "SingularityPool: PAUSED");
         _;
     }
 
@@ -68,6 +68,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
 
     /// @notice Calculates the price-per-share (PPS)
     /// @dev PPS = 1 when pool is empty
+    /// @dev PPS is strictly increasing >= 1
     /// @return pricePerShare The PPS of 1 LP token
     function getPricePerShare() public view override returns (uint256 pricePerShare) {
         if (totalSupply == 0) {
@@ -130,10 +131,12 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         }
     }
 
+    /// @notice Calculates the fee charged for deposit
+    /// @dev Deposit fee is 0 when pool is empty
+    /// @param amount The amount of tokens being deposited
+    /// @return fee The fee charged for deposit
     function getDepositFee(uint256 amount) public view override returns (uint256 fee) {
-        if (liabilities == 0) {
-            return 0;
-        }
+        if (amount == 0 || liabilities == 0) return 0;
 
         uint256 currentCollateralizationRatio = getCollateralizationRatio();
         uint256 gCurrent = _getG(currentCollateralizationRatio);
@@ -148,7 +151,12 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         }
     }
 
+    /// @notice Calculates the fee charged for withdraw
+    /// @param amount The amount of tokens being withdrawn
+    /// @return fee The fee charged for withdraw
     function getWithdrawalFee(uint256 amount) public view override returns (uint256 fee) {
+        if (amount == 0) return 0;
+
         uint256 currentCollateralizationRatio = getCollateralizationRatio();
         uint256 gCurrent = _getG(currentCollateralizationRatio);
         (uint256 _assets, uint256 _liabilities) = getAssetsAndLiabilities();
@@ -163,6 +171,8 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     }
 
     function getSlippageIn(uint256 amount) public view override returns (uint256 slippageIn) {
+        if (amount == 0) return 0;
+
         uint256 currentCollateralizationRatio = getCollateralizationRatio();
         (uint256 _assets, uint256 _liabilities) = getAssetsAndLiabilities();
         uint256 afterCollateralizationRatio = _calcCollatalizationRatio(_assets + amount, _liabilities);
@@ -180,9 +190,8 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     }
 
     function getSlippageOut(uint256 amount) public view override returns (uint256 slippageOut) {
-        if (amount >= assets) {
-            return amount;
-        }
+        if (amount == 0) return 0;
+        if (amount >= assets) return amount;
 
         uint256 currentCollateralizationRatio = getCollateralizationRatio();
         (uint256 _assets, uint256 _liabilities) = getAssetsAndLiabilities();
@@ -218,6 +227,8 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     }
 
     function getTradingFees(uint256 amount) public view override returns (uint256 totalFee, uint256 protocolFee, uint256 lpFee) {
+        if (amount == 0) return (0, 0, 0);
+
         uint256 tradingFeeRate = getTradingFeeRate();
         if (tradingFeeRate == type(uint256).max) {
             return (type(uint256).max, type(uint256).max, type(uint256).max);
@@ -332,6 +343,8 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
 
         emit SwapOut(msg.sender, amountIn, amountOut, to);
     }
+
+    /* ========== INTERNAL/PURE FUNCTIONS ========== */
 
     ///
     ///                     0.00002

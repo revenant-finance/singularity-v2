@@ -9,12 +9,12 @@ interface ISingularityPool is ISingularityPoolToken {
     event Withdraw(address indexed sender, uint256 indexed amountBurned, uint256 withdrawAmount, address indexed to);
     event SwapIn(
         address indexed sender,
-        uint256 indexed amountIn,
+        uint256 amountIn,
         uint256 amountOut
     );
     event SwapOut(
         address indexed sender,
-        uint256 indexed amountIn,
+        uint256 amountIn,
         uint256 amountOut,
         address indexed to
     );

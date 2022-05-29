@@ -3,6 +3,15 @@
 pragma solidity ^0.8.13;
 
 interface ISingularityRouter {
+    event Swap(
+        address indexed sender,
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        uint256 amountOut,
+        address indexed to
+    );
+    
     function factory() external returns (address);
     function WETH() external returns (address);
     function poolCodeHash() external returns (bytes32);

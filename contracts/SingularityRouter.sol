@@ -35,45 +35,6 @@ contract SingularityRouter is ISingularityRouter {
         assert(msg.sender == WETH);
     }
 
-    function poolFor(address _factory, address token) public view override returns (address pool) {
-        pool = address(uint160(uint256(keccak256(abi.encodePacked(
-                hex'ff',
-                _factory,
-                keccak256(abi.encodePacked(token)),
-                poolCodeHash
-        )))));
-    }
-
-    function getAmountOut(uint256 amountIn, address tokenIn, address tokenOut) public view override returns (
-        uint256 amountOut, 
-        uint256 tradingFeeIn, 
-        uint256 slippageIn, 
-        uint256 slippageOut, 
-        uint256 tradingFeeOut
-    ) {
-        require(amountIn != 0, "SingularityRouter: INSUFFICIENT_INPUT_AMOUNT");
-        address poolIn = poolFor(factory, tokenIn);
-
-        slippageIn = ISingularityPool(poolIn).getSlippageIn(amountIn);
-        amountIn += slippageIn;
-
-        (tradingFeeIn, ,) = ISingularityPool(poolIn).getTradingFees(amountIn);
-        require(tradingFeeIn != type(uint256).max, "SingularityRouter: STALE_ORACLE");
-        amountIn -= tradingFeeIn;
-    
-        uint256 swapInAmountOut = ISingularityPool(poolIn).getAmountToUSD(amountIn);
-
-        address poolOut = poolFor(factory, tokenOut);
-        amountOut = ISingularityPool(poolOut).getUSDToAmount(swapInAmountOut);
-
-        slippageOut = ISingularityPool(poolOut).getSlippageOut(amountOut);
-        amountOut -= slippageOut;
-
-        (tradingFeeOut, ,) = ISingularityPool(poolOut).getTradingFees(amountOut);
-        require(tradingFeeOut != type(uint256).max, "SingularityRouter: STALE_ORACLE");
-        amountOut -= tradingFeeOut;
-    }
-
     function swapExactTokensForTokens(
         address tokenIn,
         address tokenOut, 
@@ -86,6 +47,8 @@ contract SingularityRouter is ISingularityRouter {
         require(amountOut >= minAmountOut, "SingularityRouter: INSUFFICIENT_OUTPUT_AMOUNT");
         IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
         _swap(amountIn, tokenIn, tokenOut, to);
+
+        emit Swap(msg.sender, tokenIn, tokenOut, amountIn, amountOut, to);
     }
 
     function swapExactETHForTokens(
@@ -100,6 +63,8 @@ contract SingularityRouter is ISingularityRouter {
         require(amountOut >= minAmountOut, "SingularityRouter: INSUFFICIENT_OUTPUT_AMOUNT");
         IWETH(WETH).deposit{value: msg.value}();
         _swap(msg.value, tokenIn, tokenOut, to);
+
+        emit Swap(msg.sender, tokenIn, tokenOut, msg.value, amountOut, to);
     }
 
     function swapExactTokensForETH(
@@ -117,6 +82,8 @@ contract SingularityRouter is ISingularityRouter {
         _swap(amountIn, tokenIn, tokenOut, address(this));
         IWETH(WETH).withdraw(amountOut);
         _safeTransferETH(to, amountOut);
+
+        emit Swap(msg.sender, tokenIn, tokenOut, amountIn, amountOut, to);
     }
 
     function _swap(uint256 amountIn, address tokenIn, address tokenOut, address to) internal virtual {
@@ -209,6 +176,45 @@ contract SingularityRouter is ISingularityRouter {
         uint256 value = approveMax ? type(uint256).max : liquidity;
         ISingularityPool(pool).permit(msg.sender, address(this), value, deadline, v, r, s);
         amount = removeLiquidityETH(liquidity, amountMin, to, deadline);
+    }
+
+    function poolFor(address _factory, address token) public view override returns (address pool) {
+        pool = address(uint160(uint256(keccak256(abi.encodePacked(
+                hex'ff',
+                _factory,
+                keccak256(abi.encodePacked(token)),
+                poolCodeHash
+        )))));
+    }
+
+    function getAmountOut(uint256 amountIn, address tokenIn, address tokenOut) public view override returns (
+        uint256 amountOut, 
+        uint256 tradingFeeIn, 
+        uint256 slippageIn, 
+        uint256 slippageOut, 
+        uint256 tradingFeeOut
+    ) {
+        require(amountIn != 0, "SingularityRouter: INSUFFICIENT_INPUT_AMOUNT");
+        address poolIn = poolFor(factory, tokenIn);
+
+        slippageIn = ISingularityPool(poolIn).getSlippageIn(amountIn);
+        amountIn += slippageIn;
+
+        (tradingFeeIn, ,) = ISingularityPool(poolIn).getTradingFees(amountIn);
+        require(tradingFeeIn != type(uint256).max, "SingularityRouter: STALE_ORACLE");
+        amountIn -= tradingFeeIn;
+    
+        uint256 swapInAmountOut = ISingularityPool(poolIn).getAmountToUSD(amountIn);
+
+        address poolOut = poolFor(factory, tokenOut);
+        amountOut = ISingularityPool(poolOut).getUSDToAmount(swapInAmountOut);
+
+        slippageOut = ISingularityPool(poolOut).getSlippageOut(amountOut);
+        amountOut -= slippageOut;
+
+        (tradingFeeOut, ,) = ISingularityPool(poolOut).getTradingFees(amountOut);
+        require(tradingFeeOut != type(uint256).max, "SingularityRouter: STALE_ORACLE");
+        amountOut -= tradingFeeOut;
     }
 
     function _safeTransferETH(address to, uint256 amount) internal {

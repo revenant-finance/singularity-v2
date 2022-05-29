@@ -21,15 +21,18 @@ interface ISingularityPool is ISingularityPoolToken {
 
     function paused() external view returns (bool);
     function isStablecoin() external view returns (bool);
-
     function factory() external view returns (address);
     function token() external view returns (address);
-
     function depositCap() external view returns (uint256);
     function assets() external view returns (uint256);
     function liabilities() external view returns (uint256);
     function protocolFees() external view returns (uint256);
     function baseFee() external view returns (uint256);
+
+    function deposit(uint256 amount, address to) external returns (uint256);
+    function withdraw(uint256 lpAmount, address to) external returns (uint256);
+    function swapIn(uint256 amountIn) external returns (uint256);
+    function swapOut(uint256 amountIn, address to) external returns (uint256);
 
     function getPricePerShare() external view returns (uint256);
     function getAssetsAndLiabilities() external view returns (uint256, uint256);
@@ -44,11 +47,6 @@ interface ISingularityPool is ISingularityPoolToken {
     function getSlippageOut(uint256 amount) external view returns (uint256);
     function getTradingFeeRate() external view returns (uint256 tradingFeeRate);
     function getTradingFees(uint256 amount) external view returns (uint256, uint256, uint256);
-
-    function deposit(uint256 amount, address to) external returns (uint256);
-    function withdraw(uint256 lpAmount, address to) external returns (uint256);
-    function swapIn(uint256 amountIn) external returns (uint256);
-    function swapOut(uint256 amountIn, address to) external returns (uint256);
 
     function collectFees() external;
     function setDepositCap(uint256 newDepositCap) external;

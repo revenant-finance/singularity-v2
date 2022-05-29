@@ -21,14 +21,11 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
 
     bool public override paused;
     bool public immutable override isStablecoin;
-
     address public immutable override factory;
     address public immutable override token;
-
     uint256 public override depositCap;
     uint256 public override assets;
     uint256 public override liabilities;
-
     uint256 public override baseFee;
     uint256 public override protocolFees;
 
@@ -75,27 +72,29 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
 
         if (liabilities == 0) {
             mintAmount = amount;
+
+            // Mint LP tokens to `to`
+            _mint(to, mintAmount);
+
+            // Update assets and liabilities
             assets += amount;
             liabilities += amount;
-        } else {
-            // Store current price-per-share
-            uint256 pricePerShare = getPricePerShare();
-            
+        } else {            
             // Apply deposit fee
             uint depositFee = getDepositFee(amount);
             protocolFees += depositFee;
             uint amountPostFee = amount - depositFee;
 
-            // Adjust assets and liabilities
+            // Calculate amount of LP tokens to mint
+            mintAmount = amountPostFee.divWadDown(getPricePerShare());
+
+            // Mint LP tokens to `to`
+            _mint(to, mintAmount);
+
+            // Update assets and liabilities
             assets += amount;
             liabilities += amountPostFee;
-
-            // Calculate amount of LP tokens to mint
-            mintAmount = amountPostFee.divWadDown(pricePerShare);
         }
-        
-        // Mint LP tokens to receiver
-        _mint(to, mintAmount);
         
         emit Deposit(msg.sender, amount, mintAmount, to);
     }
@@ -117,12 +116,12 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         protocolFees += withdrawalFee;
         withdrawAmount = amount - withdrawalFee;
 
-        // Adjust assets and liabilities
+        // Transfer tokens to `to`
+        IERC20(token).safeTransfer(to, withdrawAmount);
+
+        // Update assets and liabilities
         assets -= withdrawAmount;
         liabilities -= amount;
-
-        // Transfer tokens to receiver
-        IERC20(token).safeTransfer(to, withdrawAmount);
 
         emit Withdraw(msg.sender, lpAmount, withdrawAmount, to);
     }
@@ -166,6 +165,8 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
 
         // Transfer tokens out
         IERC20(token).safeTransfer(to, amountOut);
+
+        // Update assets
         assets -= amountOut;
 
         emit SwapOut(msg.sender, amountIn, amountOut, to);
@@ -285,7 +286,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
             return 0; 
         }
 
-        // Calculate G prime
+        // Calculate G'
         uint256 gCurrent = _getG(currentCollateralizationRatio);
         uint256 gAfter = _getG(afterCollateralizationRatio);
         uint256 gDiff = gCurrent - gAfter;
@@ -305,7 +306,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
             return 0; 
         }
 
-        // Calculate G prime
+        // Calculate G'
         uint256 gCurrent = _getG(currentCollateralizationRatio);
         uint256 gAfter = _getG(afterCollateralizationRatio);
         uint256 gDiff = gAfter - gCurrent;

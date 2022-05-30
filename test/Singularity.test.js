@@ -72,6 +72,10 @@ describe("Singularity Swap", () => {
 		return ethers.utils.parseUnits(number.toString(), decimals);
 	}
 
+	function bnToNum(bn, decimals = 18) {
+		return ethers.utils.formatUnits(bn, decimals);
+	}
+
 	function advanceTime(seconds) {
 		ethers.provider.send("evm_increaseTime", [seconds]);
 		ethers.provider.send("evm_mine");
@@ -369,7 +373,9 @@ describe("Singularity Swap", () => {
 
 	it("addLiquidityETH", async () => {
 		const ftmBal = await getFtmBalance();
-		await router.addLiquidityETH(0, ownerAddress, MAX, { value: numToBN(amountToMint) });
+		await router.addLiquidityETH(0, ownerAddress, MAX, {
+			value: numToBN(amountToMint),
+		});
 		const ftmBalDiff = ftmBal.sub(await getFtmBalance());
 		expect(ftmBalDiff).to.be.closeTo(numToBN(amountToMint), numToBN(1, 16));
 	});
@@ -430,7 +436,9 @@ describe("Singularity Swap", () => {
 	});
 
 	it("removeLiquidityETH", async () => {
-		await router.addLiquidityETH(0, ownerAddress, MAX, { value: numToBN(amountToMint) });
+		await router.addLiquidityETH(0, ownerAddress, MAX, {
+			value: numToBN(amountToMint),
+		});
 		const ftmBal = await getFtmBalance();
 		await router.removeLiquidityETH(numToBN(amountToMint), 0, ownerAddress, MAX);
 		const ftmBalDiff = (await getFtmBalance()).sub(ftmBal);
@@ -468,7 +476,9 @@ describe("Singularity Swap", () => {
 	});
 
 	it("removeLiquidityETHWithPermit", async () => {
-		await router.addLiquidityETH(0, ownerAddress, MAX, { value: numToBN(amountToMint) });
+		await router.addLiquidityETH(0, ownerAddress, MAX, {
+			value: numToBN(amountToMint),
+		});
 		const name = await WFTM.pool.name();
 		const nonce = await WFTM.pool.nonces(ownerAddress);
 		const digest = getApprovalDigest(
@@ -715,7 +725,12 @@ describe("Singularity Swap", () => {
 			USDC.pool.protocolFees(),
 			ETH.pool.protocolFees(),
 		]);
-		console.log(usdcPPS, ethPPS, usdcFees, ethFees);
+		console.log(
+			`USDC PPS: ${bnToNum(usdcPPS)} | ETH PPS: ${bnToNum(ethPPS)} | USDC Fees: ${bnToNum(
+				usdcFees,
+				6
+			)} | ETH Fees: ${bnToNum(ethFees)}`
+		);
 		await router.swapExactTokensForTokens(
 			usdc.address,
 			eth.address,
@@ -730,7 +745,12 @@ describe("Singularity Swap", () => {
 			USDC.pool.protocolFees(),
 			ETH.pool.protocolFees(),
 		]);
-		console.log(usdcPPS, ethPPS, usdcFees, ethFees);
+		console.log(
+			`USDC PPS: ${bnToNum(usdcPPS)} | ETH PPS: ${bnToNum(ethPPS)} | USDC Fees: ${bnToNum(
+				usdcFees,
+				6
+			)} | ETH Fees: ${bnToNum(ethFees)}`
+		);
 		expect(await USDC.pool.assets()).to.equal(await usdc.balanceOf(USDC.poolAddress));
 		expect(await ETH.pool.assets()).to.equal(await eth.balanceOf(ETH.poolAddress));
 		await router.removeLiquidity(usdc.address, numToBN(1000, USDC.decimals), 0, ownerAddress, MAX);
@@ -741,7 +761,12 @@ describe("Singularity Swap", () => {
 			USDC.pool.protocolFees(),
 			ETH.pool.protocolFees(),
 		]);
-		console.log(usdcPPS, ethPPS, usdcFees, ethFees);
+		console.log(
+			`USDC PPS: ${bnToNum(usdcPPS)} | ETH PPS: ${bnToNum(ethPPS)} | USDC Fees: ${bnToNum(
+				usdcFees,
+				6
+			)} | ETH Fees: ${bnToNum(ethFees)}`
+		);
 		expect(await USDC.pool.assets()).to.equal(await usdc.balanceOf(USDC.poolAddress));
 		expect(await ETH.pool.assets()).to.equal(await eth.balanceOf(ETH.poolAddress));
 
@@ -759,7 +784,12 @@ describe("Singularity Swap", () => {
 			USDC.pool.protocolFees(),
 			ETH.pool.protocolFees(),
 		]);
-		console.log(usdcPPS, ethPPS, usdcFees, ethFees);
+		console.log(
+			`USDC PPS: ${bnToNum(usdcPPS)} | ETH PPS: ${bnToNum(ethPPS)} | USDC Fees: ${bnToNum(
+				usdcFees,
+				6
+			)} | ETH Fees: ${bnToNum(ethFees)}`
+		);
 		expect(await USDC.pool.assets()).to.equal(await usdc.balanceOf(USDC.poolAddress));
 		expect(await ETH.pool.assets()).to.equal(await eth.balanceOf(ETH.poolAddress));
 
@@ -771,7 +801,12 @@ describe("Singularity Swap", () => {
 			USDC.pool.protocolFees(),
 			ETH.pool.protocolFees(),
 		]);
-		console.log(usdcPPS, ethPPS, usdcFees, ethFees);
+		console.log(
+			`USDC PPS: ${bnToNum(usdcPPS)} | ETH PPS: ${bnToNum(ethPPS)} | USDC Fees: ${bnToNum(
+				usdcFees,
+				6
+			)} | ETH Fees: ${bnToNum(ethFees)}`
+		);
 		expect(await USDC.pool.assets()).to.equal(await usdc.balanceOf(USDC.poolAddress));
 		expect(await ETH.pool.assets()).to.equal(await eth.balanceOf(ETH.poolAddress));
 	});

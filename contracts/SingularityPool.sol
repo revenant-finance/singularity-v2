@@ -51,7 +51,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         string memory tokenSymbol = IERC20(token).symbol();
         name = string(
             abi.encodePacked(
-                "Singularity ", tokenSymbol, " Pool (", tranche, ")"
+                "Singularity Pool Token-", tokenSymbol, " (", tranche, ")"
             )
         );
         symbol = string(

@@ -273,14 +273,14 @@ describe("Singularity Swap", () => {
 		expect(await DAI.pool.liabilities()).to.equal(0);
 		expect(await DAI.pool.baseFee()).to.equal(numToBN(DAI.baseFee));
 		expect(await DAI.pool.protocolFees()).to.equal(0);
-		expect(await DAI.pool.name()).to.equal(`Singularity ${DAI.symbol} Pool (${trancheName})`);
+		expect(await DAI.pool.name()).to.equal(`Singularity Pool Token-${DAI.symbol} (${trancheName})`);
 		expect(await DAI.pool.symbol()).to.equal(`SPT-${DAI.symbol} (${trancheName})`);
 		expect(await DAI.pool.decimals()).to.equal(DAI.decimals);
 		expect(await DAI.pool.totalSupply()).to.equal(0);
 		expect(await DAI.pool.balanceOf(ownerAddress)).to.equal(0);
 		expect(await DAI.pool.nonces(ownerAddress)).to.equal(0);
 		expect(await DAI.pool.DOMAIN_SEPARATOR()).to.equal(
-			getDomainSeparator(`Singularity ${DAI.symbol} Pool (${trancheName})`, DAI.poolAddress)
+			getDomainSeparator(`Singularity Pool Token-${DAI.symbol} (${trancheName})`, DAI.poolAddress)
 		);
 		expect(await DAI.pool.getPricePerShare()).to.equal(numToBN(1));
 		expect((await DAI.pool.getAssetsAndLiabilities())[0]).to.equal(0);

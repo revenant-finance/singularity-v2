@@ -10,7 +10,7 @@
 	"repository": {
 		"type": "git"
 	},
-	"author": "0xEntropy",
+	"author": "Revenant Labs",
 	"license": "ISC",
 	"devDependencies": {
 		"@nomiclabs/hardhat-ethers": "^2.0.2",

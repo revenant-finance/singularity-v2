@@ -6,16 +6,16 @@
 | Name | Address |
 | :--- | :--- |
 | SingularityOracle | [0xCf096f83D49A08F6E6c66E61E45F749e9231c22a](https://ftmscan.com/address/0xCf096f83D49A08F6E6c66E61E45F749e9231c22a#code) |
-| SingularityFactory | [0x58db5a7Ea19fC170c7CD7847434Cc02a462f9D39](https://ftmscan.com/address/0x58db5a7Ea19fC170c7CD7847434Cc02a462f9D39#code) |
+| SingularityFactory | [0x516D569964b61Eb9221aa56E4A9142ac13199a27](https://ftmscan.com/address/0x516D569964b61Eb9221aa56E4A9142ac13199a27#code) |
 | SingularityRouter | [0x95668A4AFa5fc194AF71D2564cC4BB03F4De0FB5](https://ftmscan.com/address/0x95668A4AFa5fc194AF71D2564cC4BB03F4De0FB5#code) |
 
 ### Fantom Contracts and Pools
 | Name | Address |
 | :--- | :--- |
-| USDC Pool | [0xa48069CfB60f9304308DbBD507ecE3e1052825D8](https://ftmscan.com/address/0xa48069CfB60f9304308DbBD507ecE3e1052825D8#code) |
-| fUSDT Pool | [0x153F18407E70695566eaa33E40ad1c5bA6454f8c](https://ftmscan.com/address/0x153F18407E70695566eaa33E40ad1c5bA6454f8c#code) |
-| DAI Pool | [0x2f41AE650AD13D10F00711ceD957BAd3ce0fA0b2](https://ftmscan.com/address/0x2f41AE650AD13D10F00711ceD957BAd3ce0fA0b2#code) |
-| wFTM Pool | [0x2f41AE650AD13D10F00711ceD957BAd3ce0fA0b2](https://ftmscan.com/address/0x2f41AE650AD13D10F00711ceD957BAd3ce0fA0b2#code) |
+| USDC Pool | [0xdC383325E815e8FccBdea659694bbaaD0E58FFb0](https://ftmscan.com/address/0xdC383325E815e8FccBdea659694bbaaD0E58FFb0#code) |
+| fUSDT Pool | [0xB8cBbc22e78DD8929f0CfF1440561C536c0b7480](https://ftmscan.com/address/0xB8cBbc22e78DD8929f0CfF1440561C536c0b7480#code) |
+| DAI Pool | [0x3d316e524517c870DDa9C15d26AB642e49f89dBD](https://ftmscan.com/address/0x3d316e524517c870DDa9C15d26AB642e49f89dBD#code) |
+| wFTM Pool | [0xc924F039D28910c7a0dD4d928A9baaF835EBaF4b](https://ftmscan.com/address/0xc924F039D28910c7a0dD4d928A9baaF835EBaF4b#code) |
 
 
 ## Outputs

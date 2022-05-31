@@ -28,7 +28,7 @@ async function main() {
 		},
 		{
 			name: "wFTM",
-			address: "",
+			address: "0x21be370d5312f44cb42ce377bc9b8a0cef1a4c83",
 			fee: 0.002,
 			isStable: false,
 			cap: numToBN(300000)

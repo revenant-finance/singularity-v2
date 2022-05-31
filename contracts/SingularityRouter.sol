@@ -26,6 +26,8 @@ contract SingularityRouter is ISingularityRouter {
     }
 
     constructor(address _factory, address _WETH) {
+        require(_factory != address(0), "SingularityRouter: FACTORY_IS_0");
+        require(_WETH != address(0), "SingularityRouter: WETH_IS_0");
         factory = _factory;
         WETH = _WETH;
         poolCodeHash = ISingularityFactory(_factory).poolCodeHash();
@@ -215,14 +217,17 @@ contract SingularityRouter is ISingularityRouter {
             uint256 tradingFeeOut
         )
     {
-        require(amountIn != 0, "SingularityRouter: INSUFFICIENT_INPUT_AMOUNT");
+        if (amountIn == 0) {
+            return (0, 0, 0, 0, 0);
+        }
+
         address poolIn = poolFor(factory, tokenIn);
 
         slippageIn = ISingularityPool(poolIn).getSlippageIn(amountIn);
         amountIn += slippageIn;
 
         (tradingFeeIn, , ) = ISingularityPool(poolIn).getTradingFees(amountIn);
-        require(tradingFeeIn != type(uint256).max, "SingularityRouter: STALE_ORACLE");
+        require(tradingFeeIn != type(uint256).max, "SingularityRouter: STALE_ORACLE_IN");
         amountIn -= tradingFeeIn;
 
         uint256 swapInAmountOut = ISingularityPool(poolIn).getAmountToUSD(amountIn);
@@ -234,7 +239,7 @@ contract SingularityRouter is ISingularityRouter {
         amountOut -= slippageOut;
 
         (tradingFeeOut, , ) = ISingularityPool(poolOut).getTradingFees(amountOut);
-        require(tradingFeeOut != type(uint256).max, "SingularityRouter: STALE_ORACLE");
+        require(tradingFeeOut != type(uint256).max, "SingularityRouter: STALE_ORACLE_OUT");
         amountOut -= tradingFeeOut;
     }
 

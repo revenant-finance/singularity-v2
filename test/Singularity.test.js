@@ -533,7 +533,7 @@ describe("Singularity Swap", () => {
     expect(expectedOut).to.be.gt(0);
     await expect(
       router.swapExactTokensForTokens(eth.address, usdc.address, 0, 0, ownerAddress, MAX)
-    ).to.be.revertedWith("SingularityRouter: INSUFFICIENT_INPUT_AMOUNT");
+    ).to.be.revertedWith("SingularityPool: AMOUNT_IS_0");
 
     await router.swapExactTokensForTokens(
       eth.address,

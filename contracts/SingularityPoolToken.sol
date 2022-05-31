@@ -51,7 +51,11 @@ abstract contract SingularityPoolToken is ISingularityPoolToken {
         return true;
     }
 
-    function transferFrom(address from, address to, uint256 value) external override returns (bool) {
+    function transferFrom(
+        address from,
+        address to,
+        uint256 value
+    ) external override returns (bool) {
         uint256 allowed = allowance[from][msg.sender]; // Saves gas for limited approvals.
 
         if (allowed != type(uint256).max) allowance[from][msg.sender] = allowed - value;
@@ -69,7 +73,15 @@ abstract contract SingularityPoolToken is ISingularityPoolToken {
         return true;
     }
 
-    function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) public override {
+    function permit(
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public override {
         require(deadline >= block.timestamp, "SingularityPoolToken: EXPIRED");
 
         // Unchecked because the only math done is incrementing
@@ -95,7 +107,10 @@ abstract contract SingularityPoolToken is ISingularityPoolToken {
             );
 
             address recoveredAddress = ecrecover(digest, v, r, s);
-            require(recoveredAddress != address(0) && recoveredAddress == owner, "SingularityPoolToken: INVALID_SIGNER");
+            require(
+                recoveredAddress != address(0) && recoveredAddress == owner,
+                "SingularityPoolToken: INVALID_SIGNER"
+            );
 
             allowance[recoveredAddress][spender] = value;
         }

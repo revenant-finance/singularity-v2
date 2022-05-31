@@ -9,7 +9,7 @@ import "./SingularityPool.sol";
  * @title Singularity Factory
  * @author Revenant Labs
  */
- contract SingularityFactory is ISingularityFactory {
+contract SingularityFactory is ISingularityFactory {
     string public override tranche;
     address public override admin;
     address public override oracle;
@@ -19,7 +19,7 @@ import "./SingularityPool.sol";
     uint256 public override oracleSens = 60; // threshold (in seconds) since last oracle update to apply 2x trading fee
 
     PoolParams public override poolParams;
-    
+
     mapping(address => address) public override getPool;
     address[] public override allPools;
 
@@ -28,7 +28,12 @@ import "./SingularityPool.sol";
         _;
     }
 
-    constructor(string memory _tranche, address _admin, address _oracle, address _feeTo) {
+    constructor(
+        string memory _tranche,
+        address _admin,
+        address _oracle,
+        address _feeTo
+    ) {
         require(bytes(_tranche).length != 0, "SingularityFactory: TRANCHE_IS_EMPTY");
         require(_admin != address(0), "SingularityFactory: ADMIN_IS_0");
         require(_oracle != address(0), "SingularityFactory: ORACLE_IS_0");
@@ -48,8 +53,8 @@ import "./SingularityPool.sol";
     /// @param baseFee The base fee for the pool
     /// @return pool The address of the pool created
     function createPool(
-        address token, 
-        bool isStablecoin, 
+        address token,
+        bool isStablecoin,
         uint256 baseFee
     ) external override onlyAdmin returns (address pool) {
         require(router != address(0), "SingularityFactory: ROUTER_IS_0");
@@ -104,51 +109,61 @@ import "./SingularityPool.sol";
 
     function collectFees() external override onlyAdmin {
         uint256 length = allPools.length;
-        for (uint256 i; i < length;) {
+        for (uint256 i; i < length; ) {
             ISingularityPool(allPools[i]).collectFees();
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
     }
 
     function setDepositCaps(address[] calldata tokens, uint256[] calldata caps) external override onlyAdmin {
         require(tokens.length == caps.length, "SingularityFactory: NOT_SAME_LENGTH");
         uint256 length = tokens.length;
-        for (uint256 i; i < length;) {
+        for (uint256 i; i < length; ) {
             address pool = getPool[tokens[i]];
             require(pool != address(0), "SingularityFactory: POOL_DOESNT_EXIST");
             ISingularityPool(pool).setDepositCap(caps[i]);
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
     }
 
     function setBaseFees(address[] calldata tokens, uint256[] calldata baseFees) external override onlyAdmin {
         require(tokens.length == baseFees.length, "SingularityFactory: NOT_SAME_LENGTH");
         uint256 length = tokens.length;
-        for (uint256 i; i < length;) {
+        for (uint256 i; i < length; ) {
             require(baseFees[i] != 0, "SingularityFactory: BASE_FEE_IS_0");
             address pool = getPool[tokens[i]];
             require(pool != address(0), "SingularityFactory: POOL_DOESNT_EXIST");
             ISingularityPool(pool).setBaseFee(baseFees[i]);
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
     }
 
     function setPaused(address[] calldata tokens, bool[] calldata states) external override onlyAdmin {
         require(tokens.length == states.length, "SingularityFactory: NOT_SAME_LENGTH");
         uint256 length = tokens.length;
-        for (uint256 i; i < length;) {
+        for (uint256 i; i < length; ) {
             address pool = getPool[tokens[i]];
             require(pool != address(0), "SingularityFactory: POOL_DOESNT_EXIST");
             ISingularityPool(pool).setPaused(states[i]);
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
     }
 
     function setPausedForAll(bool state) external override onlyAdmin {
         uint256 length = allPools.length;
-        for (uint256 i; i < length;) {
+        for (uint256 i; i < length; ) {
             ISingularityPool(allPools[i]).setPaused(state);
-            unchecked { ++i; }
+            unchecked {
+                ++i;
+            }
         }
     }
 }

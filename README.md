@@ -5,8 +5,8 @@
 ### Protocol Contracts
 | Name | Address |
 | :--- | :--- |
-| SingularityOracle | [0xf8b88f0d5bd0669a7a59e1812ebf1bdf93948b7a](https://ftmscan.com/address/0xf8b88f0d5bd0669a7a59e1812ebf1bdf93948b7a#code) |
-| SingularityFactory | [0x58db5a7Ea19fC170c7CD7847434Cc02a462f9D39](https://ftmscan.com/address/0x58db5a7Ea19fC170c7CD7847434Cc02a462f9D39#code) |
+| SingularityOracle | [0xF8B88f0d5BD0669a7a59E1812Ebf1BDF93948b7A](https://ftmscan.com/address/0xF8B88f0d5BD0669a7a59E1812Ebf1BDF93948b7A#code) |
+| SingularityFactory | [0x516D569964b61Eb9221aa56E4A9142ac13199a27](https://ftmscan.com/address/0x516D569964b61Eb9221aa56E4A9142ac13199a27#code) |
 | SingularityRouter | [0x95668A4AFa5fc194AF71D2564cC4BB03F4De0FB5](https://ftmscan.com/address/0x95668A4AFa5fc194AF71D2564cC4BB03F4De0FB5#code) |
 
 ### Fantom Contracts and Pools

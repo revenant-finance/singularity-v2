@@ -2,9 +2,8 @@ const hre = require("hardhat");
 
 async function main() {
 	const Factory = await hre.ethers.getContractFactory("SingularityFactory");
-	const factoryAddress = "0x58db5a7Ea19fC170c7CD7847434Cc02a462f9D39";
+	const factoryAddress = "0x516D569964b61Eb9221aa56E4A9142ac13199a27";
 	const factory = Factory.attach(factoryAddress);
-
 	const tokens = [
 		{
 			name: "USDC",
@@ -27,6 +26,13 @@ async function main() {
 			isStable: true,
 			cap: numToBN(100000, 18),
 		},
+		{
+			name: "wFTM",
+			address: "",
+			fee: 0.002,
+			isStable: false,
+			cap: numToBN(300000)
+		}
 	];
 	for (let i = 0; i < tokens.length; i++) {
 		const tokenAddress = tokens[i].address;

@@ -5,7 +5,7 @@ async function main() {
 	const Factory = await hre.ethers.getContractFactory("SingularityFactory");
 	const trancheName = "Beta v1";
 	const adminAddress = deployer.address;
-	const oracleAddress = "0xf8b88f0d5bd0669a7a59e1812ebf1bdf93948b7a";
+	const oracleAddress = "0xCf096f83D49A08F6E6c66E61E45F749e9231c22a";
 	const feeToAddress = deployer.address;
 	const factory = await Factory.deploy(trancheName, adminAddress, oracleAddress, feeToAddress);
 

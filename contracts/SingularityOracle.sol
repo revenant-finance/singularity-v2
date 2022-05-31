@@ -16,9 +16,9 @@ contract SingularityOracle is ISingularityOracle {
 		uint256 nonce;
 	}
 
-	bool onlyUseChainlink;
-	address admin;
-	uint256 maxPriceTolerance = 0.015 ether; // 1.5%
+	bool public onlyUseChainlink;
+	address public admin;
+	uint256 public maxPriceTolerance = 0.015 ether; // 1.5%
 
 	mapping(address => bool) public pushers;
 	mapping(address => PriceData[]) public allPrices;

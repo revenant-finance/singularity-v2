@@ -7,7 +7,7 @@
 | :--- | :--- |
 | SingularityOracle | [0x6Dd8a12a5B0C03267f61Bdc440A04E9Ef3B92C28](https://ftmscan.com/address/0x6Dd8a12a5B0C03267f61Bdc440A04E9Ef3B92C28#code) |
 | SingularityFactory | [0x516D569964b61Eb9221aa56E4A9142ac13199a27](https://ftmscan.com/address/0x516D569964b61Eb9221aa56E4A9142ac13199a27#code) |
-| SingularityRouter | [0x95668A4AFa5fc194AF71D2564cC4BB03F4De0FB5](https://ftmscan.com/address/0x95668A4AFa5fc194AF71D2564cC4BB03F4De0FB5#code) |
+| SingularityRouter | [0x2294135E0790ADeA204f237B1004bD9E77E1Ca07](https://ftmscan.com/address/0x2294135E0790ADeA204f237B1004bD9E77E1Ca07#code) |
 
 ### Fantom Contracts and Pools
 | Name | Address |

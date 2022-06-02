@@ -45,8 +45,8 @@ async function main() {
   }
 
   await factory.setDepositCaps(
-    [tokens[0].address, tokens[1].address, tokens[2].address],
-    [tokens[0].cap, tokens[1].cap, tokens[2].cap]
+    [tokens[0].address, tokens[1].address, tokens[2].address, tokens[3].address],
+    [tokens[0].cap, tokens[1].cap, tokens[2].cap, tokens[3].cap]
   );
 }
 

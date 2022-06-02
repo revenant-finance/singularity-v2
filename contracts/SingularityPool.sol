@@ -96,7 +96,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         override
         notPaused
         nonReentrant
-        returns (uint256 withdrawAmount)
+        returns (uint256 withdrawalAmount)
     {
         require(lpAmount != 0, "SingularityPool: AMOUNT_IS_0");
 
@@ -112,16 +112,16 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         // Apply withdrawal fee
         uint256 withdrawalFee = getWithdrawalFee(amount);
         protocolFees += withdrawalFee;
-        withdrawAmount = amount - withdrawalFee;
+        withdrawalAmount = amount - withdrawalFee;
 
         // Transfer tokens to `to`
-        IERC20(token).safeTransfer(to, withdrawAmount);
+        IERC20(token).safeTransfer(to, withdrawalAmount);
 
         // Update assets and liabilities
-        assets -= withdrawAmount;
+        assets -= withdrawalAmount;
         liabilities -= amount;
 
-        emit Withdraw(msg.sender, lpAmount, withdrawAmount, to);
+        emit Withdraw(msg.sender, lpAmount, withdrawalAmount, to);
     }
 
     function swapIn(uint256 amountIn) external override onlyRouter notPaused nonReentrant returns (uint256 amountOut) {

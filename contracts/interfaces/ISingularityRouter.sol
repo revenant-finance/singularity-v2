@@ -20,21 +20,6 @@ interface ISingularityRouter {
 
     function poolFor(address token) external view returns (address pool);
 
-    function getAmountOut(
-        uint256 amountIn,
-        address tokenIn,
-        address tokenOut
-    )
-        external
-        view
-        returns (
-            uint256 amountOut,
-            uint256 tradingFeeIn,
-            uint256 slippageIn,
-            uint256 slippageOut,
-            uint256 tradingFeeOut
-        );
-
     function swapExactTokensForTokens(
         address tokenIn,
         address tokenOut,
@@ -112,4 +97,23 @@ interface ISingularityRouter {
         bytes32 r,
         bytes32 s
     ) external returns (uint256 amount);
+
+    function getAddLiquidityAmount(address token, uint256 amount) external view returns (uint256 mintAmount);
+
+    function getRemoveLiquidityAmount(address token, uint256 lpAmount) external view returns (uint256 withdrawalAmount);
+
+    function getAmountOut(
+        uint256 amountIn,
+        address tokenIn,
+        address tokenOut
+    )
+        external
+        view
+        returns (
+            uint256 amountOut,
+            uint256 tradingFeeIn,
+            uint256 slippageIn,
+            uint256 slippageOut,
+            uint256 tradingFeeOut
+        );
 }

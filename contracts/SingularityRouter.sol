@@ -8,6 +8,7 @@ import "./interfaces/ISingularityPool.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IWETH.sol";
 import "./utils/SafeERC20.sol";
+import "./utils/FixedPointMathLib.sol";
 
 /**
  * @title Singularity Router
@@ -15,6 +16,7 @@ import "./utils/SafeERC20.sol";
  */
 contract SingularityRouter is ISingularityRouter {
     using SafeERC20 for IERC20;
+    using FixedPointMathLib for uint256;
 
     address public immutable override factory;
     address public immutable override WETH;
@@ -194,11 +196,35 @@ contract SingularityRouter is ISingularityRouter {
     function poolFor(address token) public view override returns (address pool) {
         pool = address(
             uint160(
-                uint256(
-                    keccak256(abi.encodePacked(hex"ff", factory, keccak256(abi.encodePacked(token)), poolCodeHash))
-                )
+                uint256(keccak256(abi.encodePacked(hex"ff", factory, keccak256(abi.encodePacked(token)), poolCodeHash)))
             )
         );
+    }
+
+    function getAddLiquidityAmount(address token, uint256 amount) external view override returns (uint256 mintAmount) {
+        address pool = poolFor(token);
+
+        if (ISingularityPool(pool).liabilities() == 0) {
+            mintAmount = amount;
+        } else {
+            uint256 depositFee = ISingularityPool(pool).getDepositFee(amount);
+            uint256 amountPostFee = amount - depositFee;
+            uint256 pricePerShare = ISingularityPool(pool).getPricePerShare();
+            mintAmount = amountPostFee.divWadDown(pricePerShare);
+        }
+    }
+
+    function getRemoveLiquidityAmount(address token, uint256 lpAmount)
+        external
+        view
+        override
+        returns (uint256 withdrawalAmount)
+    {
+        address pool = poolFor(token);
+        uint256 pricePerShare = ISingularityPool(pool).getPricePerShare();
+        uint256 amount = lpAmount.mulWadDown(pricePerShare);
+        uint256 withdrawalFee = ISingularityPool(pool).getWithdrawalFee(amount);
+        withdrawalAmount = amount - withdrawalFee;
     }
 
     function getAmountOut(

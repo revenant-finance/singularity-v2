@@ -322,8 +322,14 @@ describe("Singularity Swap", () => {
     ).to.be.revertedWith("SingularityPool: DEPOSIT_EXCEEDS_CAP");
     await factory.setDepositCaps([USDC.address], [MAX]);
 
-    expect(await USDC.pool.getDepositFee(amountToMint)).to.equal(0);
+    expect(await USDC.pool.getDepositFee(numToBN(amountToMint, USDC.decimals))).to.equal(0);
+    const expectedLpBal = await router.getAddLiquidityAmount(
+      USDC.address,
+      numToBN(amountToMint, 6)
+    );
     await addLiquidity(USDC, amountToMint);
+    const lpBal = await USDC.pool.balanceOf(ownerAddress);
+    expect(expectedLpBal).to.equal(lpBal);
     expect(await usdc.balanceOf(ownerAddress)).to.equal(
       numToBN(USDC.balance - amountToMint, USDC.decimals)
     );
@@ -331,8 +337,14 @@ describe("Singularity Swap", () => {
     expect(await USDC.pool.balanceOf(ownerAddress)).to.equal(numToBN(amountToMint, USDC.decimals));
     expect(await USDC.pool.liabilities()).to.equal(numToBN(amountToMint, USDC.decimals));
     expect(await USDC.pool.assets()).to.equal(numToBN(amountToMint, USDC.decimals));
-
+    const expectedLpBal2 = await router.getAddLiquidityAmount(
+      usdc.address,
+      numToBN(amountToMint, 6)
+    );
     await addLiquidity(USDC, amountToMint);
+    const lpBal2 = await USDC.pool.balanceOf(ownerAddress);
+    expect(expectedLpBal.add(expectedLpBal2)).to.equal(lpBal2);
+
     expect(await usdc.balanceOf(USDC.poolAddress)).to.equal(
       numToBN(amountToMint * 2, USDC.decimals)
     );
@@ -402,7 +414,11 @@ describe("Singularity Swap", () => {
       )
     ).to.be.revertedWith("SingularityPool: PAUSED");
     await factory.setPausedForAll(false);
-
+    const expectedBal = await router.getRemoveLiquidityAmount(
+      usdc.address,
+      numToBN(amountToMint / 2, USDC.decimals)
+    );
+    const balBefore = await usdc.balanceOf(ownerAddress);
     await router.removeLiquidity(
       usdc.address,
       numToBN(amountToMint / 2, USDC.decimals),
@@ -410,7 +426,8 @@ describe("Singularity Swap", () => {
       ownerAddress,
       MAX
     );
-
+    const balAfter = await usdc.balanceOf(ownerAddress);
+    expect(expectedBal).to.equal(balAfter.sub(balBefore));
     await router.removeLiquidity(
       usdc.address,
       numToBN(amountToMint / 2, USDC.decimals),

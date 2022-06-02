@@ -6,7 +6,7 @@ import "./ISingularityPoolToken.sol";
 
 interface ISingularityPool is ISingularityPoolToken {
     event Deposit(address indexed sender, uint256 indexed amountDeposited, uint256 mintAmount, address indexed to);
-    event Withdraw(address indexed sender, uint256 indexed amountBurned, uint256 withdrawAmount, address indexed to);
+    event Withdraw(address indexed sender, uint256 indexed amountBurned, uint256 withdrawalAmount, address indexed to);
     event SwapIn(address indexed sender, uint256 amountIn, uint256 amountOut);
     event SwapOut(address indexed sender, uint256 amountIn, uint256 amountOut, address indexed to);
 

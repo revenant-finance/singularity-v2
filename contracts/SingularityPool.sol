@@ -126,22 +126,25 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
 
     function swapIn(uint256 amountIn) external override onlyRouter notPaused nonReentrant returns (uint256 amountOut) {
         require(amountIn != 0, "SingularityPool: AMOUNT_IS_0");
-        IERC20(token).safeTransferFrom(msg.sender, address(this), amountIn);
 
         // Apply slippage (+)
-        uint256 slippage = getSlippageIn(amountIn);
+        uint256 amountPostSlippage = amountIn + getSlippageIn(amountIn);
+
+        // Transfer tokens from sender
+        IERC20(token).safeTransferFrom(msg.sender, address(this), amountIn);
+
+        // Update assets
         assets += amountIn;
-        amountIn += slippage;
 
         // Apply trading fees
-        (uint256 totalFee, uint256 protocolFee, uint256 lpFee) = getTradingFees(amountIn);
+        (uint256 totalFee, uint256 protocolFee, uint256 lpFee) = getTradingFees(amountPostSlippage);
         require(totalFee != type(uint256).max, "SingularityPool: STALE_ORACLE");
         protocolFees += protocolFee;
         liabilities += lpFee;
-        amountIn -= totalFee;
+        uint256 amountPostFee = amountPostSlippage - totalFee;
 
-        // Calculate amount out
-        amountOut = getAmountToUSD(amountIn);
+        // Convert amount to USD value
+        amountOut = getAmountToUSD(amountPostFee);
 
         emit SwapIn(msg.sender, amountIn, amountOut);
     }
@@ -155,18 +158,19 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         returns (uint256 amountOut)
     {
         require(amountIn != 0, "SingularityPool: AMOUNT_IS_0");
-        amountOut = getUSDToAmount(amountIn);
+
+        // Convert USD value to amount
+        uint256 amount = getUSDToAmount(amountIn);
 
         // Apply slippage (-)
-        uint256 slippage = getSlippageOut(amountOut);
-        amountOut -= slippage;
+        uint256 amountPostSlippage = amount - getSlippageOut(amount);
 
         // Apply trading fees
-        (uint256 totalFee, uint256 protocolFee, uint256 lpFee) = getTradingFees(amountOut);
+        (uint256 totalFee, uint256 protocolFee, uint256 lpFee) = getTradingFees(amountPostSlippage);
         require(totalFee != type(uint256).max, "SingularityPool: STALE_ORACLE");
         protocolFees += protocolFee;
         liabilities += lpFee;
-        amountOut -= totalFee;
+        amountOut = amountPostSlippage - totalFee;
 
         // Transfer tokens out
         IERC20(token).safeTransfer(to, amountOut);
@@ -298,12 +302,11 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         }
 
         // Calculate G'
-        uint256 gCurrent = _getG(currentCollateralizationRatio);
-        uint256 gAfter = _getG(afterCollateralizationRatio);
-        uint256 gDiff = gCurrent - gAfter;
+        uint256 gDiff = _getG(currentCollateralizationRatio) - _getG(afterCollateralizationRatio);
+        uint256 gPrime = gDiff.divWadDown(afterCollateralizationRatio - currentCollateralizationRatio);
 
         // Calculate slippage
-        slippageIn = amount.mulWadDown(gDiff.divWadDown(afterCollateralizationRatio - currentCollateralizationRatio));
+        slippageIn = amount.mulWadDown(gPrime);
     }
 
     function getSlippageOut(uint256 amount) public view override returns (uint256 slippageOut) {
@@ -318,12 +321,11 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         }
 
         // Calculate G'
-        uint256 gCurrent = _getG(currentCollateralizationRatio);
-        uint256 gAfter = _getG(afterCollateralizationRatio);
-        uint256 gDiff = gAfter - gCurrent;
+        uint256 gDiff = _getG(afterCollateralizationRatio) - _getG(currentCollateralizationRatio);
+        uint256 gPrime = gDiff.divWadUp(currentCollateralizationRatio - afterCollateralizationRatio);
 
         // Calculate slippage
-        slippageOut = amount.mulWadUp(gDiff.divWadUp(currentCollateralizationRatio - afterCollateralizationRatio));
+        slippageOut = amount.mulWadUp(gPrime);
     }
 
     function getTradingFeeRate() public view override returns (uint256 tradingFeeRate) {

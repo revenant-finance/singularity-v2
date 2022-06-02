@@ -163,7 +163,9 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         uint256 amount = getUSDToAmount(amountIn);
 
         // Apply slippage (-)
-        uint256 amountPostSlippage = amount - getSlippageOut(amount);
+        uint256 slippage = getSlippageOut(amount);
+        require(amount > slippage, "SingularityPool: SLIPPAPGE_EXCEEDS_AMOUNT");
+        uint256 amountPostSlippage = amount - slippage;
 
         // Apply trading fees
         (uint256 totalFee, uint256 protocolFee, uint256 lpFee) = getTradingFees(amountPostSlippage);
@@ -274,10 +276,12 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     /// @return fee The fee charged for withdraw
     function getWithdrawalFee(uint256 amount) public view override returns (uint256 fee) {
         if (amount == 0) return 0;
+        require(amount <= assets, "SingularityPool: AMOUNT_EXCEEDS_ASSETS");
 
         uint256 currentCollateralizationRatio = getCollateralizationRatio();
         uint256 gCurrent = _getG(currentCollateralizationRatio);
         (uint256 _assets, uint256 _liabilities) = getAssetsAndLiabilities();
+        require(amount <= _liabilities, "SingularityPool: AMOUNT_EXCEEDS_LIABILITIES");
         uint256 afterCollateralizationRatio = _calcCollatalizationRatio(_assets - amount, _liabilities - amount);
         uint256 gAfter = _getG(afterCollateralizationRatio);
 
@@ -311,7 +315,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
 
     function getSlippageOut(uint256 amount) public view override returns (uint256 slippageOut) {
         if (amount == 0) return 0;
-        if (amount >= assets) return amount;
+        require(amount < assets, "SingularityPool: AMOUNT_EXCEEDS_ASSETS");
 
         uint256 currentCollateralizationRatio = getCollateralizationRatio();
         (uint256 _assets, uint256 _liabilities) = getAssetsAndLiabilities();

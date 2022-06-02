@@ -249,9 +249,7 @@ describe("Singularity Swap", () => {
     expect(await router.WETH()).to.equal(WFTM.address);
 
     expect(await router.poolCodeHash()).to.equal(await factory.poolCodeHash());
-    expect(await router.poolFor(factory.address, wftm.address)).to.equal(
-      await factory.getPool(wftm.address)
-    );
+    expect(await router.poolFor(wftm.address)).to.equal(await factory.getPool(wftm.address));
   });
 
   it("createPool", async () => {
@@ -298,7 +296,6 @@ describe("Singularity Swap", () => {
     expect((await DAI.pool.getOracleData())[0]).to.equal(numToBN(DAI.price));
     expect(await DAI.pool.getAmountToUSD(numToBN(1, DAI.decimals))).to.equal(numToBN(DAI.price));
     expect(await DAI.pool.getUSDToAmount(numToBN(DAI.price))).to.equal(numToBN(1, DAI.decimals));
-    expect(await router.poolFor(factory.address, DAI.address)).to.equal(DAI.poolAddress);
   });
 
   it("addLiquidity", async () => {
@@ -510,7 +507,9 @@ describe("Singularity Swap", () => {
     await addLiquidity(ETH, 10);
     await addLiquidity(USDC, 20000);
     expect(await USDC.pool.getSlippageIn(0)).to.equal(0);
-    expect(await USDC.pool.getSlippageOut(numToBN(25000, 6))).to.equal(numToBN(25000, 6));
+    await expect(USDC.pool.getSlippageOut(numToBN(25000, 6))).to.be.revertedWith(
+      "SingularityPool: AMOUNT_EXCEEDS_ASSETS"
+    );
     expect(await USDC.pool.getSlippageOut(0)).to.equal(0);
   });
 
@@ -717,8 +716,6 @@ describe("Singularity Swap", () => {
   });
 
   it("run simulations", async () => {
-    await addLiquidity(ETH, 10);
-    await addLiquidity(USDC, 20000);
     async function doCheck() {
       let [usdcPPS, ethPPS, usdcFees, ethFees, usdcAssets, ethAssets] = await Promise.all([
         USDC.pool.getPricePerShare(),
@@ -741,6 +738,13 @@ describe("Singularity Swap", () => {
       expect(await USDC.pool.assets()).to.equal(await usdc.balanceOf(USDC.poolAddress));
       expect(await ETH.pool.assets()).to.equal(await eth.balanceOf(ETH.poolAddress));
     }
+
+    await addLiquidity(ETH, 10);
+    await addLiquidity(USDC, 20000);
+    await doCheck();
+    await router.removeLiquidity(usdc.address, numToBN(20000, USDC.decimals), 0, ownerAddress, MAX);
+    await addLiquidity(USDC, 20000);
+    await doCheck();
 
     await router.swapExactTokensForTokens(
       usdc.address,
@@ -766,24 +770,6 @@ describe("Singularity Swap", () => {
     await doCheck();
     await addLiquidity(USDC, 20000);
     await addLiquidity(ETH, 10);
-    await doCheck();
-    await router.swapExactTokensForTokens(
-      eth.address,
-      usdc.address,
-      numToBN(100, ETH.decimals),
-      0,
-      ownerAddress,
-      MAX
-    );
-    await doCheck();
-    await router.swapExactTokensForTokens(
-      usdc.address,
-      eth.address,
-      numToBN(20000, USDC.decimals),
-      0,
-      ownerAddress,
-      MAX
-    );
     await doCheck();
     const usdcLpBal = await USDC.pool.balanceOf(ownerAddress);
     await USDC.pool.withdraw(usdcLpBal, ownerAddress);

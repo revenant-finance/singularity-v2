@@ -84,7 +84,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
             _mint(to, mintAmount);
 
             // Update assets and liabilities
-            assets += amount;
+            assets += amountPostFee;
             liabilities += amountPostFee;
         }
 
@@ -118,7 +118,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         IERC20(token).safeTransfer(to, withdrawalAmount);
 
         // Update assets and liabilities
-        assets -= withdrawalAmount;
+        assets -= amount;
         liabilities -= amount;
 
         emit Withdraw(msg.sender, lpAmount, withdrawalAmount, to);
@@ -140,6 +140,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         (uint256 totalFee, uint256 protocolFee, uint256 lpFee) = getTradingFees(amountPostSlippage);
         require(totalFee != type(uint256).max, "SingularityPool: STALE_ORACLE");
         protocolFees += protocolFee;
+        assets -= protocolFee;
         liabilities += lpFee;
         uint256 amountPostFee = amountPostSlippage - totalFee;
 
@@ -171,6 +172,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         (uint256 totalFee, uint256 protocolFee, uint256 lpFee) = getTradingFees(amountPostSlippage);
         require(totalFee != type(uint256).max, "SingularityPool: STALE_ORACLE");
         protocolFees += protocolFee;
+        assets -= protocolFee;
         liabilities += lpFee;
         amountOut = amountPostSlippage - totalFee;
 
@@ -200,7 +202,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     /// @return _assets The assets of the pool
     /// @return _liabilities The liabilities of the pool
     function getAssetsAndLiabilities() public view override returns (uint256 _assets, uint256 _liabilities) {
-        return (assets, liabilities + protocolFees);
+        return (assets, liabilities);
     }
 
     /// @notice Get pool's collateralization ratio
@@ -272,6 +274,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         } else {
             fee = gAfter.mulWadUp(_liabilities + amount) - gCurrent.mulWadDown(_liabilities);
         }
+        require(fee < amount, "SingularityPool: FEE_EXCEEDS_AMOUNT");
     }
 
     /// @notice Calculates the fee charged for withdraw
@@ -279,12 +282,13 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     /// @return fee The fee charged for withdraw
     function getWithdrawalFee(uint256 amount) public view override returns (uint256 fee) {
         if (amount == 0) return 0;
-        require(amount <= assets, "SingularityPool: AMOUNT_EXCEEDS_ASSETS");
+        
+        (uint256 _assets, uint256 _liabilities) = getAssetsAndLiabilities();
+        require(amount <= _assets, "SingularityPool: AMOUNT_EXCEEDS_ASSETS");
+        require(amount <= _liabilities, "SingularityPool: AMOUNT_EXCEEDS_LIABILITIES");
 
         uint256 currentCollateralizationRatio = getCollateralizationRatio();
         uint256 gCurrent = _getG(currentCollateralizationRatio);
-        (uint256 _assets, uint256 _liabilities) = getAssetsAndLiabilities();
-        require(amount <= _liabilities, "SingularityPool: AMOUNT_EXCEEDS_LIABILITIES");
         uint256 afterCollateralizationRatio = _calcCollatalizationRatio(_assets - amount, _liabilities - amount);
         uint256 gAfter = _getG(afterCollateralizationRatio);
 
@@ -296,6 +300,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
                 _getG(1 ether).mulWadUp(amount) -
                 gCurrent.mulWadDown(_liabilities);
         }
+        require(fee < amount, "SingularityPool: FEE_EXCEEDS_AMOUNT");
     }
 
     function getSlippageIn(uint256 amount) public view override returns (uint256 slippageIn) {
@@ -354,7 +359,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
             }
         }
     }
-    
+
     /// @notice Calculates trading fees applied for `amount`
     /// @dev Total Fee = Protocol Fee + LP Fee
     /// @param amount The amount of tokens being withdrawn
@@ -391,6 +396,8 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     ///          (collateralization ratio) ^ 7
     ///
     function _getG(uint256 collateralizationRatio) internal pure returns (uint256 g) {
+        if (collateralizationRatio == 0) return type(uint256).max;
+
         uint256 numerator = 0.00002 ether;
         uint256 denominator = collateralizationRatio.rpow(7, 1 ether);
         g = numerator.divWadUp(denominator);
@@ -413,7 +420,6 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     function collectFees(address feeTo) external override onlyFactory {
         if (protocolFees != 0) {
             IERC20(token).safeTransfer(feeTo, protocolFees);
-            assets -= protocolFees;
             protocolFees = 0;
         }
     }

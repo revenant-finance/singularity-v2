@@ -394,6 +394,7 @@ describe("Singularity Swap", () => {
     await expect(router.removeLiquidity(usdc.address, 0, 0, ownerAddress, MAX)).to.be.revertedWith(
       "SingularityPool: AMOUNT_IS_0"
     );
+
     await expect(
       router.removeLiquidity(
         usdc.address,
@@ -414,27 +415,18 @@ describe("Singularity Swap", () => {
       )
     ).to.be.revertedWith("SingularityPool: PAUSED");
     await factory.setPausedForAll(false);
+    const lpBal = await USDC.pool.balanceOf(ownerAddress);
+    const firstHalf = lpBal.div(2);
+    const secondHalf = lpBal.sub(firstHalf);
     const expectedBal = await router.getRemoveLiquidityAmount(
       usdc.address,
       numToBN(amountToMint / 2, USDC.decimals)
     );
     const balBefore = await usdc.balanceOf(ownerAddress);
-    await router.removeLiquidity(
-      usdc.address,
-      numToBN(amountToMint / 2, USDC.decimals),
-      0,
-      ownerAddress,
-      MAX
-    );
+    await router.removeLiquidity(usdc.address, firstHalf, 0, ownerAddress, MAX);
     const balAfter = await usdc.balanceOf(ownerAddress);
     expect(expectedBal).to.equal(balAfter.sub(balBefore));
-    await router.removeLiquidity(
-      usdc.address,
-      numToBN(amountToMint / 2, USDC.decimals),
-      0,
-      ownerAddress,
-      MAX
-    );
+    await router.removeLiquidity(usdc.address, secondHalf, 0, ownerAddress, MAX);
     const protocolFees = await USDC.pool.protocolFees();
     const [_assets, _liabilities] = await USDC.pool.getAssetsAndLiabilities();
     const usdcPoolBal = await usdc.balanceOf(USDC.poolAddress);
@@ -443,10 +435,9 @@ describe("Singularity Swap", () => {
     );
     expect(usdcPoolBal).to.equal(protocolFees);
     expect(await USDC.pool.balanceOf(ownerAddress)).to.equal(0);
-    expect(await USDC.pool.assets()).to.equal(usdcPoolBal);
-    expect(_assets).to.equal(usdcPoolBal);
+    expect(await USDC.pool.assets()).to.equal(usdcPoolBal.sub(protocolFees));
+    expect(_liabilities).to.equal(0);
     expect(await USDC.pool.liabilities()).to.equal(0);
-    expect(_liabilities).to.equal(usdcPoolBal);
   });
 
   it("removeLiquidityETH", async () => {
@@ -736,26 +727,41 @@ describe("Singularity Swap", () => {
 
   it("run simulations", async () => {
     async function doCheck() {
-      let [usdcPPS, ethPPS, usdcFees, ethFees, usdcAssets, ethAssets] = await Promise.all([
+      let [
+        usdcPPS,
+        ethPPS,
+        usdcFees,
+        ethFees,
+        usdcAssets,
+        ethAssets,
+        usdcLiabilities,
+        ethLiabilities,
+      ] = await Promise.all([
         USDC.pool.getPricePerShare(),
         ETH.pool.getPricePerShare(),
         USDC.pool.protocolFees(),
         ETH.pool.protocolFees(),
         USDC.pool.assets(),
         ETH.pool.assets(),
+        USDC.pool.liabilities(),
+        ETH.pool.liabilities(),
       ]);
       console.log(
         `USDC | PPS: ${bnToNum(usdcPPS)} | Fees: ${bnToNum(usdcFees, 6)} | Assets: ${bnToNum(
           usdcAssets,
           6
-        )}`
+        )} | Liabilities: ${bnToNum(usdcLiabilities, 6)}`
       );
       console.log(
-        `ETH | PPS: ${bnToNum(ethPPS)} | Fees: ${bnToNum(ethFees)} | Assets: ${bnToNum(ethAssets)}`
+        `ETH | PPS: ${bnToNum(ethPPS)} | Fees: ${bnToNum(ethFees)} | Assets: ${bnToNum(
+          ethAssets
+        )} | Liabilities: ${bnToNum(ethLiabilities)}`
       );
       console.log("=====================================================================");
-      expect(await USDC.pool.assets()).to.equal(await usdc.balanceOf(USDC.poolAddress));
-      expect(await ETH.pool.assets()).to.equal(await eth.balanceOf(ETH.poolAddress));
+      expect(await USDC.pool.assets()).to.equal(
+        (await usdc.balanceOf(USDC.poolAddress)).sub(usdcFees)
+      );
+      expect(await ETH.pool.assets()).to.equal((await eth.balanceOf(ETH.poolAddress)).sub(ethFees));
     }
 
     await addLiquidity(ETH, 10);
@@ -764,7 +770,6 @@ describe("Singularity Swap", () => {
     await router.removeLiquidity(usdc.address, numToBN(20000, USDC.decimals), 0, ownerAddress, MAX);
     await addLiquidity(USDC, 20000);
     await doCheck();
-
     await router.swapExactTokensForTokens(
       usdc.address,
       eth.address,
@@ -791,10 +796,12 @@ describe("Singularity Swap", () => {
     await addLiquidity(ETH, 10);
     await doCheck();
     const usdcLpBal = await USDC.pool.balanceOf(ownerAddress);
-    await USDC.pool.withdraw(usdcLpBal, ownerAddress);
+    await USDC.pool.withdraw(usdcLpBal.div(2), ownerAddress);
     await doCheck();
     const ethLpBal = await ETH.pool.balanceOf(ownerAddress);
-    await ETH.pool.withdraw(ethLpBal, ownerAddress);
+    await ETH.pool.withdraw(ethLpBal.div(2), ownerAddress);
+    await doCheck();
+    await factory.collectFees();
     await doCheck();
   });
 });

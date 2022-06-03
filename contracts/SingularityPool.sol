@@ -282,7 +282,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     /// @return fee The fee charged for withdraw
     function getWithdrawalFee(uint256 amount) public view override returns (uint256 fee) {
         if (amount == 0) return 0;
-        
+
         (uint256 _assets, uint256 _liabilities) = getAssetsAndLiabilities();
         require(amount <= _assets, "SingularityPool: AMOUNT_EXCEEDS_ASSETS");
         require(amount <= _liabilities, "SingularityPool: AMOUNT_EXCEEDS_LIABILITIES");
@@ -418,10 +418,11 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     /* ========== FACTORY FUNCTIONS ========== */
 
     function collectFees(address feeTo) external override onlyFactory {
-        if (protocolFees != 0) {
-            IERC20(token).safeTransfer(feeTo, protocolFees);
-            protocolFees = 0;
-        }
+        if (protocolFees == 0) return;
+
+        IERC20(token).safeTransfer(feeTo, protocolFees);
+        protocolFees = 0;
+        emit CollectFees(protocolFees);
     }
 
     function setDepositCap(uint256 newDepositCap) external override onlyFactory {

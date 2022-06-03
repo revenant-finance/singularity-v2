@@ -9,6 +9,7 @@ interface ISingularityPool is ISingularityPoolToken {
     event Withdraw(address indexed sender, uint256 indexed amountBurned, uint256 withdrawalAmount, address indexed to);
     event SwapIn(address indexed sender, uint256 amountIn, uint256 amountOut);
     event SwapOut(address indexed sender, uint256 amountIn, uint256 amountOut, address indexed to);
+    event CollectFees(uint256 protocolFees);
 
     function paused() external view returns (bool);
 

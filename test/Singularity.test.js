@@ -676,6 +676,8 @@ describe("Singularity Swap", () => {
     expect(await USDC.pool.protocolFees()).to.equal(0);
     expect(await eth.balanceOf(otherAddress)).to.be.gt(0);
     expect(await usdc.balanceOf(otherAddress)).to.be.gt(0);
+    expect(await ETH.pool.assets()).to.equal(await eth.balanceOf(ETH.poolAddress));
+    expect(await USDC.pool.assets()).to.equal(await usdc.balanceOf(USDC.poolAddress));
   });
 
   it("setBaseFee", async () => {

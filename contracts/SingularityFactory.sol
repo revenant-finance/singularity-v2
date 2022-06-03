@@ -110,7 +110,7 @@ contract SingularityFactory is ISingularityFactory {
     function collectFees() external override onlyAdmin {
         uint256 length = allPools.length;
         for (uint256 i; i < length; ) {
-            ISingularityPool(allPools[i]).collectFees();
+            ISingularityPool(allPools[i]).collectFees(feeTo);
             unchecked {
                 ++i;
             }

@@ -67,7 +67,7 @@ interface ISingularityPool is ISingularityPoolToken {
             uint256
         );
 
-    function collectFees() external;
+    function collectFees(address feeTo) external;
 
     function setDepositCap(uint256 newDepositCap) external;
 

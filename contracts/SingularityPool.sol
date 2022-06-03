@@ -215,6 +215,9 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         }
     }
 
+    /// @notice Get the underlying token's oracle data
+    /// @return tokenPrice The price of the underlying token
+    /// @return updatedAt The timestamp of last oracle update
     function getOracleData() public view override returns (uint256 tokenPrice, uint256 updatedAt) {
         (tokenPrice, updatedAt) = ISingularityOracle(ISingularityFactory(factory).oracle()).getLatestRound(token);
         require(tokenPrice != 0, "SingularityPool: INVALID_ORACLE_PRICE");
@@ -332,6 +335,9 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         slippageOut = amount.mulWadUp(gPrime);
     }
 
+    /// @notice Calculates the trading fee rate for a swap
+    /// @dev Trading fee rate is in 1e18
+    /// @return tradingFeeRate The fee rate charged
     function getTradingFeeRate() public view override returns (uint256 tradingFeeRate) {
         if (isStablecoin) {
             tradingFeeRate = baseFee;
@@ -348,7 +354,13 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
             }
         }
     }
-
+    
+    /// @notice Calculates trading fees applied for `amount`
+    /// @dev Total Fee = Protocol Fee + LP Fee
+    /// @param amount The amount of tokens being withdrawn
+    /// @return totalFee The sum of all fees applied
+    /// @return protocolFee The fee awarded to the protocol
+    /// @return lpFee The fee awarded to LPs
     function getTradingFees(uint256 amount)
         public
         view
@@ -398,10 +410,10 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
 
     /* ========== FACTORY FUNCTIONS ========== */
 
-    function collectFees() external override onlyFactory {
+    function collectFees(address feeTo) external override onlyFactory {
         if (protocolFees != 0) {
-            address feeTo = ISingularityFactory(factory).feeTo();
             IERC20(token).safeTransfer(feeTo, protocolFees);
+            assets -= protocolFees;
             protocolFees = 0;
         }
     }

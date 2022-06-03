@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: No License
 
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.14;
 
 interface IChainlinkFeed {
     function decimals() external view returns (uint8);

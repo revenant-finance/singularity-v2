@@ -10,6 +10,9 @@ interface ISingularityPool is ISingularityPoolToken {
     event SwapIn(address indexed sender, uint256 amountIn, uint256 amountOut);
     event SwapOut(address indexed sender, uint256 amountIn, uint256 amountOut, address indexed to);
     event CollectFees(uint256 protocolFees);
+    event SetDepositCap(uint256 oldValue, uint256 newValue);
+    event SetBaseFee(uint256 oldValue, uint256 newValue);
+    event SetPaused(bool oldState, bool newState);
 
     function paused() external view returns (bool);
 

@@ -426,14 +426,17 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     }
 
     function setDepositCap(uint256 newDepositCap) external override onlyFactory {
+        emit SetDepositCap(depositCap, newDepositCap);
         depositCap = newDepositCap;
     }
 
     function setBaseFee(uint256 newBaseFee) external override onlyFactory {
+        emit SetBaseFee(baseFee, newBaseFee);
         baseFee = newBaseFee;
     }
 
     function setPaused(bool state) external override onlyFactory {
+        emit SetPaused(paused, state);
         paused = state;
     }
 }

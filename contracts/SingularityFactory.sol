@@ -69,7 +69,7 @@ contract SingularityFactory is ISingularityFactory {
         require(baseFee != 0, "SingularityFactory: FEE_IS_0");
         require(getPool[token] == address(0), "SingularityFactory: POOL_EXISTS");
 
-        poolParams = PoolParams({token: token, isStablecoin: isStablecoin, baseFee: baseFee});
+        poolParams = PoolParams({factory: address(this), token: token, isStablecoin: isStablecoin, baseFee: baseFee});
         pool = address(new SingularityPool{salt: keccak256(abi.encodePacked(token))}());
         delete poolParams;
         getPool[token] = pool;

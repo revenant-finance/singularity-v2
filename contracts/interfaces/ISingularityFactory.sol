@@ -4,6 +4,7 @@ pragma solidity ^0.8.14;
 
 interface ISingularityFactory {
     struct PoolParams {
+        address factory;
         address token;
         bool isStablecoin;
         uint256 baseFee;
@@ -29,6 +30,7 @@ interface ISingularityFactory {
         external
         view
         returns (
+            address factory,
             address token,
             bool isStablecoin,
             uint256 baseFee

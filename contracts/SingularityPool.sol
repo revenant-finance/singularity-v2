@@ -45,8 +45,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     }
 
     constructor() {
-        factory = msg.sender;
-        (token, isStablecoin, baseFee) = ISingularityFactory(factory).poolParams();
+        (factory, token, isStablecoin, baseFee) = ISingularityFactory(msg.sender).poolParams();
         string memory tranche = ISingularityFactory(factory).tranche();
         string memory tokenSymbol = IERC20(token).symbol();
         name = string(abi.encodePacked("Singularity Pool Token-", tokenSymbol, " (", tranche, ")"));

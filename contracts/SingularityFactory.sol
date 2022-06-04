@@ -44,12 +44,20 @@ contract SingularityFactory is ISingularityFactory {
         feeTo = _feeTo;
     }
 
+    function allPoolsLength() external view override returns (uint256) {
+        return allPools.length;
+    }
+
+    function poolCodeHash() external pure override returns (bytes32) {
+        return keccak256(type(SingularityPool).creationCode);
+    }
+
     /* ========== ADMIN FUNCTIONS ========== */
 
     /// @notice Creates pool for token
     /// @dev Only one pool can exist per token
-    /// @param token The pool token
-    /// @param isStablecoin If token is a stablecoin (bypasses oracle penalty)
+    /// @param token The underlying token
+    /// @param isStablecoin True if token is a stablecoin, otherwise false
     /// @param baseFee The base fee for the pool
     /// @return pool The address of the pool created
     function createPool(
@@ -57,24 +65,17 @@ contract SingularityFactory is ISingularityFactory {
         bool isStablecoin,
         uint256 baseFee
     ) external override onlyAdmin returns (address pool) {
-        require(router != address(0), "SingularityFactory: ROUTER_IS_0");
         require(token != address(0), "SingularityFactory: ZERO_ADDRESS");
-        require(getPool[token] == address(0), "SingularityFactory: POOL_EXISTS");
         require(baseFee != 0, "SingularityFactory: FEE_IS_0");
+        require(getPool[token] == address(0), "SingularityFactory: POOL_EXISTS");
+
         poolParams = PoolParams({token: token, isStablecoin: isStablecoin, baseFee: baseFee});
         pool = address(new SingularityPool{salt: keccak256(abi.encodePacked(token))}());
         delete poolParams;
         getPool[token] = pool;
         allPools.push(pool);
+
         emit PoolCreated(token, isStablecoin, baseFee, pool, allPools.length);
-    }
-
-    function allPoolsLength() external view override returns (uint256) {
-        return allPools.length;
-    }
-
-    function poolCodeHash() external pure override returns (bytes32) {
-        return keccak256(type(SingularityPool).creationCode);
     }
 
     function setAdmin(address _admin) external override onlyAdmin {

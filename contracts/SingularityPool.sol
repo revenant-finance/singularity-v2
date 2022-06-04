@@ -198,7 +198,6 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     }
 
     /// @notice Get pool's assets and liabilities
-    /// @dev Includes protocol fees only in liabilities since they are already included in assets
     /// @return _assets The assets of the pool
     /// @return _liabilities The liabilities of the pool
     function getAssetsAndLiabilities() public view override returns (uint256 _assets, uint256 _liabilities) {
@@ -422,6 +421,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
 
         IERC20(token).safeTransfer(feeTo, protocolFees);
         protocolFees = 0;
+
         emit CollectFees(protocolFees);
     }
 

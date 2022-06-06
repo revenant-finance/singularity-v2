@@ -300,7 +300,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     /// @param amount The amount of tokens being withdrawn
     /// @return fee The fee charged for withdraw
     function getWithdrawalFee(uint256 amount) public view override returns (uint256 fee) {
-        if (amount == 0) return 0;
+        if (amount == 0 || amount >= liabilities) return 0;
 
         (uint256 _assets, uint256 _liabilities) = getAssetsAndLiabilities();
         require(amount <= _assets, "SingularityPool: AMOUNT_EXCEEDS_ASSETS");
@@ -416,12 +416,14 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     /* ========== INTERNAL/PURE FUNCTIONS ========== */
 
     ///
-    ///                     0.00002
+    ///                     0.000025
     ///     g = -------------------------------
     ///          (collateralization ratio) ^ 7
     ///
     function _getG(uint256 collateralizationRatio) internal pure returns (uint256 g) {
-        if (collateralizationRatio == 0) return type(uint256).max;
+        if (collateralizationRatio < 0.33 ether) {
+            return 0.38 ether - collateralizationRatio;
+        }
 
         uint256 numerator = 0.00002 ether;
         uint256 denominator = collateralizationRatio.rpow(7, 1 ether);

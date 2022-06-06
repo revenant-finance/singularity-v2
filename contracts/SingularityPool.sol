@@ -245,6 +245,8 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     /// @param amount The amount of tokens to calculate the value of
     /// @return value The USD value equivalent to the number of tokens
     function getAmountToUSD(uint256 amount) public view override returns (uint256 value) {
+        if (amount == 0) return 0;
+
         (uint256 tokenPrice, ) = getOracleData();
         value = amount.mulWadDown(tokenPrice);
         if (decimals <= 18) {
@@ -259,6 +261,8 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     /// @param value The USD value of tokens to calculate the amount of
     /// @return amount The number of tokens equivalent to the USD value
     function getUSDToAmount(uint256 value) public view override returns (uint256 amount) {
+        if (value == 0) return 0;
+
         (uint256 tokenPrice, ) = getOracleData();
         amount = value.divWadDown(tokenPrice);
         if (decimals <= 18) {

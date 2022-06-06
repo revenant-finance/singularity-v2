@@ -54,6 +54,10 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         _initialize();
     }
 
+    /// @notice Deposit underlying tokens to LP
+    /// @param amount The amount of underlying tokens to deposit
+    /// @param to The address to mint LP tokens to
+    /// @return mintAmount The amount of LP tokens minted
     function deposit(uint256 amount, address to) external override notPaused nonReentrant returns (uint256 mintAmount) {
         require(amount != 0, "SingularityPool: AMOUNT_IS_0");
         require(amount + liabilities <= depositCap, "SingularityPool: DEPOSIT_EXCEEDS_CAP");
@@ -90,6 +94,10 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         emit Deposit(msg.sender, amount, mintAmount, to);
     }
 
+    /// @notice Withdraw underlying tokens through burning LP tokens
+    /// @param lpAmount The amount of LP tokens to burn
+    /// @param to The address to redeem underlying tokens to
+    /// @return withdrawalAmount The amount of underlying tokens withdrawn
     function withdraw(uint256 lpAmount, address to)
         external
         override
@@ -123,6 +131,10 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         emit Withdraw(msg.sender, lpAmount, withdrawalAmount, to);
     }
 
+    /// @notice Swap tokens in
+    /// @dev Slippage is positive (or zero)
+    /// @param amountIn The amount of underlying tokens being swapped in
+    /// @return amountOut The USD value of the swap in (post fees)
     function swapIn(uint256 amountIn) external override onlyRouter notPaused nonReentrant returns (uint256 amountOut) {
         require(amountIn != 0, "SingularityPool: AMOUNT_IS_0");
 
@@ -149,6 +161,11 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         emit SwapIn(msg.sender, amountIn, amountOut);
     }
 
+    /// @notice Swap tokens out
+    /// @dev Slippage is negative (or zero)
+    /// @param amountIn The amount of underlying tokens being swapped in
+    /// @param to The address to send tokens to
+    /// @return amountOut The amount of tokens being swapped out
     function swapOut(uint256 amountIn, address to)
         external
         override
@@ -301,6 +318,9 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         require(fee < amount, "SingularityPool: FEE_EXCEEDS_AMOUNT");
     }
 
+    /// @notice Calculates the slippage for swap in
+    /// @param amount The amount being swapped in
+    /// @return slippageIn The slippage for swap in
     function getSlippageIn(uint256 amount) public view override returns (uint256 slippageIn) {
         if (amount == 0) return 0;
 
@@ -319,6 +339,9 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         slippageIn = amount.mulWadDown(gPrime);
     }
 
+    /// @notice Calculates the slippage for swap out
+    /// @param amount The amount being swapped out
+    /// @return slippageOut The slippage for swap out
     function getSlippageOut(uint256 amount) public view override returns (uint256 slippageOut) {
         if (amount == 0) return 0;
         require(amount < assets, "SingularityPool: AMOUNT_EXCEEDS_ASSETS");
@@ -343,7 +366,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     /// @return tradingFeeRate The fee rate charged
     function getTradingFeeRate() public view override returns (uint256 tradingFeeRate) {
         if (isStablecoin) {
-            tradingFeeRate = baseFee;
+            return baseFee;
         } else {
             (, uint256 updatedAt) = getOracleData();
             uint256 oracleSens = ISingularityFactory(factory).oracleSens();

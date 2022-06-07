@@ -425,7 +425,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
             return 0.38 ether - collateralizationRatio;
         }
 
-        uint256 numerator = 0.00002 ether;
+        uint256 numerator = 0.000025 ether;
         uint256 denominator = collateralizationRatio.rpow(7, 1 ether);
         g = numerator.divWadUp(denominator);
     }

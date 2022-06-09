@@ -303,21 +303,25 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         if (amount == 0 || amount >= liabilities) return 0;
 
         (uint256 _assets, uint256 _liabilities) = getAssetsAndLiabilities();
-        require(amount <= _assets, "SingularityPool: AMOUNT_EXCEEDS_ASSETS");
-        require(amount <= _liabilities, "SingularityPool: AMOUNT_EXCEEDS_LIABILITIES");
 
         uint256 currentCollateralizationRatio = getCollateralizationRatio();
         uint256 gCurrent = _getG(currentCollateralizationRatio);
-        uint256 afterCollateralizationRatio = _calcCollatalizationRatio(_assets - amount, _liabilities - amount);
+        uint256 afterCollateralizationRatio = _calcCollatalizationRatio(
+            _assets > amount ? _assets - amount : 0,
+            _liabilities - amount
+        );
         uint256 gAfter = _getG(afterCollateralizationRatio);
 
         if (currentCollateralizationRatio >= 1 ether) {
             fee = gCurrent.mulWadDown(_liabilities) - gAfter.mulWadUp(_liabilities - amount);
         } else {
-            fee =
-                gAfter.mulWadUp(_liabilities - amount) +
-                _getG(1 ether).mulWadUp(amount) -
-                gCurrent.mulWadDown(_liabilities);
+            uint256 feeA = gAfter.mulWadUp(_liabilities - amount) + _getG(1 ether).mulWadUp(amount);
+            uint256 feeB = gCurrent.mulWadDown(_liabilities);
+            if (feeA > feeB) {
+                fee = feeA - feeB;
+            } else {
+                fee = 0;
+            }
         }
         require(fee < amount, "SingularityPool: FEE_EXCEEDS_AMOUNT");
     }

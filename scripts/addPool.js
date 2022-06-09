@@ -2,7 +2,7 @@ const hre = require("hardhat");
 
 async function main() {
   const Factory = await hre.ethers.getContractFactory("SingularityFactory");
-  const factoryAddress = "0xc27579d5Ad9e3f59b6deF2F2dA559d2F9d7e3a19";
+  const factoryAddress = "0xC335358995dc9dF377D425C32DC15Fc2DcC1Cc42";
   const factory = Factory.attach(factoryAddress);
   const tokens = [
     {

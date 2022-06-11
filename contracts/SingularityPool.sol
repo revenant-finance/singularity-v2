@@ -287,11 +287,14 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
 
         if (currentCollateralizationRatio <= 1 ether) {
             fee =
-                gCurrent.mulWadUp(_liabilities) +
-                _getG(1 ether).mulWadUp(amount) -
+                _getG(1 ether).mulWadUp(amount) +
+                gCurrent.mulWadUp(_liabilities) -
                 gAfter.mulWadDown(_liabilities + amount);
         } else {
-            fee = gAfter.mulWadUp(_liabilities + amount) - gCurrent.mulWadDown(_liabilities);
+            fee =
+                _getG(1 ether).mulWadUp(amount) +
+                gAfter.mulWadUp(_liabilities + amount) -
+                gCurrent.mulWadDown(_liabilities);
         }
         require(fee < amount, "SingularityPool: FEE_EXCEEDS_AMOUNT");
     }
@@ -313,9 +316,12 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         uint256 gAfter = _getG(afterCollateralizationRatio);
 
         if (currentCollateralizationRatio >= 1 ether) {
-            fee = gCurrent.mulWadDown(_liabilities) - gAfter.mulWadUp(_liabilities - amount);
+            fee =
+                _getG(1 ether).mulWadUp(amount) +
+                gCurrent.mulWadDown(_liabilities) -
+                gAfter.mulWadUp(_liabilities - amount);
         } else {
-            uint256 feeA = gAfter.mulWadUp(_liabilities - amount) + _getG(1 ether).mulWadUp(amount);
+            uint256 feeA = _getG(1 ether).mulWadUp(amount) + gAfter.mulWadUp(_liabilities - amount);
             uint256 feeB = gCurrent.mulWadDown(_liabilities);
             if (feeA > feeB) {
                 fee = feeA - feeB;

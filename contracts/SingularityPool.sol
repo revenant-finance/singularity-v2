@@ -285,18 +285,23 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         uint256 afterCollateralizationRatio = _calcCollatalizationRatio(_assets + amount, _liabilities + amount);
         uint256 gAfter = _getG(afterCollateralizationRatio);
 
+        uint256 feeA;
+        uint256 feeB;
         if (currentCollateralizationRatio <= 1 ether) {
-            fee =
-                _getG(1 ether).mulWadUp(amount) +
-                gCurrent.mulWadUp(_liabilities) -
-                gAfter.mulWadDown(_liabilities + amount);
+            feeA = _getG(1 ether).mulWadUp(amount) + gCurrent.mulWadUp(_liabilities);
+            feeB = gAfter.mulWadDown(_liabilities + amount);
         } else {
-            fee =
-                _getG(1 ether).mulWadUp(amount) +
-                gAfter.mulWadUp(_liabilities + amount) -
-                gCurrent.mulWadDown(_liabilities);
+            feeA = _getG(1 ether).mulWadUp(amount) + gAfter.mulWadUp(_liabilities + amount);
+            feeB = gCurrent.mulWadDown(_liabilities);
         }
-        require(fee < amount, "SingularityPool: FEE_EXCEEDS_AMOUNT");
+
+        // check underflow
+        if (feeA > feeB) {
+            fee = feeA - feeB;
+            require(fee < amount, "SingularityPool: FEE_EXCEEDS_AMOUNT");
+        } else {
+            fee = 0;
+        }
     }
 
     /// @notice Calculates the fee charged for withdraw
@@ -315,21 +320,23 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         );
         uint256 gAfter = _getG(afterCollateralizationRatio);
 
+        uint256 feeA;
+        uint256 feeB;
         if (currentCollateralizationRatio >= 1 ether) {
-            fee =
-                _getG(1 ether).mulWadUp(amount) +
-                gCurrent.mulWadDown(_liabilities) -
-                gAfter.mulWadUp(_liabilities - amount);
+            feeA = _getG(1 ether).mulWadUp(amount) + gCurrent.mulWadDown(_liabilities);
+            feeB = gAfter.mulWadUp(_liabilities - amount);
         } else {
-            uint256 feeA = _getG(1 ether).mulWadUp(amount) + gAfter.mulWadUp(_liabilities - amount);
-            uint256 feeB = gCurrent.mulWadDown(_liabilities);
-            if (feeA > feeB) {
-                fee = feeA - feeB;
-            } else {
-                fee = 0;
-            }
+            feeA = _getG(1 ether).mulWadUp(amount) + gAfter.mulWadUp(_liabilities - amount);
+            feeB = gCurrent.mulWadDown(_liabilities);
         }
-        require(fee < amount, "SingularityPool: FEE_EXCEEDS_AMOUNT");
+        
+        // check underflow
+        if (feeA > feeB) {
+            fee = feeA - feeB;
+            require(fee < amount, "SingularityPool: FEE_EXCEEDS_AMOUNT");
+        } else {
+            fee = 0;
+        }
     }
 
     /// @notice Calculates the slippage for swap in

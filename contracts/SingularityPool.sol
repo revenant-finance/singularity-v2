@@ -442,6 +442,11 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
             return 0.43 ether - collateralizationRatio;
         }
 
+        // handle overflow when computing exponent
+        if (collateralizationRatio >= 1.5 ether) {
+            return 0;
+        }
+
         uint256 numerator = 0.00003 ether;
         uint256 denominator = collateralizationRatio.rpow(8, 1 ether);
         g = numerator.divWadUp(denominator);

@@ -2,7 +2,7 @@ const hre = require("hardhat");
 
 async function main() {
   const Factory = await hre.ethers.getContractFactory("SingularityFactory");
-  const factoryAddress = "0xD33CFb4E53CF6EdBeDAc8bB5fe7327a1Da25f746";
+  const factoryAddress = "0x59b3af6844602aDFCA42CAb17D301439B95FBba3";
   const factory = Factory.attach(factoryAddress);
   const tokens = [
     {
@@ -34,6 +34,7 @@ async function main() {
       cap: numToBN(300000),
     },
   ];
+  let poolAddresses = [];
   for (let i = 0; i < tokens.length; i++) {
     const tokenAddress = tokens[i].address;
     const isStablecoin = tokens[i].isStable;
@@ -42,16 +43,20 @@ async function main() {
     await tx.wait(5);
     const poolAddress = await factory.getPool(tokenAddress);
     console.log(`${tokenAddress} pool deployed to: ${poolAddress}`);
-    await run("verify:verify", {
-      address: poolAddress,
-      constructorArguments: [],
-    });
+    poolAddresses.push(poolAddress);
   }
 
   await factory.setDepositCaps(
     [tokens[0].address, tokens[1].address, tokens[2].address, tokens[3].address],
     [tokens[0].cap, tokens[1].cap, tokens[2].cap, tokens[3].cap]
   );
+
+  poolAddresses.forEach(async (poolAddress) => {
+    await run("verify:verify", {
+      address: poolAddress,
+      constructorArguments: [],
+    });
+  });
 }
 
 function numToBN(number, decimals = 18) {

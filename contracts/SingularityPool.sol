@@ -306,25 +306,20 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     function getWithdrawalFee(uint256 amount) public view override returns (uint256 fee) {
         if (amount == 0 || amount >= liabilities) return 0;
 
-        (uint256 _assets, uint256 _liabilities) = getAssetsAndLiabilities();
-
         uint256 currentCollateralizationRatio = getCollateralizationRatio();
+        if (currentCollateralizationRatio >= 1 ether) {
+            return 0;
+        }
         uint256 gCurrent = _getG(currentCollateralizationRatio);
+        (uint256 _assets, uint256 _liabilities) = getAssetsAndLiabilities();
         uint256 afterCollateralizationRatio = _calcCollatalizationRatio(
             _assets > amount ? _assets - amount : 0,
             _liabilities - amount
         );
         uint256 gAfter = _getG(afterCollateralizationRatio);
 
-        uint256 feeA;
-        uint256 feeB;
-        if (currentCollateralizationRatio >= 1 ether) {
-            feeA = _getG(1 ether).mulWadUp(amount) + gCurrent.mulWadDown(_liabilities);
-            feeB = gAfter.mulWadUp(_liabilities - amount);
-        } else {
-            feeA = _getG(1 ether).mulWadUp(amount) + gAfter.mulWadUp(_liabilities - amount);
-            feeB = gCurrent.mulWadDown(_liabilities);
-        }
+        uint256 feeA = _getG(1 ether).mulWadUp(amount) + gAfter.mulWadUp(_liabilities - amount);
+        uint256 feeB = gCurrent.mulWadDown(_liabilities);
         
         // check underflow
         if (feeA > feeB) {

@@ -429,8 +429,8 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     ///          (collateralization ratio) ^ 8
     ///
     function _getG(uint256 collateralizationRatio) internal pure returns (uint256 g) {
-        if (collateralizationRatio < 0.3 ether) {
-            return 3 ether - 8 * collateralizationRatio;
+        if (collateralizationRatio < 0.35 ether) {
+            return 3.63 ether - 10 * collateralizationRatio;
         }
 
         // handle overflow when computing exponent

@@ -746,18 +746,18 @@ describe("Singularity Swap", () => {
         USDC.pool.liabilities(),
         ETH.pool.liabilities(),
       ]);
-      console.log(
-        `USDC | PPS: ${bnToNum(usdcPPS)} | Fees: ${bnToNum(usdcFees, 6)} | Assets: ${bnToNum(
-          usdcAssets,
-          6
-        )} | Liabilities: ${bnToNum(usdcLiabilities, 6)}`
-      );
-      console.log(
-        `ETH | PPS: ${bnToNum(ethPPS)} | Fees: ${bnToNum(ethFees)} | Assets: ${bnToNum(
-          ethAssets
-        )} | Liabilities: ${bnToNum(ethLiabilities)}`
-      );
-      console.log("=====================================================================");
+      // console.log(
+      //   `USDC | PPS: ${bnToNum(usdcPPS)} | Fees: ${bnToNum(usdcFees, 6)} | Assets: ${bnToNum(
+      //     usdcAssets,
+      //     6
+      //   )} | Liabilities: ${bnToNum(usdcLiabilities, 6)}`
+      // );
+      // console.log(
+      //   `ETH | PPS: ${bnToNum(ethPPS)} | Fees: ${bnToNum(ethFees)} | Assets: ${bnToNum(
+      //     ethAssets
+      //   )} | Liabilities: ${bnToNum(ethLiabilities)}`
+      // );
+      // console.log("=====================================================================");
       expect(await USDC.pool.assets()).to.equal(
         (await usdc.balanceOf(USDC.poolAddress)).sub(usdcFees)
       );

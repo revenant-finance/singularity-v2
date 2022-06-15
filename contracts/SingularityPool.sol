@@ -283,6 +283,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         if (currentCollateralizationRatio <= 1 ether) {
             return 0;
         }
+
         uint256 gCurrent = _getG(currentCollateralizationRatio);
         (uint256 _assets, uint256 _liabilities) = getAssetsAndLiabilities();
         uint256 afterCollateralizationRatio = _calcCollatalizationRatio(_assets + amount, _liabilities + amount);
@@ -290,7 +291,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
 
         uint256 feeA = _getG(1 ether).mulWadUp(amount) + gAfter.mulWadUp(_liabilities + amount);
         uint256 feeB = gCurrent.mulWadDown(_liabilities);
-       
+
         // check underflow
         if (feeA > feeB) {
             fee = feeA - feeB;
@@ -310,6 +311,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         if (currentCollateralizationRatio >= 1 ether) {
             return 0;
         }
+
         uint256 gCurrent = _getG(currentCollateralizationRatio);
         (uint256 _assets, uint256 _liabilities) = getAssetsAndLiabilities();
         uint256 afterCollateralizationRatio = _calcCollatalizationRatio(
@@ -320,7 +322,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
 
         uint256 feeA = _getG(1 ether).mulWadUp(amount) + gAfter.mulWadUp(_liabilities - amount);
         uint256 feeB = gCurrent.mulWadDown(_liabilities);
-        
+
         // check underflow
         if (feeA > feeB) {
             fee = feeA - feeB;
@@ -384,10 +386,16 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
             uint256 oracleSens = ISingularityFactory(factory).oracleSens();
             uint256 timeSinceUpdate = block.timestamp - updatedAt;
             if (timeSinceUpdate * 10 > oracleSens * 11) {
+                // Case: 1.1 * oracleSens < timeSinceUpdate
+
                 tradingFeeRate = type(uint256).max; // Revert later to allow viewability
             } else if (timeSinceUpdate >= oracleSens) {
+                // Case: oracleSens <= timeSinceUpdate <= 1.1 * oracleSens
+
                 tradingFeeRate = baseFee * 2;
             } else {
+                // Case: timeSinceUpdate < oracleSens
+
                 tradingFeeRate = baseFee + (baseFee * timeSinceUpdate) / oracleSens;
             }
         }

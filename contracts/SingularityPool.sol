@@ -55,6 +55,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     }
 
     /// @notice Deposit underlying tokens to LP
+    /// @dev Low-level call (no slippage protection) that should be called from router
     /// @param amount The amount of underlying tokens to deposit
     /// @param to The address to mint LP tokens to
     /// @return mintAmount The amount of LP tokens minted
@@ -95,6 +96,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     }
 
     /// @notice Withdraw underlying tokens through burning LP tokens
+    /// @dev Low-level call (no slippage protection) that should be called from router
     /// @param lpAmount The amount of LP tokens to burn
     /// @param to The address to redeem underlying tokens to
     /// @return withdrawalAmount The amount of underlying tokens withdrawn

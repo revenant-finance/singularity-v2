@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: No License
 
-pragma solidity ^0.8.14;
+pragma solidity ^0.8.15;
 
 interface ISingularityOracle {
     function getLatestRound(address token) external view returns (uint256, uint256);

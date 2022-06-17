@@ -433,10 +433,14 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
 
     /* ========== INTERNAL/PURE FUNCTIONS ========== */
 
+    /// 
+    ///     g = 3.63 - 10 * collateralizationRatio   { colleralizationRatio < 0.35 }
     ///
     ///                     0.00003
-    ///     g = -------------------------------
-    ///          (collateralization ratio) ^ 8
+    ///     g = -------------------------------      { 0.35 <= collateralizationRatio < 1.5 }
+    ///          (collateralizationRatio) ^ 8
+    ///
+    ///     g = 0                                    { collateralizationRatio >= 1.5 }
     ///
     function _getG(uint256 collateralizationRatio) internal pure returns (uint256 g) {
         if (collateralizationRatio < 0.35 ether) {

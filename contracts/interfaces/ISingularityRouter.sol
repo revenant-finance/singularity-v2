@@ -106,14 +106,5 @@ interface ISingularityRouter {
         uint256 amountIn,
         address tokenIn,
         address tokenOut
-    )
-        external
-        view
-        returns (
-            uint256 amountOut,
-            uint256 tradingFeeIn,
-            uint256 slippageIn,
-            uint256 slippageOut,
-            uint256 tradingFeeOut
-        );
+    ) external view returns (uint256 amountOut);
 }

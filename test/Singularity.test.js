@@ -57,7 +57,7 @@ describe("Singularity Swap", () => {
     address: "",
     name: "Dai Stablecoin",
     symbol: "DAI",
-    decimals: 21,
+    decimals: 18,
     price: 1,
     balance: 100000,
     isStablecoin: true,
@@ -534,9 +534,11 @@ describe("Singularity Swap", () => {
     );
     const ethBal = await eth.balanceOf(ownerAddress);
     const usdcBal = await usdc.balanceOf(ownerAddress);
-    const expectedOut = (
-      await router.getAmountOut(numToBN(amountToSwap, ETH.decimals), eth.address, usdc.address)
-    )[0];
+    const expectedOut = await router.getAmountOut(
+      numToBN(amountToSwap, ETH.decimals),
+      eth.address,
+      usdc.address
+    );
     expect(expectedOut).to.be.gt(0);
     await expect(
       router.swapExactTokensForTokens(eth.address, usdc.address, 0, 0, ownerAddress, MAX)
@@ -575,9 +577,11 @@ describe("Singularity Swap", () => {
 
     const ftmBal = await getFtmBalance();
     const usdcBal = await usdc.balanceOf(ownerAddress);
-    const expectedOut = (
-      await router.getAmountOut(numToBN(amountToSwap, WFTM.decimals), wftm.address, usdc.address)
-    )[0];
+    const expectedOut = await router.getAmountOut(
+      numToBN(amountToSwap, WFTM.decimals),
+      wftm.address,
+      usdc.address
+    );
     expect(expectedOut).to.be.gt(0);
     await router.swapExactETHForTokens(wftm.address, usdc.address, 0, ownerAddress, MAX, {
       value: numToBN(amountToSwap, WFTM.decimals),
@@ -608,9 +612,11 @@ describe("Singularity Swap", () => {
 
     const ftmBal = await getFtmBalance();
     const usdcBal = await usdc.balanceOf(ownerAddress);
-    const expectedOut = (
-      await router.getAmountOut(numToBN(amountToSwap, USDC.decimals), usdc.address, wftm.address)
-    )[0];
+    const expectedOut = await router.getAmountOut(
+      numToBN(amountToSwap, USDC.decimals),
+      usdc.address,
+      wftm.address
+    );
     expect(expectedOut).to.be.gt(0);
     await router.swapExactTokensForETH(
       usdc.address,
@@ -746,18 +752,18 @@ describe("Singularity Swap", () => {
         USDC.pool.liabilities(),
         ETH.pool.liabilities(),
       ]);
-      // console.log(
-      //   `USDC | PPS: ${bnToNum(usdcPPS)} | Fees: ${bnToNum(usdcFees, 6)} | Assets: ${bnToNum(
-      //     usdcAssets,
-      //     6
-      //   )} | Liabilities: ${bnToNum(usdcLiabilities, 6)}`
-      // );
-      // console.log(
-      //   `ETH | PPS: ${bnToNum(ethPPS)} | Fees: ${bnToNum(ethFees)} | Assets: ${bnToNum(
-      //     ethAssets
-      //   )} | Liabilities: ${bnToNum(ethLiabilities)}`
-      // );
-      // console.log("=====================================================================");
+      console.log(
+        `USDC | PPS: ${bnToNum(usdcPPS)} | Fees: ${bnToNum(usdcFees, 6)} | Assets: ${bnToNum(
+          usdcAssets,
+          6
+        )} | Liabilities: ${bnToNum(usdcLiabilities, 6)}`
+      );
+      console.log(
+        `ETH | PPS: ${bnToNum(ethPPS)} | Fees: ${bnToNum(ethFees)} | Assets: ${bnToNum(
+          ethAssets
+        )} | Liabilities: ${bnToNum(ethLiabilities)}`
+      );
+      console.log("=====================================================================");
       expect(await USDC.pool.assets()).to.equal(
         (await usdc.balanceOf(USDC.poolAddress)).sub(usdcFees)
       );
@@ -803,5 +809,32 @@ describe("Singularity Swap", () => {
     await doCheck();
     await factory.collectFees();
     await doCheck();
+  });
+
+  it("run price impact simulations", async () => {
+    function calculatePriceImpact(amountIn, amountOut) {
+      return (1 - amountOut / amountIn) * 100;
+    }
+    async function setUpDaiPool() {
+      await factory.createPool(DAI.address, DAI.isStablecoin, numToBN(DAI.baseFee));
+      DAI.poolAddress = await factory.getPool(DAI.address);
+      DAI.pool = await Pool.attach(DAI.poolAddress);
+      await oracle.pushPrices([DAI.address], [numToBN(DAI.price)]);
+      await factory.setDepositCaps([DAI.address], [MAX]);
+    }
+
+    await setUpDaiPool();
+    await addLiquidity(USDC, 100000);
+    await addLiquidity(DAI, 100000);
+    for (let i = 5000; i < 75000; i += 5000) {
+      const rawOut = await router.getAmountOut(numToBN(i, DAI.decimals), DAI.address, USDC.address);
+      const amountOut = bnToNum(rawOut, USDC.decimals);
+      console.log(
+        `Price Impact Swapping ${i} DAI => ${amountOut} USDC: ${calculatePriceImpact(
+          i,
+          amountOut
+        )}%`
+      );
+    }
   });
 });

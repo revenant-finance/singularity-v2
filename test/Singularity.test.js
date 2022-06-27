@@ -655,7 +655,7 @@ describe("Singularity Swap", () => {
   // Factory specific
 
   it("collectFees", async () => {
-    await expect(factory.connect(otherAccount).collectFees()).to.be.revertedWith(
+    await expect(factory.connect(otherAccount).collectFees([])).to.be.revertedWith(
       "SingularityFactory: NOT_ADMIN"
     );
     await addLiquidity(ETH, 10);
@@ -668,7 +668,7 @@ describe("Singularity Swap", () => {
       ownerAddress,
       MAX
     );
-    await factory.collectFees();
+    await factory.collectFees([ETH.poolAddress, USDC.poolAddress]);
     expect(await ETH.pool.protocolFees()).to.equal(0);
     expect(await USDC.pool.protocolFees()).to.equal(0);
     expect(await eth.balanceOf(otherAddress)).to.be.gt(0);
@@ -807,7 +807,7 @@ describe("Singularity Swap", () => {
     const ethLpBal = await ETH.pool.balanceOf(ownerAddress);
     await ETH.pool.withdraw(ethLpBal.div(2), ownerAddress);
     await doCheck();
-    await factory.collectFees();
+    await factory.collectFees([USDC.poolAddress, ETH.poolAddress]);
     await doCheck();
   });
 

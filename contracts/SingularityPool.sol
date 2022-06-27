@@ -311,7 +311,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
 
         uint256 currentCollateralizationRatio = getCollateralizationRatio();
         if (currentCollateralizationRatio >= 1 ether) {
-            return 0;
+            return _getG(1 ether).mulWadUp(amount);
         }
 
         uint256 gCurrent = _getG(currentCollateralizationRatio);

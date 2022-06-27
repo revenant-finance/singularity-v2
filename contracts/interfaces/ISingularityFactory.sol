@@ -62,7 +62,7 @@ interface ISingularityFactory {
 
     function setOracleSens(uint256 _oracleSens) external;
 
-    function collectFees() external;
+    function collectFees(address[] calldata tokens) external;
 
     function setDepositCaps(address[] calldata tokens, uint256[] calldata caps) external;
 

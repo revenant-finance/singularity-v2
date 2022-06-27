@@ -108,10 +108,10 @@ contract SingularityFactory is ISingularityFactory {
         oracleSens = _oracleSens;
     }
 
-    function collectFees() external override onlyAdmin {
-        uint256 length = allPools.length;
+    function collectFees(address[] calldata tokens) external override onlyAdmin {
+        uint256 length = tokens.length;
         for (uint256 i; i < length; ) {
-            ISingularityPool(allPools[i]).collectFees(feeTo);
+            ISingularityPool(tokens[i]).collectFees(feeTo);
             unchecked {
                 ++i;
             }

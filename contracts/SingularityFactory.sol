@@ -23,11 +23,6 @@ contract SingularityFactory is ISingularityFactory {
     mapping(address => address) public override getPool;
     address[] public override allPools;
 
-    modifier onlyAdmin() {
-        require(msg.sender == admin, "SingularityFactory: NOT_ADMIN");
-        _;
-    }
-
     constructor(
         string memory _tranche,
         address _admin,
@@ -64,7 +59,8 @@ contract SingularityFactory is ISingularityFactory {
         address token,
         bool isStablecoin,
         uint256 baseFee
-    ) external override onlyAdmin returns (address pool) {
+    ) external override returns (address pool) {
+        _onlyAdmin();
         require(token != address(0), "SingularityFactory: ZERO_ADDRESS");
         require(baseFee != 0, "SingularityFactory: FEE_IS_0");
         require(getPool[token] == address(0), "SingularityFactory: POOL_EXISTS");
@@ -78,37 +74,44 @@ contract SingularityFactory is ISingularityFactory {
         emit PoolCreated(token, isStablecoin, baseFee, pool, allPools.length);
     }
 
-    function setAdmin(address _admin) external override onlyAdmin {
+    function setAdmin(address _admin) external override {
+        _onlyAdmin();
         require(_admin != address(0), "SingularityFactory: ZERO_ADDRESS");
         admin = _admin;
     }
 
-    function setOracle(address _oracle) external override onlyAdmin {
+    function setOracle(address _oracle) external override {
+        _onlyAdmin();
         require(_oracle != address(0), "SingularityFactory: ZERO_ADDRESS");
         oracle = _oracle;
     }
 
-    function setFeeTo(address _feeTo) external override onlyAdmin {
+    function setFeeTo(address _feeTo) external override {
+        _onlyAdmin();
         require(_feeTo != address(0), "SingularityFactory: ZERO_ADDRESS");
         feeTo = _feeTo;
     }
 
-    function setRouter(address _router) external override onlyAdmin {
+    function setRouter(address _router) external override {
+        _onlyAdmin();
         require(_router != address(0), "SingularityFactory: ZERO_ADDRESS");
         router = _router;
     }
 
-    function setProtocolFeeShare(uint256 _protocolFeeShare) external override onlyAdmin {
+    function setProtocolFeeShare(uint256 _protocolFeeShare) external override {
+        _onlyAdmin();
         require(_protocolFeeShare <= 100, "SingularityFactory: PROTOCOL_FEE_SHARE_GT_100");
         protocolFeeShare = _protocolFeeShare;
     }
 
-    function setOracleSens(uint256 _oracleSens) external override onlyAdmin {
+    function setOracleSens(uint256 _oracleSens) external override {
+        _onlyAdmin();
         require(_oracleSens != 0, "SingularityFactory: ORACLE_SENS_IS_0");
         oracleSens = _oracleSens;
     }
 
-    function collectFees(address[] calldata tokens) external override onlyAdmin {
+    function collectFees(address[] calldata tokens) external override {
+        _onlyAdmin();
         uint256 length = tokens.length;
         for (uint256 i; i < length; ) {
             ISingularityPool(tokens[i]).collectFees(feeTo);
@@ -118,7 +121,8 @@ contract SingularityFactory is ISingularityFactory {
         }
     }
 
-    function setDepositCaps(address[] calldata tokens, uint256[] calldata caps) external override onlyAdmin {
+    function setDepositCaps(address[] calldata tokens, uint256[] calldata caps) external override {
+        _onlyAdmin();
         require(tokens.length == caps.length, "SingularityFactory: NOT_SAME_LENGTH");
         uint256 length = tokens.length;
         for (uint256 i; i < length; ) {
@@ -131,7 +135,8 @@ contract SingularityFactory is ISingularityFactory {
         }
     }
 
-    function setBaseFees(address[] calldata tokens, uint256[] calldata baseFees) external override onlyAdmin {
+    function setBaseFees(address[] calldata tokens, uint256[] calldata baseFees) external override {
+        _onlyAdmin();
         require(tokens.length == baseFees.length, "SingularityFactory: NOT_SAME_LENGTH");
         uint256 length = tokens.length;
         for (uint256 i; i < length; ) {
@@ -145,7 +150,8 @@ contract SingularityFactory is ISingularityFactory {
         }
     }
 
-    function setPaused(address[] calldata tokens, bool[] calldata states) external override onlyAdmin {
+    function setPaused(address[] calldata tokens, bool[] calldata states) external override {
+        _onlyAdmin();
         require(tokens.length == states.length, "SingularityFactory: NOT_SAME_LENGTH");
         uint256 length = tokens.length;
         for (uint256 i; i < length; ) {
@@ -158,7 +164,8 @@ contract SingularityFactory is ISingularityFactory {
         }
     }
 
-    function setPausedForAll(bool state) external override onlyAdmin {
+    function setPausedForAll(bool state) external override {
+        _onlyAdmin();
         uint256 length = allPools.length;
         for (uint256 i; i < length; ) {
             ISingularityPool(allPools[i]).setPaused(state);
@@ -166,5 +173,9 @@ contract SingularityFactory is ISingularityFactory {
                 ++i;
             }
         }
+    }
+
+    function _onlyAdmin() internal view {
+        require(msg.sender == admin, "SingularityFactory: NOT_ADMIN");
     }
 }

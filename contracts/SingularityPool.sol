@@ -29,21 +29,6 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     uint256 public override baseFee;
     uint256 public override protocolFees;
 
-    modifier notPaused() {
-        require(!paused, "SingularityPool: PAUSED");
-        _;
-    }
-
-    modifier onlyFactory() {
-        require(msg.sender == factory, "SingularityPool: NOT_FACTORY");
-        _;
-    }
-
-    modifier onlyRouter() {
-        require(msg.sender == ISingularityFactory(factory).router(), "SingularityPool: NOT_ROUTER");
-        _;
-    }
-
     constructor() {
         (factory, token, isStablecoin, baseFee) = ISingularityFactory(msg.sender).poolParams();
         string memory tranche = ISingularityFactory(factory).tranche();
@@ -59,7 +44,8 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     /// @param amount The amount of underlying tokens to deposit
     /// @param to The address to mint LP tokens to
     /// @return mintAmount The amount of LP tokens minted
-    function deposit(uint256 amount, address to) external override notPaused nonReentrant returns (uint256 mintAmount) {
+    function deposit(uint256 amount, address to) external override nonReentrant returns (uint256 mintAmount) {
+        _notPaused();
         require(amount != 0, "SingularityPool: AMOUNT_IS_0");
         require(amount + liabilities <= depositCap, "SingularityPool: DEPOSIT_EXCEEDS_CAP");
 
@@ -100,13 +86,8 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     /// @param lpAmount The amount of LP tokens to burn
     /// @param to The address to redeem underlying tokens to
     /// @return withdrawalAmount The amount of underlying tokens withdrawn
-    function withdraw(uint256 lpAmount, address to)
-        external
-        override
-        notPaused
-        nonReentrant
-        returns (uint256 withdrawalAmount)
-    {
+    function withdraw(uint256 lpAmount, address to) external override nonReentrant returns (uint256 withdrawalAmount) {
+        _notPaused();
         require(lpAmount != 0, "SingularityPool: AMOUNT_IS_0");
 
         // Store current price-per-share
@@ -137,7 +118,9 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     /// @dev Slippage is positive (or zero)
     /// @param amountIn The amount of underlying tokens being swapped in
     /// @return amountOut The USD value of the swap in (post fees)
-    function swapIn(uint256 amountIn) external override onlyRouter notPaused nonReentrant returns (uint256 amountOut) {
+    function swapIn(uint256 amountIn) external override nonReentrant returns (uint256 amountOut) {
+        _notPaused();
+        _onlyRouter();
         require(amountIn != 0, "SingularityPool: AMOUNT_IS_0");
 
         // Apply slippage (+)
@@ -168,14 +151,9 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     /// @param amountIn The amount of underlying tokens being swapped in
     /// @param to The address to send tokens to
     /// @return amountOut The amount of tokens being swapped out
-    function swapOut(uint256 amountIn, address to)
-        external
-        override
-        onlyRouter
-        notPaused
-        nonReentrant
-        returns (uint256 amountOut)
-    {
+    function swapOut(uint256 amountIn, address to) external override nonReentrant returns (uint256 amountOut) {
+        _notPaused();
+        _onlyRouter();
         require(amountIn != 0, "SingularityPool: AMOUNT_IS_0");
 
         // Convert USD value to amount
@@ -294,13 +272,8 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         uint256 feeA = _getG(1 ether).mulWadUp(amount) + gAfter.mulWadUp(_liabilities + amount);
         uint256 feeB = gCurrent.mulWadDown(_liabilities);
 
-        // check underflow
-        if (feeA > feeB) {
-            fee = feeA - feeB;
-            require(fee < amount, "SingularityPool: FEE_EXCEEDS_AMOUNT");
-        } else {
-            fee = 0;
-        }
+        fee = feeA - feeB;
+        require(fee < amount, "SingularityPool: FEE_EXCEEDS_AMOUNT");
     }
 
     /// @notice Calculates the fee charged for withdraw
@@ -433,7 +406,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
 
     /* ========== INTERNAL/PURE FUNCTIONS ========== */
 
-    /// 
+    ///
     ///     g = 3.63 - 10 * collateralizationRatio   { colleralizationRatio < 0.35 }
     ///
     ///                     0.00003
@@ -469,9 +442,23 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         }
     }
 
+    function _notPaused() internal view {
+        require(!paused, "SingularityPool: PAUSED");
+    }
+
+    function _onlyFactory() internal view {
+        require(msg.sender == factory, "SingularityPool: NOT_FACTORY");
+    }
+
+    function _onlyRouter() internal view {
+        require(msg.sender == ISingularityFactory(factory).router(), "SingularityPool: NOT_ROUTER");
+    }
+
     /* ========== FACTORY FUNCTIONS ========== */
 
-    function collectFees(address feeTo) external override onlyFactory {
+    function collectFees(address feeTo) external override {
+        _onlyFactory();
+
         if (protocolFees == 0) return;
 
         IERC20(token).safeTransfer(feeTo, protocolFees);
@@ -480,17 +467,23 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         emit CollectFees(protocolFees);
     }
 
-    function setDepositCap(uint256 newDepositCap) external override onlyFactory {
+    function setDepositCap(uint256 newDepositCap) external override {
+        _onlyFactory();
+
         emit SetDepositCap(depositCap, newDepositCap);
         depositCap = newDepositCap;
     }
 
-    function setBaseFee(uint256 newBaseFee) external override onlyFactory {
+    function setBaseFee(uint256 newBaseFee) external override {
+        _onlyFactory();
+
         emit SetBaseFee(baseFee, newBaseFee);
         baseFee = newBaseFee;
     }
 
-    function setPaused(bool state) external override onlyFactory {
+    function setPaused(bool state) external override {
+        _onlyFactory();
+
         emit SetPaused(paused, state);
         paused = state;
     }

@@ -40,7 +40,7 @@ contract SingularityOracle is ISingularityOracle {
         PriceData[] memory prices = allPrices[token];
         price = prices[prices.length - 1].price;
         uint256 priceDiff = price > chainlinkPrice ? price - chainlinkPrice : chainlinkPrice - price;
-        uint256 percentDiff = (priceDiff * 1 ether) / (price * 100);
+        uint256 percentDiff = (priceDiff * 1 ether) / price;
         require(percentDiff <= maxPriceTolerance, "SingularityOracle: PRICE_DIFF_EXCEEDS_TOLERANCE");
         updatedAt = prices[prices.length - 1].updatedAt;
     }

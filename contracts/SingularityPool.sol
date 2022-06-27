@@ -251,10 +251,10 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
 
         (uint256 tokenPrice, ) = getOracleData();
         value = amount.mulWadDown(tokenPrice);
-        if (decimals <= 18) {
-            value *= 10**(18 - decimals);
-        } else {
+        if (decimals > 18) {
             value /= 10**(decimals - 18);
+        } else {
+            value *= 10**(18 - decimals);
         }
     }
 
@@ -267,10 +267,10 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
 
         (uint256 tokenPrice, ) = getOracleData();
         amount = value.divWadDown(tokenPrice);
-        if (decimals <= 18) {
-            amount /= 10**(18 - decimals);
-        } else {
+        if (decimals > 18) {
             amount *= 10**(decimals - 18);
+        } else {
+            amount /= 10**(18 - decimals);
         }
     }
 

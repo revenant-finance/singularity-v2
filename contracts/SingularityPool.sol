@@ -193,13 +193,6 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         }
     }
 
-    /// @notice Get pool's assets and liabilities
-    /// @return _assets The assets of the pool
-    /// @return _liabilities The liabilities of the pool
-    function getAssetsAndLiabilities() public view override returns (uint256 _assets, uint256 _liabilities) {
-        return (assets, liabilities);
-    }
-
     /// @notice Get pool's collateralization ratio
     /// @dev Collateralization ratio is 1 if pool not seeded
     /// @return collateralizationRatio The collateralization ratio of the pool
@@ -207,8 +200,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         if (liabilities == 0) {
             collateralizationRatio = 1 ether;
         } else {
-            (uint256 _assets, uint256 _liabilities) = getAssetsAndLiabilities();
-            collateralizationRatio = _assets.divWadDown(_liabilities);
+            collateralizationRatio = assets.divWadDown(liabilities);
         }
     }
 
@@ -265,12 +257,11 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         }
 
         uint256 gCurrent = _getG(currentCollateralizationRatio);
-        (uint256 _assets, uint256 _liabilities) = getAssetsAndLiabilities();
-        uint256 afterCollateralizationRatio = _calcCollatalizationRatio(_assets + amount, _liabilities + amount);
+        uint256 afterCollateralizationRatio = _calcCollatalizationRatio(assets + amount, liabilities + amount);
         uint256 gAfter = _getG(afterCollateralizationRatio);
 
-        uint256 feeA = _getG(1 ether).mulWadUp(amount) + gAfter.mulWadUp(_liabilities + amount);
-        uint256 feeB = gCurrent.mulWadDown(_liabilities);
+        uint256 feeA = _getG(1 ether).mulWadUp(amount) + gAfter.mulWadUp(liabilities + amount);
+        uint256 feeB = gCurrent.mulWadDown(liabilities);
 
         fee = feeA - feeB;
         require(fee < amount, "SingularityPool: FEE_EXCEEDS_AMOUNT");
@@ -288,15 +279,14 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         }
 
         uint256 gCurrent = _getG(currentCollateralizationRatio);
-        (uint256 _assets, uint256 _liabilities) = getAssetsAndLiabilities();
         uint256 afterCollateralizationRatio = _calcCollatalizationRatio(
-            _assets > amount ? _assets - amount : 0,
-            _liabilities - amount
+            assets > amount ? assets - amount : 0,
+            liabilities - amount
         );
         uint256 gAfter = _getG(afterCollateralizationRatio);
 
-        uint256 feeA = _getG(1 ether).mulWadUp(amount) + gAfter.mulWadUp(_liabilities - amount);
-        uint256 feeB = gCurrent.mulWadDown(_liabilities);
+        uint256 feeA = _getG(1 ether).mulWadUp(amount) + gAfter.mulWadUp(liabilities - amount);
+        uint256 feeB = gCurrent.mulWadDown(liabilities);
 
         // check underflow
         if (feeA > feeB) {
@@ -314,8 +304,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         if (amount == 0) return 0;
 
         uint256 currentCollateralizationRatio = getCollateralizationRatio();
-        (uint256 _assets, uint256 _liabilities) = getAssetsAndLiabilities();
-        uint256 afterCollateralizationRatio = _calcCollatalizationRatio(_assets + amount, _liabilities);
+        uint256 afterCollateralizationRatio = _calcCollatalizationRatio(assets + amount, liabilities);
         if (currentCollateralizationRatio == afterCollateralizationRatio) {
             return 0;
         }
@@ -336,8 +325,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         require(amount < assets, "SingularityPool: AMOUNT_EXCEEDS_ASSETS");
 
         uint256 currentCollateralizationRatio = getCollateralizationRatio();
-        (uint256 _assets, uint256 _liabilities) = getAssetsAndLiabilities();
-        uint256 afterCollateralizationRatio = _calcCollatalizationRatio(_assets - amount, _liabilities);
+        uint256 afterCollateralizationRatio = _calcCollatalizationRatio(assets - amount, liabilities);
         if (currentCollateralizationRatio == afterCollateralizationRatio) {
             return 0;
         }

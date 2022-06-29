@@ -13,7 +13,6 @@ contract SingularityOracle is ISingularityOracle {
     struct PriceData {
         uint256 price;
         uint256 updatedAt;
-        uint256 nonce;
     }
 
     bool public onlyUseChainlink;
@@ -21,7 +20,7 @@ contract SingularityOracle is ISingularityOracle {
     uint256 public maxPriceTolerance = 0.015 ether; // 1.5%
 
     mapping(address => bool) public pushers;
-    mapping(address => PriceData[]) public allPrices;
+    mapping(address => PriceData) public allPrices;
     mapping(address => address) public chainlinkFeeds;
 
     constructor(address _admin) {
@@ -37,12 +36,12 @@ contract SingularityOracle is ISingularityOracle {
             return (chainlinkPrice, block.timestamp); // change to _updatedAt in prod
         }
 
-        PriceData[] memory prices = allPrices[token];
-        price = prices[prices.length - 1].price;
+        PriceData memory priceData = allPrices[token];
+        price = priceData.price;
+        updatedAt = priceData.updatedAt;
         uint256 priceDiff = price > chainlinkPrice ? price - chainlinkPrice : chainlinkPrice - price;
         uint256 percentDiff = (priceDiff * 1 ether) / price;
         require(percentDiff <= maxPriceTolerance, "SingularityOracle: PRICE_DIFF_EXCEEDS_TOLERANCE");
-        updatedAt = prices[prices.length - 1].updatedAt;
     }
 
     function getLatestRounds(address[] calldata tokens)
@@ -64,18 +63,17 @@ contract SingularityOracle is ISingularityOracle {
         }
     }
 
-    function pushPrice(address _token, uint256 _price) public {
+    function pushPrice(address _token, uint256 _price, uint256 _timestamp) public {
         require(pushers[msg.sender], "SingularityOracle: NOT_PUSHER");
         require(_price != 0, "SingularityOracle: PRICE_IS_0");
-        PriceData[] storage prices = allPrices[_token];
-        prices.push(PriceData({price: _price, updatedAt: block.timestamp, nonce: prices.length}));
+        allPrices[_token] = PriceData({price: _price, updatedAt: _timestamp});
     }
 
-    function pushPrices(address[] calldata tokens, uint256[] calldata prices) external {
+    function pushPrices(address[] calldata tokens, uint256[] calldata prices, uint256[] calldata timestamps) external {
         require(tokens.length == prices.length, "SingularityOracle: NOT_SAME_LENGTH");
         uint256 length = tokens.length;
         for (uint256 i; i < length; ) {
-            pushPrice(tokens[i], prices[i]);
+            pushPrice(tokens[i], prices[i], timestamps[i]);
             unchecked {
                 ++i;
             }

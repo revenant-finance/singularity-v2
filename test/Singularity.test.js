@@ -81,6 +81,11 @@ describe("Singularity Swap", () => {
     ethers.provider.send("evm_mine");
   }
 
+  async function getCurrentTimestamp() {
+    const blockData = await ethers.provider.getBlock("latest");
+    return blockData.timestamp;
+  }
+
   async function deployTestTokens() {
     // deploy wFTM
     wftm = await Wftm.deploy();
@@ -111,9 +116,11 @@ describe("Singularity Swap", () => {
   }
 
   async function updatePrices() {
+    const timestamp = await getCurrentTimestamp();
     await oracle.pushPrices(
       [wftm.address, eth.address, usdc.address, dai.address],
-      [numToBN(WFTM.price), numToBN(ETH.price), numToBN(USDC.price), numToBN(DAI.price)]
+      [numToBN(WFTM.price), numToBN(ETH.price), numToBN(USDC.price), numToBN(DAI.price)],
+      [timestamp, timestamp, timestamp, timestamp]
     );
 
     wftmFeed = await ChainlinkFeed.deploy(numToBN(WFTM.price, 8));
@@ -285,14 +292,15 @@ describe("Singularity Swap", () => {
       getDomainSeparator(`Singularity Pool Token-${DAI.symbol} (${trancheName})`, DAI.poolAddress)
     );
     expect(await DAI.pool.getPricePerShare()).to.equal(numToBN(1));
-    expect((await DAI.pool.getAssetsAndLiabilities())[0]).to.equal(0);
-    expect((await DAI.pool.getAssetsAndLiabilities())[1]).to.equal(0);
+    expect(await DAI.pool.assets()).to.equal(0);
+    expect(await DAI.pool.liabilities()).to.equal(0);
     expect(await DAI.pool.getCollateralizationRatio()).to.equal(numToBN(1));
-    await oracle.pushPrices([DAI.address], [numToBN(0.01)]);
+    const timestamp = await getCurrentTimestamp();
+    await oracle.pushPrices([DAI.address], [numToBN(0.01)], [timestamp]);
     await expect(DAI.pool.getOracleData()).to.be.revertedWith(
       "SingularityOracle: PRICE_DIFF_EXCEEDS_TOLERANCE"
     );
-    await oracle.pushPrices([DAI.address], [numToBN(DAI.price)]);
+    await oracle.pushPrices([DAI.address], [numToBN(DAI.price)], [timestamp]);
     expect((await DAI.pool.getOracleData())[0]).to.equal(numToBN(DAI.price));
     expect(await DAI.pool.getAmountToUSD(numToBN(1, DAI.decimals))).to.equal(numToBN(DAI.price));
     expect(await DAI.pool.getUSDToAmount(numToBN(DAI.price))).to.equal(numToBN(1, DAI.decimals));
@@ -428,7 +436,10 @@ describe("Singularity Swap", () => {
     expect(expectedBal).to.equal(balAfter.sub(balBefore));
     await router.removeLiquidity(usdc.address, secondHalf, 0, ownerAddress, MAX);
     const protocolFees = await USDC.pool.protocolFees();
-    const [_assets, _liabilities] = await USDC.pool.getAssetsAndLiabilities();
+    const [_assets, _liabilities] = await Promise.all([
+      USDC.pool.assets(),
+      USDC.pool.liabilities(),
+    ]);
     const usdcPoolBal = await usdc.balanceOf(USDC.poolAddress);
     expect(await usdc.balanceOf(ownerAddress)).to.be.equal(
       numToBN(USDC.balance, USDC.decimals) - protocolFees
@@ -819,7 +830,8 @@ describe("Singularity Swap", () => {
       await factory.createPool(DAI.address, DAI.isStablecoin, numToBN(DAI.baseFee));
       DAI.poolAddress = await factory.getPool(DAI.address);
       DAI.pool = await Pool.attach(DAI.poolAddress);
-      await oracle.pushPrices([DAI.address], [numToBN(DAI.price)]);
+      const timestamp = await getCurrentTimestamp();
+      await oracle.pushPrices([DAI.address], [numToBN(DAI.price)], [timestamp]);
       await factory.setDepositCaps([DAI.address], [MAX]);
     }
 

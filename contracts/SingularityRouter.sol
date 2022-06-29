@@ -22,11 +22,6 @@ contract SingularityRouter is ISingularityRouter {
     address public immutable override WETH;
     bytes32 public immutable override poolCodeHash;
 
-    modifier ensure(uint256 deadline) {
-        require(deadline >= block.timestamp, "SingularityRouter: EXPIRED");
-        _;
-    }
-
     constructor(address _factory, address _WETH) {
         require(_factory != address(0), "SingularityRouter: FACTORY_IS_0");
         require(_WETH != address(0), "SingularityRouter: WETH_IS_0");
@@ -46,7 +41,8 @@ contract SingularityRouter is ISingularityRouter {
         uint256 minAmountOut,
         address to,
         uint256 deadline
-    ) external override ensure(deadline) returns (uint256 amountOut) {
+    ) external override returns (uint256 amountOut) {
+        _ensureDeadline(deadline);
         amountOut = getAmountOut(amountIn, tokenIn, tokenOut);
         require(amountOut >= minAmountOut, "SingularityRouter: INSUFFICIENT_OUTPUT_AMOUNT");
         IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
@@ -61,7 +57,8 @@ contract SingularityRouter is ISingularityRouter {
         uint256 minAmountOut,
         address to,
         uint256 deadline
-    ) external payable override ensure(deadline) returns (uint256 amountOut) {
+    ) external payable override returns (uint256 amountOut) {
+        _ensureDeadline(deadline);
         require(tokenIn == WETH, "SingularityRouter: INVALID_IN_TOKEN");
         amountOut = getAmountOut(msg.value, tokenIn, tokenOut);
         require(amountOut >= minAmountOut, "SingularityRouter: INSUFFICIENT_OUTPUT_AMOUNT");
@@ -78,7 +75,8 @@ contract SingularityRouter is ISingularityRouter {
         uint256 minAmountOut,
         address to,
         uint256 deadline
-    ) external override ensure(deadline) returns (uint256 amountOut) {
+    ) external override returns (uint256 amountOut) {
+        _ensureDeadline(deadline);
         require(tokenOut == WETH, "SingularityRouter: INVALID_OUT_TOKEN");
         amountOut = getAmountOut(amountIn, tokenIn, tokenOut);
         require(amountOut >= minAmountOut, "SingularityRouter: INSUFFICIENT_OUTPUT_AMOUNT");
@@ -96,6 +94,7 @@ contract SingularityRouter is ISingularityRouter {
         address tokenOut,
         address to
     ) internal virtual {
+        require(tokenIn != address(0) && tokenOut != address(0), "SingularityRouter: ZERO_ADDRESS");
         require(tokenIn != tokenOut, "SingularityRouter: SAME_TOKEN");
         address poolIn = poolFor(tokenIn);
         IERC20(tokenIn).safeIncreaseAllowance(poolIn, amountIn);
@@ -110,7 +109,8 @@ contract SingularityRouter is ISingularityRouter {
         uint256 minLiquidity,
         address to,
         uint256 deadline
-    ) public override ensure(deadline) returns (uint256 liquidity) {
+    ) public override returns (uint256 liquidity) {
+        _ensureDeadline(deadline);
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
         liquidity = _addLiquidity(token, amount, minLiquidity, to);
     }
@@ -119,7 +119,8 @@ contract SingularityRouter is ISingularityRouter {
         uint256 minLiquidity,
         address to,
         uint256 deadline
-    ) external payable override ensure(deadline) returns (uint256 liquidity) {
+    ) external payable override returns (uint256 liquidity) {
+        _ensureDeadline(deadline);
         IWETH(WETH).deposit{value: msg.value}();
         liquidity = _addLiquidity(WETH, msg.value, minLiquidity, to);
     }
@@ -142,7 +143,8 @@ contract SingularityRouter is ISingularityRouter {
         uint256 amountMin,
         address to,
         uint256 deadline
-    ) public override ensure(deadline) returns (uint256 amount) {
+    ) public override returns (uint256 amount) {
+        _ensureDeadline(deadline);
         address pool = poolFor(token);
         IERC20(pool).safeTransferFrom(msg.sender, address(this), liquidity);
         amount = ISingularityPool(pool).withdraw(liquidity, to);
@@ -154,7 +156,8 @@ contract SingularityRouter is ISingularityRouter {
         uint256 amountMin,
         address to,
         uint256 deadline
-    ) public payable override ensure(deadline) returns (uint256 amount) {
+    ) public payable override returns (uint256 amount) {
+        _ensureDeadline(deadline);
         amount = removeLiquidity(WETH, liquidity, amountMin, address(this), deadline);
         IWETH(WETH).withdraw(amount);
         _safeTransferETH(to, amount);
@@ -257,6 +260,10 @@ contract SingularityRouter is ISingularityRouter {
         (uint256 tradingFeeOut, , ) = ISingularityPool(poolOut).getTradingFees(amountOut);
         require(tradingFeeOut != type(uint256).max, "SingularityRouter: STALE_ORACLE_OUT");
         amountOut -= tradingFeeOut;
+    }
+
+    function _ensureDeadline(uint256 deadline) internal view {
+        require(deadline >= block.timestamp, "SingularityRouter: EXPIRED");
     }
 
     function _safeTransferETH(address to, uint256 amount) internal {

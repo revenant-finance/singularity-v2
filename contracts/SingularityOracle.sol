@@ -33,7 +33,7 @@ contract SingularityOracle is ISingularityOracle {
         (uint256 chainlinkPrice, uint256 _updatedAt) = _getChainlinkData(token);
         require(chainlinkPrice != 0, "SingularityOracle: CHAINLINK_PRICE_IS_0");
         if (onlyUseChainlink) {
-            return (chainlinkPrice, block.timestamp); // change to _updatedAt in prod
+            return (chainlinkPrice, _updatedAt);
         }
 
         PriceData memory priceData = allPrices[token];

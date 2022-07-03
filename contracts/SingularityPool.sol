@@ -47,7 +47,6 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     function deposit(uint256 amount, address to) external override nonReentrant returns (uint256 mintAmount) {
         _notPaused();
         require(amount != 0, "SingularityPool: AMOUNT_IS_0");
-        require(amount + liabilities <= depositCap, "SingularityPool: DEPOSIT_EXCEEDS_CAP");
 
         // Transfer token from sender
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
@@ -77,6 +76,8 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
             assets += amountPostFee;
             liabilities += amountPostFee;
         }
+        
+        require(liabilities <= depositCap, "SingularityPool: DEPOSIT_EXCEEDS_CAP");
 
         emit Deposit(msg.sender, amount, mintAmount, to);
     }

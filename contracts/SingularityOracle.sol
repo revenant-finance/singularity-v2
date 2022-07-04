@@ -52,8 +52,7 @@ contract SingularityOracle is ISingularityOracle {
     {
         prices = new uint256[](tokens.length);
         updatedAts = new uint256[](tokens.length);
-        uint256 length = tokens.length;
-        for (uint256 i; i < length; ) {
+        for (uint256 i; i < tokens.length; ) {
             (uint256 price, uint256 updatedAt) = getLatestRound(tokens[i]);
             prices[i] = price;
             updatedAts[i] = updatedAt;
@@ -71,8 +70,7 @@ contract SingularityOracle is ISingularityOracle {
 
     function pushPrices(address[] calldata tokens, uint256[] calldata prices, uint256[] calldata timestamps) external {
         require(tokens.length == prices.length, "SingularityOracle: NOT_SAME_LENGTH");
-        uint256 length = tokens.length;
-        for (uint256 i; i < length; ) {
+        for (uint256 i; i < tokens.length; ) {
             pushPrice(tokens[i], prices[i], timestamps[i]);
             unchecked {
                 ++i;
@@ -99,8 +97,7 @@ contract SingularityOracle is ISingularityOracle {
 
     function setChainlinkFeeds(address[] calldata tokens, address[] calldata feeds) external {
         require(tokens.length == feeds.length, "SingularityOracle: NOT_SAME_LENGTH");
-        uint256 length = tokens.length;
-        for (uint256 i; i < length; ) {
+        for (uint256 i; i < tokens.length; ) {
             setChainlinkFeed(tokens[i], feeds[i]);
             unchecked {
                 ++i;

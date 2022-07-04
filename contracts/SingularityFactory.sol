@@ -112,8 +112,7 @@ contract SingularityFactory is ISingularityFactory {
 
     function collectFees(address[] calldata tokens) external override {
         _onlyAdmin();
-        uint256 length = tokens.length;
-        for (uint256 i; i < length; ) {
+        for (uint256 i; i < tokens.length; ) {
             ISingularityPool(tokens[i]).collectFees(feeTo);
             unchecked {
                 ++i;
@@ -124,8 +123,7 @@ contract SingularityFactory is ISingularityFactory {
     function setDepositCaps(address[] calldata tokens, uint256[] calldata caps) external override {
         _onlyAdmin();
         require(tokens.length == caps.length, "SingularityFactory: NOT_SAME_LENGTH");
-        uint256 length = tokens.length;
-        for (uint256 i; i < length; ) {
+        for (uint256 i; i < tokens.length; ) {
             address pool = getPool[tokens[i]];
             require(pool != address(0), "SingularityFactory: POOL_DOESNT_EXIST");
             ISingularityPool(pool).setDepositCap(caps[i]);
@@ -138,8 +136,7 @@ contract SingularityFactory is ISingularityFactory {
     function setBaseFees(address[] calldata tokens, uint256[] calldata baseFees) external override {
         _onlyAdmin();
         require(tokens.length == baseFees.length, "SingularityFactory: NOT_SAME_LENGTH");
-        uint256 length = tokens.length;
-        for (uint256 i; i < length; ) {
+        for (uint256 i; i < tokens.length; ) {
             require(baseFees[i] != 0, "SingularityFactory: BASE_FEE_IS_0");
             address pool = getPool[tokens[i]];
             require(pool != address(0), "SingularityFactory: POOL_DOESNT_EXIST");
@@ -153,8 +150,7 @@ contract SingularityFactory is ISingularityFactory {
     function setPaused(address[] calldata tokens, bool[] calldata states) external override {
         _onlyAdmin();
         require(tokens.length == states.length, "SingularityFactory: NOT_SAME_LENGTH");
-        uint256 length = tokens.length;
-        for (uint256 i; i < length; ) {
+        for (uint256 i; i < tokens.length; ) {
             address pool = getPool[tokens[i]];
             require(pool != address(0), "SingularityFactory: POOL_DOESNT_EXIST");
             ISingularityPool(pool).setPaused(states[i]);
@@ -166,8 +162,7 @@ contract SingularityFactory is ISingularityFactory {
 
     function setPausedForAll(bool state) external override {
         _onlyAdmin();
-        uint256 length = allPools.length;
-        for (uint256 i; i < length; ) {
+        for (uint256 i; i < allPools.length; ) {
             ISingularityPool(allPools[i]).setPaused(state);
             unchecked {
                 ++i;

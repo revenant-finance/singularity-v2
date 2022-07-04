@@ -456,10 +456,12 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
 
         if (protocolFees == 0) return;
 
-        IERC20(token).safeTransfer(feeTo, protocolFees);
+        uint256 protocolFeesToTransfer = protocolFees;
         protocolFees = 0;
 
-        emit CollectFees(protocolFees);
+        IERC20(token).safeTransfer(feeTo, protocolFeesToTransfer);
+
+        emit CollectFees(protocolFeesToTransfer);
     }
 
     function setDepositCap(uint256 newDepositCap) external override {

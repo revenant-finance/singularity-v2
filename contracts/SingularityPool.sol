@@ -166,9 +166,10 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         (uint256 totalFee, uint256 protocolFee, uint256 lpFee) = getTradingFees(amountPostSlippage);
         require(totalFee != type(uint256).max, "SingularityPool: STALE_ORACLE");
         protocolFees += protocolFee;
+        assets -= protocolFee;
         liabilities += lpFee;
         amountOut = amountPostSlippage - totalFee;
-        assets = assets - protocolFees - amountOut;
+        assets = assets - protocolFee - amountOut;
 
         // Transfer tokens out
         IERC20(token).safeTransfer(to, amountOut);

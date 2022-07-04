@@ -515,6 +515,10 @@ Otherwise, one can **no fees** by strategically depositing / withdrawing in part
 - Imagine current CR is 90%. User wants to withdraw 50% of the assets which would charge fees on their entire withdrawal amount.
 - Instead, they first deposit an amount that brings the CR above 100% (no fees). Then they withdraw their original amount plus the newly deposited amount and skip the withdrawal fee.
 
+#### Developer response
+
+Fixed in commit 7042e4dc411e2d68a4a43bf2e56d2037274a075c
+
 ### 2. High - `_getG` is not continuous
 
 https://github.com/revenant-finance/singularity-v2/blob/a3cdbc5515374c9e1792b3cb94ff1b084a9a1361/contracts/SingularityPool.sol#L442
@@ -562,6 +566,10 @@ See [`bfs#7030`'s POC](https://gist.github.com/bsamuels453/b0fc4715fc384d94eb3e8
 
 #### Recommended Mitigation Steps
 Consider interpolating the current price to the new price over a short time frame to smooth out the price and make atomic sandwich attacks not profitable.
+
+#### Developer response
+
+Acknowledged, will fix via off-chain oracle
 
 ## Medium Findings
 
@@ -616,7 +624,7 @@ Because the pool mechanics permit pool undercollateralization for extended perio
 
 #### Developer response
 
-
+Acknowledged, will fix off-chain
 
 ### 2. Medium - Oracle price lag enables 1% arbitrage opportunities (engn33r)
 
@@ -638,6 +646,8 @@ Medium. Arbitrageurs can wait for specific market conditions to extract value fr
 Protocol fees should be high enough to disincentivize arbitrage of this kind or compensate LP holders sufficiently to protect against loss of value. Additional pricing sources can provide more accurate prices for high volatility assets.
 
 #### Developer response
+
+Acknowledged, will fix via off-chain oracle
 
 ## Fellows Medium findings
 

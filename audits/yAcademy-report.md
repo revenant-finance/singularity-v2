@@ -98,7 +98,7 @@ Allow fees to be collected one pool at a time, either by adding a new function i
 
 #### Developer response
 
-
+Fixed in commit 57541d07f6e43648e42de8f8ee3cd2f1be8a0d35
 
 ### 2. High - Pools mechanics don't incentivize end goal (engn33r)
 
@@ -127,7 +127,7 @@ Because `deposit()` causes the collateralization ratio to always move towards 1 
 
 #### Developer response
 
-
+Fixed in commit 04b4c710b3d9c3354f63c27f53cb16fe14741591
 
 ### 3. High - Flashloan/Whale slippage manipulation (engn33r, NibblerExpress)
 
@@ -209,7 +209,7 @@ Modify the protocol so the assumptions used above are not valid. For example, se
 
 #### Developer response
 
-
+Acknowledged, will modify trading fees on a per-asset basis
 
 ### 4. High - Single depositor in pool can steal funds from other pools (NibblerExpress)
 
@@ -238,7 +238,7 @@ Increase the fee/penalty for withdrawing a pool down to very low or zero liquidi
 
 #### Developer response
 
-
+Acknowledged
 
 ## Fellows High findings
 
@@ -270,6 +270,10 @@ However, we also noted that in the two places in the code where an `allPrices` a
     mapping(address => PriceData) public allPrices; // proposed change
 ```
 If the mapping gets updated, the [getLatestRound()](https://github.com/Yacademy-block-2/singularity-v2/blob/a3cdbc5515374c9e1792b3cb94ff1b084a9a1361/contracts/SingularityOracle.sol#L40) and [pushPrice()](https://github.com/Yacademy-block-2/singularity-v2/blob/a3cdbc5515374c9e1792b3cb94ff1b084a9a1361/contracts/SingularityOracle.sol#L70) logic would have to be updated to reference a single `PriceData` and not the last element of a `PriceData[]` array.
+
+##### Developer response
+
+Fixed in commit 808dc21cc701def2d307892e78b0a11720281cef
 
 ### 2. High - Pool drain via Oracle Update Sandwich Attack (Benjamin Samuels)
 
@@ -341,6 +345,11 @@ With regards to the second point, it should be noted that large enough swings in
 
 Fundamentally this issue is caused by a mispricing of trade fees. The attack will remain viable as long as there is any possibility that `% change in oracle price > % trade fees + % slippage`. The following recommendations are designed to mitigate that risk as much as possible, although this auditor is not certain whether they are adequate.
 
+
+#### Developer repsonse
+
+Acknowledged, will fix via off-chain oracle
+
 **Calculate trading fees based off an implied volatility oracle**
 
 The safest point at which to conduct trades on Singularity is immediately after an oracle price update. This is because the price the oracle is reporting(aka the price the trade is executed at) is likely to be very close to the true price of the asset. As time passes, there will be some amount of volatility in the asset's true price that will not be reflected in the oracle until the next time the oracle will be updated.
@@ -402,6 +411,10 @@ Change the way `priceDiff` is calculated at [SingularityOracle.sol#L43](https://
 uint256 percentDiff = (priceDiff * 1 ether) / price;
 ```
 
+#### Developer response
+
+Fixed in commit c26c70975cd12c51476de14999cec08f18320f3c
+
 ### 4. High - Frozen protocol fee when too many pools are deployed (blockdev)
 
 A transaction containing a potentially unbounded loop can cause it to run out of gas. If that loop is reading and writing on storage, every iteration becomes expensive. Each block has a target gas limit, if a transaction is close to that limit or exceeds it, it becomes impossible to execute it. `SingularityFactory.sol`'s `collectFees()` function has this risk.
@@ -442,6 +455,10 @@ function collectFees(address[] calldata tokens) external override onlyAdmin {
 }
 ```
 
+#### Developer response
+
+Fixed in commit 57541d07f6e43648e42de8f8ee3cd2f1be8a0d35
+
 ### 5. High - Planned functionality incentivizes low pool liquidity (uk)
 
 The Singularity documentation states that when the `cRatio <= 1` that deposits are free. Similarly withdrawals incur no fee when `cRatio >= 1`. These changes have adverse effects that can lead to unplanned loss of fees and very low absolute liquidity. At certain values of `cRatio` large depositors are incentivized to take advantage of positive slippage and subsequently withdraw all of their funds from a pool. This change is currently only in the documentation and planned in the dev branch
@@ -468,7 +485,11 @@ Withdrawals that should be charged large fees can be made free by doing swaps wi
 
 Add a sliding fee instead of setting it to 0 outright. Alternatively, continue to charge a fee for all withdrawals regardless of `cRatio`.
 
-## Gues auditors High findings
+#### Developer response
+
+Acknowledged
+
+## Guest auditors High findings
 
 ### 1. High - Deposit fees even below 100% CR & withdrawal fees above 100%
 
@@ -507,6 +528,10 @@ Users that trade across this threshold of 30% will trigger a revert in this func
 #### Recommended Mitigation Steps
 The function should be continuous everywhere and be a decreasing function.
 
+#### Developer response
+
+Fixed in commit ff71a174560ff12077b1ad48bfd964a97b9d097c
+
 ### 3. High - `maxPriceTolerance` does not work correctly
 
 https://github.com/revenant-finance/singularity-v2/blob/a3cdbc5515374c9e1792b3cb94ff1b084a9a1361/contracts/SingularityOracle.sol#L43
@@ -522,6 +547,10 @@ Fix it and add a test for it.
 - uint256 percentDiff = (priceDiff * 1 ether) / price;
 require(percentDiff <= maxPriceTolerance, "SingularityOracle: PRICE_DIFF_EXCEEDS_TOLERANCE");
 ```
+
+#### Developer response
+
+Fixed in commit c26c70975cd12c51476de14999cec08f18320f3c
 
 ### 4. High - Price updates can be sandwiched
 

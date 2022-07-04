@@ -19,8 +19,8 @@ contract SingularityRouter is ISingularityRouter {
     using FixedPointMathLib for uint256;
 
     address public immutable override factory;
-    address public immutable override WETH;
-    bytes32 public immutable override poolCodeHash;
+    address internal immutable WETH;
+    bytes32 internal immutable poolCodeHash;
 
     constructor(address _factory, address _WETH) {
         require(_factory != address(0), "SingularityRouter: FACTORY_IS_0");

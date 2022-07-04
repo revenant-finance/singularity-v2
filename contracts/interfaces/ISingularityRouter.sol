@@ -14,10 +14,6 @@ interface ISingularityRouter {
 
     function factory() external returns (address);
 
-    function WETH() external returns (address);
-
-    function poolCodeHash() external returns (bytes32);
-
     function poolFor(address token) external view returns (address pool);
 
     function swapExactTokensForTokens(

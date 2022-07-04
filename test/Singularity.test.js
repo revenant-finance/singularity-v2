@@ -253,9 +253,6 @@ describe("Singularity Swap", () => {
 
     // Router
     expect(await router.factory()).to.equal(factory.address);
-    expect(await router.WETH()).to.equal(WFTM.address);
-
-    expect(await router.poolCodeHash()).to.equal(await factory.poolCodeHash());
     expect(await router.poolFor(wftm.address)).to.equal(await factory.getPool(wftm.address));
   });
 

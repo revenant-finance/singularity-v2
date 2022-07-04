@@ -349,18 +349,12 @@ describe("Singularity Swap", () => {
       usdc.address,
       numToBN(amountToMint, 6)
     );
+    const depositFee = await USDC.pool.getDepositFee(numToBN(amountToMint, USDC.decimals))
     await addLiquidity(USDC, amountToMint);
     const lpBal2 = await USDC.pool.balanceOf(ownerAddress);
     expect(expectedLpBal.add(expectedLpBal2)).to.equal(lpBal2);
-
-    expect(await usdc.balanceOf(USDC.poolAddress)).to.equal(
-      numToBN(amountToMint * 2, USDC.decimals)
-    );
-    expect(await USDC.pool.balanceOf(ownerAddress)).to.equal(
-      numToBN(amountToMint * 2, USDC.decimals)
-    );
-    expect(await USDC.pool.liabilities()).to.equal(numToBN(amountToMint * 2, USDC.decimals));
-    expect(await USDC.pool.assets()).to.equal(numToBN(amountToMint * 2, USDC.decimals));
+    expect(await USDC.pool.liabilities()).to.equal(numToBN(amountToMint * 2, USDC.decimals).sub(depositFee));
+    expect(await USDC.pool.assets()).to.equal(numToBN(amountToMint * 2, USDC.decimals).sub(depositFee));
 
     // Test pool token functionality
     await USDC.pool.transfer(otherAddress, numToBN(1, USDC.decimals));

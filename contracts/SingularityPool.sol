@@ -76,7 +76,7 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
             assets += amountPostFee;
             liabilities += amountPostFee;
         }
-        
+
         require(liabilities <= depositCap, "SingularityPool: DEPOSIT_EXCEEDS_CAP");
 
         emit Deposit(msg.sender, amount, mintAmount, to);
@@ -246,53 +246,59 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
     }
 
     /// @notice Calculates the fee charged for deposit
-    /// @dev Deposit fee is 0 when pool is empty
     /// @param amount The amount of tokens being deposited
     /// @return fee The fee charged for deposit
     function getDepositFee(uint256 amount) public view override returns (uint256 fee) {
-        if (amount == 0 || liabilities == 0) return 0;
+        if (amount == 0 || liabilities == 0 || amount + assets <= liabilities) return 0;
 
+        uint256 amountToPayFees = amount;
         uint256 currentCollateralizationRatio = getCollateralizationRatio();
-        if (currentCollateralizationRatio <= 1 ether) {
-            return 0;
+        if (currentCollateralizationRatio < 1 ether) {
+            amountToPayFees = amount - (liabilities - assets);
         }
 
         uint256 gCurrent = _getG(currentCollateralizationRatio);
-        uint256 afterCollateralizationRatio = _calcCollatalizationRatio(assets + amount, liabilities + amount);
+        uint256 afterCollateralizationRatio = _calcCollatalizationRatio(
+            assets + amountToPayFees,
+            liabilities + amountToPayFees
+        );
         uint256 gAfter = _getG(afterCollateralizationRatio);
 
-        uint256 feeA = _getG(1 ether).mulWadUp(amount) + gAfter.mulWadUp(liabilities + amount);
+        uint256 feeA = _getG(1 ether).mulWadUp(amountToPayFees) + gAfter.mulWadUp(liabilities + amountToPayFees);
         uint256 feeB = gCurrent.mulWadDown(liabilities);
 
         fee = feeA - feeB;
-        require(fee < amount, "SingularityPool: FEE_EXCEEDS_AMOUNT");
+        require(fee < amountToPayFees, "SingularityPool: FEE_EXCEEDS_AMOUNT");
     }
 
     /// @notice Calculates the fee charged for withdraw
     /// @param amount The amount of tokens being withdrawn
     /// @return fee The fee charged for withdraw
     function getWithdrawalFee(uint256 amount) public view override returns (uint256 fee) {
-        if (amount == 0 || amount >= liabilities) return 0;
-
-        uint256 currentCollateralizationRatio = getCollateralizationRatio();
-        if (currentCollateralizationRatio >= 1 ether) {
+        if (amount == 0 || amount >= liabilities || assets >= liabilities + amount) {
             return _getG(1 ether).mulWadUp(amount);
+        }
+
+        uint256 amountToPayFees = amount;
+        uint256 currentCollateralizationRatio = getCollateralizationRatio();
+        if (currentCollateralizationRatio > 1 ether) {
+            amountToPayFees = amount - (assets - liabilities);
         }
 
         uint256 gCurrent = _getG(currentCollateralizationRatio);
         uint256 afterCollateralizationRatio = _calcCollatalizationRatio(
-            assets > amount ? assets - amount : 0,
-            liabilities - amount
+            assets > amountToPayFees ? assets - amountToPayFees : 0,
+            liabilities - amountToPayFees
         );
         uint256 gAfter = _getG(afterCollateralizationRatio);
 
-        uint256 feeA = _getG(1 ether).mulWadUp(amount) + gAfter.mulWadUp(liabilities - amount);
+        uint256 feeA = _getG(1 ether).mulWadUp(amountToPayFees) + gAfter.mulWadUp(liabilities - amountToPayFees);
         uint256 feeB = gCurrent.mulWadDown(liabilities);
 
         // check underflow
         if (feeA > feeB) {
             fee = feeA - feeB;
-            require(fee < amount, "SingularityPool: FEE_EXCEEDS_AMOUNT");
+            require(fee < amountToPayFees, "SingularityPool: FEE_EXCEEDS_AMOUNT");
         } else {
             fee = 0;
         }

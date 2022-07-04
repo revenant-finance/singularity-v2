@@ -769,6 +769,10 @@ function collectFees(address feeTo) external override onlyFactory {
 ```
 In addition, extreme caution should be taken by the protocol admin when allowlisting tokens and creating new pools.
 
+#### Developer response
+
+Fixed in commit 5dea908b44af0f02b20a49e5545a4b8e02fe1eeb
+
 ## Guest auditors Medium findings
 
 ### 1. Medium - It can be profitable to split up orders
@@ -828,7 +832,7 @@ Follow the same approach as Uniswap and check whether a pool exists before inter
 
 #### Developer response
 
-
+Acknowledged
 
 ### 2. Low - Missing zero address check (engn33r)
 
@@ -848,7 +852,7 @@ Add a zero address check near the start of the `_swap()` function in Singularity
 
 #### Developer response
 
-
+Fixed in commit 808dc21cc701def2d307892e78b0a11720281cef
 
 ### 3. Low - g function discontinuity at 0.3 (engn33r)
 
@@ -867,6 +871,8 @@ Low. The incentives are designed to keep the collateralization ratio away from t
 Modify the g function to avoid discontinuities.
 
 #### Developer response
+
+Fixed in commit ff71a174560ff12077b1ad48bfd964a97b9d097c
 
 ## Fellows Low findings
 
@@ -895,6 +901,10 @@ Low. In case, the caller is not careful, an incorrect argument can be passed lea
 Follow two-step transfer ownership pattern. The current admin `a` first proposes a new address `b` for `admin`. Now, `b` accepts this proposal which then sets `admin` as `a`. Until then, `a` continues to be `admin`. You can use [BoringOwnable.sol](https://github.com/boringcrypto/BoringSolidity/blob/e74c5b22a61bfbadd645e51a64aa1d33734d577a/contracts/BoringOwnable.sol) as a reference.
 
 
+#### Developer response
+
+Acknowledged
+
 ## Guest auditors Low Findings
 
 ### 1. Low - Deposit cap is inaccurate
@@ -905,6 +915,10 @@ However, it uses the pre-fee `amount`, whereas the liabilities only increase by 
 
 #### Recommended Mitigation Steps
 Fix the deposit check.
+
+#### Developer response
+
+Fixed in commit 7042e4dc411e2d68a4a43bf2e56d2037274a075c
 
 ## Gas Savings Findings
 
@@ -931,7 +945,7 @@ Use unchecked when no risk of overflow or underflow exists.
 
 #### Developer response
 
-
+Fixed in commit 808dc21cc701def2d307892e78b0a11720281cef
 
 ### 2. Gas - Replace modifiers with internal functions (engn33r)
 
@@ -951,7 +965,7 @@ Replace modifiers with internal functions.
 
 #### Developer response
 
-
+Fixed in commit fd145537aaa6702c8d0f77e0b6a0b17695091a2c
 
 ### 3. Gas - Payable functions can save gas (engn33r)
 
@@ -974,7 +988,7 @@ Mark functions that have access control modifiers like onlyAdmin as payable for 
 
 #### Developer response
 
-
+Acknowledged
 
 ### 4. Gas - Use short require strings (engn33r)
 
@@ -994,7 +1008,7 @@ Replace modifiers with internal functions.
 
 #### Developer response
 
-
+Acknowledged
 
 ### 5. Gas - Use Solidity errors in 0.8.4+ (engn33r)
 
@@ -1016,7 +1030,7 @@ Add errors to replace each `require()` with `revert errorName()` for greater gas
 
 #### Developer response
 
-
+Acknowledged
 
 ### 6. Gas - Using simple comparison (engn33r)
 
@@ -1065,7 +1079,7 @@ Replace compound comparison operators with simple ones for gas savings.
 
 #### Developer response
 
-
+Fixed in commit c26c70975cd12c51476de14999cec08f18320f3c
 
 ### 7. Gas - Using Yul `iszero()` (engn33r)
 
@@ -1085,7 +1099,7 @@ Use Yul `iszero()` for gas savings.
 
 #### Developer response
 
-
+Acknowledged
 
 ### 8. Gas - Replace bool with uint256 (engn33r)
 
@@ -1105,7 +1119,7 @@ Replace all bool variables with uint256 variables.
 
 #### Developer response
 
-
+Acknowledged
 
 ### 9. Gas - Declare immutable variables internal when possible (engn33r)
 
@@ -1125,7 +1139,7 @@ Make immutable variables internal for gas savings.
 
 #### Developer response
 
-
+Fixed in commit 581cde77e655e66f9cb2f4c20c453cd5b91e4145
 
 ### 10. Gas - Redundant function (engn33r)
 
@@ -1145,7 +1159,7 @@ Remove `getAssetsAndLiabilities()` and use the built-in getter functions or the 
 
 #### Developer response
 
-
+Fixed in commit 808dc21cc701def2d307892e78b0a11720281cef
 
 ### 11. Gas - Remove nonReentrant modifiers (engn33r)
 
@@ -1185,7 +1199,7 @@ Remove the nonReentrant modifier for gas savings if functions follow the checks-
 
 #### Developer response
 
-
+Fixed in commit 808dc21cc701def2d307892e78b0a11720281cef
 
 ### 12. Gas - Remove `feeA > feeB` test in `getDepositFee()` (engn33r)
 
@@ -1226,6 +1240,8 @@ Gas savings
 Use the suggested code change to increase gas savings.
 
 #### Developer response
+
+Fixed in commit fd145537aaa6702c8d0f77e0b6a0b17695091a2c
 
 ## Fellows Gas Savings Findings
 
@@ -1320,6 +1336,10 @@ index 1de798d..47ebcfe 100644
 
 ```
 
+#### Developer response
+
+Acknowledged
+
 ### 2. Gas - Replace ProtocolFees state var with Slippage (devtooligan)
 
 Currently protocol fees are explicitly tracked via the `protocolFees` state variable.  This var is updated during `deposit()`, `withdraw()`, `swapIn()` and `swapOut()` at an average cost of around ~5,000 gas for SSTORE when changing a non-zero value to another non-zero value.
@@ -1375,6 +1395,10 @@ Here is the top half of `deposit()` refactored for use with uint128 assets / uin
 
 At a minimum, pack assets and liabilities into 1 slot by casting them as uint128.  Recommend using a SafeCast library like [Solmate SafeCastLib.sol](https://github.com/Rari-Capital/solmate/blob/main/src/utils/SafeCastLib.sol).  For additional savings, consider the storage layout of other slots and other contracts.
 
+#### Developer response
+
+Acknowledged
+
 ### 4. Gas - Use `unchecked` when there is no risk of overflow or underflow (blockdev)
 
 Since Solidity v0.8, arithmetic operations revert on underflow and overflow. If there is no such possibility, these operatiosn can be wrapped in an `unchecked` clause to save gas.
@@ -1410,6 +1434,10 @@ Gas savings
 
 Use `unchecked` when when no risk of overflow or underflow exists.
 
+#### Developer response
+
+Acknowledged
+
 ### 5. Gas - Do not load calldata length in memory for loops (blockdev)
 
 Reading calldata is cheaper than reading from memory. So, to iterate on a calldata array, we can just use its length already stored in calldata.
@@ -1430,6 +1458,10 @@ Gas savings
 #### Recommendation
 
 Use `tokens.length` directly for iteration instead of using `length`.
+
+#### Developer response
+
+Fixed in commit 5d91208a816f8229b4389b4d48048465816f2356
 
 ### 6. Gas - Unnecessary named return variable assignment (blockdev)
 
@@ -1457,6 +1489,10 @@ Gas savings
 
 Remove the `else` clause in the code piece shown above for `getDepositFee()` and `getWithdrawalFee()`.
 
+#### Developer response
+
+Fixed in commit c253d1d7b66d5cb9b82816fb1d4295e078f42701
+
 ### 7. Gas - Combine accounting updates in `swapIn` and `swapOut` (uk)
 
 In `swapIn` and `swapOut` the `assets` storage slot is unnecessarily updated multiple times.
@@ -1479,6 +1515,10 @@ Gas Savings
 #### Recommendation
 
 Combine the two statements into one update.
+
+#### Developer response
+
+Fixed in commit 2f1864d28e9280c24045052e174a49495c8b97e0
 
 ### 8. Gas - Routers can give infinite token approval to pools (blockdev)
 
@@ -1519,6 +1559,10 @@ function approvePool(address token) external onlyAdmin {
 
 Now, whenever a new pool for a token `t` is added, `admin` can call `SingularityFactory.approvePool(t)`.
 
+#### Developer response
+
+Acknowledged
+
 ## Informational Findings
 
 ## Residents Informational Findings
@@ -1539,6 +1583,10 @@ Informational
 
 Consider using the exact Uniswap `safeTransferFrom()` logic to better mimic Uniswap's AMM logic.
 
+#### Developer response
+
+Acknowledged
+
 ### 2. Informational - Centralization risk with admin role (engn33r)
 
 [The `admin` role](https://github.com/revenant-finance/singularity-v2/blob/a3cdbc5515374c9e1792b3cb94ff1b084a9a1361/contracts/SingularityFactory.sol#L14) in PoolFactory.sol has access to all factory contract administrative functions. The deployer of the [factory contract in the existing Fantom deployment](https://ftmscan.com/address/0xC335358995dc9dF377D425C32DC15Fc2DcC1Cc42) may not be a multisig address, which is a centralization risk.
@@ -1554,6 +1602,10 @@ Informational
 #### Recommendation
 
 Use a multisig for the admin role. Considering adding a timelock or 2-step admin transfer process for certain administrative functions such as `setAdmin()`.
+
+#### Developer response
+
+Acknowledged
 
 ### 3. Informational - `baseFee` value not limited (engn33r)
 
@@ -1571,6 +1623,10 @@ Informational
 
 Add checks to limit the basefee to a reasonable range, such as 0 to 0.5 (50%) or similar. Other methods of increasing user trust may achieve the same end goal.
 
+#### Developer response
+
+Acknowledged
+
 ### 4. Informational - No way to remove pools (engn33r)
 
 Uniswap is designed to be a DEX, where the D stands for decentralized. The Singularity v2 solution requires an admin to add pools with `createPool()`, so this process is more controlled. It can be useful to have a complementary `removePool()` function to allow for pools to be removed.
@@ -1586,6 +1642,10 @@ Informational
 #### Recommendation
 
 Add a `removePool()` function in SingularityFactory.sol.
+
+#### Developer response
+
+Acknowledged
 
 ### 5. Informational - Fee-on-transfer tokens not supported (engn33r)
 
@@ -1603,6 +1663,10 @@ Informational
 
 Clearly document that fee-on-transfer tokens are not compatible with this protocol. Make sure the admin is always aware of this limitation to prevent the addition of such an ERC20 token in the future.
 
+#### Developer response
+
+Acknowledged
+
 ### 6. Informational - Documentation inconsistencies (engn33r)
 
 The [Singularity documentation](https://docs.revenantlabs.io/singularity/) did not match the contract code in some places. The dev team confirmed in Discord that the code contains more updated information. The docs should be updated.
@@ -1618,6 +1682,10 @@ Informational
 #### Recommendation
 
 Update the developer documentation to match the implementation.
+
+#### Developer response
+
+Acknowledged
 
 ### 7. Informational - Decimals value borrowed from underlying ERC20 (engn33r)
 
@@ -1635,6 +1703,10 @@ Informational
 
 Use a consistent decimals value of 18 for all Singularity LP tokens. Following Uniswap's approach even save some gas by storing the value in a constant.
 
+#### Developer response
+
+Acknowledged
+
 ### 8. Informational - Typo (engn33r)
 
 There is a typo in a function name.
@@ -1650,6 +1722,10 @@ Informational
 #### Recommendation
 
 Fix typos.
+
+#### Developer response
+
+Fixed in commit 5d5a38cf7bffd5510c3aa0bfe983bf9bd5626fa2
 
 ### 9. Informational - nonReentrant modifier is specific to each pool (engn33r)
 
@@ -1667,6 +1743,10 @@ Informational
 
 Consider adding global reentrancy protection if certain weird ERC20 tokens are added to the protocol in the future.
 
+#### Developer response
+
+Acknowledged
+
 ### 10. Informational - Pool may not be able to reach `depositCap` (engn33r)
 
 The [`depositCap` state variable](https://github.com/revenant-finance/singularity-v2/blob/a3cdbc5515374c9e1792b3cb94ff1b084a9a1361/contracts/SingularityPool.sol#L26) sets an upper bound on the value that a pool can hold. The pool may revert before it can reach this upper bound because `rpow()` may cause the revert for large collateralization ratio values.
@@ -1682,6 +1762,10 @@ Informational
 #### Recommendation
 
 When setting `depositCap`, consider the limits at which `rpow()` will revert. A change was made [in the dev branch](https://github.com/revenant-finance/singularity-v2/commit/5b96f6e1b0eb9e70eb35a53fd58fd802b6ddea19) while the review was ongoing for a related issue, but it is unclear whether the chosen value of 1.5 ether is the exact tipping point that results in a revert for this specific case.
+
+#### Developer response
+
+Acknowledged
 
 ## Fellows Informational Findings
 
@@ -1754,6 +1838,10 @@ See the [POC here](https://gist.github.com/MrToph/9a3549cb7a5bbc7db1a561d208e49b
 #### Recommended Mitigation Steps
 It's hard to fix in the current AMM design. One can play around with the `baseFees` and `withdrawal`/`deposit` fees to reduce the profitability of JIT LPing.
 
+#### Developer response
+
+Acknowledged
+
 ### 3. Informational - Potentially misleading description of "no impermanent loss"
 
 #### Impact
@@ -1769,6 +1857,10 @@ A different section of the docs later clarifies this behavior.
 
 #### Recommended Mitigation Steps
 Consider stating the exact risks instead of saying there is no impermanent loss.
+
+#### Developer response
+
+Acknowledged
 
 ### 4. Informational - Miscellaneous
 #### Impact

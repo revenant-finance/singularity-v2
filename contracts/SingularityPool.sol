@@ -299,8 +299,6 @@ contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGu
         if (feeA > feeB) {
             fee = feeA - feeB;
             require(fee < amountToPayFees, "SingularityPool: FEE_EXCEEDS_AMOUNT");
-        } else {
-            fee = 0;
         }
     }
 

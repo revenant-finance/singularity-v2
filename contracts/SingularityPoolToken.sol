@@ -6,7 +6,7 @@ import "./interfaces/ISingularityPoolToken.sol";
 
 /**
  * @title Singularity Pool Token
- * @author Revenant Labs
+ * @author 0xEntropy
  * @author Modified from Solmate (https://github.com/Rari-Capital/solmate/blob/main/src/tokens/ERC20.sol)
  */
 abstract contract SingularityPoolToken is ISingularityPoolToken {

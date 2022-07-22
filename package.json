@@ -10,8 +10,8 @@
 	"repository": {
 		"type": "git"
 	},
-	"author": "Revenant Labs",
-	"license": "ISC",
+	"author": "0xEntropy",
+	"license": "MIT",
 	"devDependencies": {
 		"@nomiclabs/hardhat-ethers": "^2.0.6",
 		"@nomiclabs/hardhat-etherscan": "^3.0.4",

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: No License
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.15;
 
@@ -7,7 +7,7 @@ import "./interfaces/IChainlinkFeed.sol";
 
 /**
  * @title Singularity Oracle
- * @author Revenant Labs
+ * @author 0xEntropy
  */
 contract SingularityOracle is ISingularityOracle {
     struct PriceData {

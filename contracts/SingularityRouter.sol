@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: No License
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.15;
 
@@ -12,7 +12,7 @@ import "./utils/FixedPointMathLib.sol";
 
 /**
  * @title Singularity Router
- * @author Revenant Labs
+ * @author 0xEntropy
  */
 contract SingularityRouter is ISingularityRouter {
     using SafeERC20 for IERC20;

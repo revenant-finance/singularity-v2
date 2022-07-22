@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: No License
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.15;
 
@@ -13,7 +13,7 @@ import "./utils/ReentrancyGuard.sol";
 
 /**
  * @title Singularity Pool
- * @author Revenant Labs
+ * @author 0xEntropy
  */
 contract SingularityPool is ISingularityPool, SingularityPoolToken, ReentrancyGuard {
     using SafeERC20 for IERC20;

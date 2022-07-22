@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: No License
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.15;
 
@@ -7,7 +7,7 @@ import "./SingularityPool.sol";
 
 /**
  * @title Singularity Factory
- * @author Revenant Labs
+ * @author 0xEntropy
  */
 contract SingularityFactory is ISingularityFactory {
     string public override tranche;
